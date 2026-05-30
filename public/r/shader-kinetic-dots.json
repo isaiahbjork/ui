@@ -1,0 +1,183 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "shader-kinetic-dots",
+  "title": "Kinetic dots",
+  "description": "Kinetic dots is a compact WebGL website shader from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/isaiahbjork/shaders/website-shader.tsx",
+      "content": "\"use client\";\n\nimport { useTheme } from \"next-themes\";\nimport {\n  useCallback,\n  useEffect,\n  useMemo,\n  useRef,\n  useState,\n  type CSSProperties,\n  type PointerEvent as ReactPointerEvent,\n  type ReactNode,\n} from \"react\";\nimport { useReducedMotion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\n\nexport type WebsiteShaderId =\n  | \"aurora-veil\"\n  | \"kinetic-dots\";\n\nexport interface WebsiteShaderPreset {\n  id: WebsiteShaderId;\n  title: string;\n  summary: string;\n  intent: string;\n  accent: string;\n  interactive?: boolean;\n  preview: {\n    dark: string;\n    light: string;\n  };\n  fragment: string;\n}\n\nexport interface WebsiteShaderCanvasProps {\n  preset?: WebsiteShaderId | string | WebsiteShaderPreset;\n  className?: string;\n  tone?: \"dark\" | \"light\";\n  intensity?: number;\n  animate?: boolean;\n  maxPixelRatio?: number;\n  maxCanvasPixels?: number;\n  children?: ReactNode;\n}\n\ninterface WebsiteShaderDemoProps {\n  preset: WebsiteShaderId | WebsiteShaderPreset;\n  className?: string;\n}\n\nconst vertexShaderSource = `\nattribute vec2 a_position;\n\nvoid main() {\n  gl_Position = vec4(a_position, 0.0, 1.0);\n}\n`;\n\nconst fragmentHeader = `\n#ifdef GL_FRAGMENT_PRECISION_HIGH\nprecision highp float;\n#else\nprecision mediump float;\n#endif\n\nuniform vec2 u_resolution;\nuniform float u_time;\nuniform vec2 u_pointer;\nuniform vec4 u_trails[8];\nuniform float u_intensity;\nuniform float u_isLight;\n\nfloat saturate(float value) {\n  return clamp(value, 0.0, 1.0);\n}\n\nmat2 rotate2d(float angle) {\n  float s = sin(angle);\n  float c = cos(angle);\n  return mat2(c, -s, s, c);\n}\n\nfloat hash21(vec2 p) {\n  p = fract(p * vec2(123.34, 456.21));\n  p += dot(p, p + 45.32);\n  return fract(p.x * p.y);\n}\n\nfloat noise(vec2 p) {\n  vec2 i = floor(p);\n  vec2 f = fract(p);\n  vec2 u = f * f * (3.0 - 2.0 * f);\n\n  float a = hash21(i);\n  float b = hash21(i + vec2(1.0, 0.0));\n  float c = hash21(i + vec2(0.0, 1.0));\n  float d = hash21(i + vec2(1.0, 1.0));\n\n  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);\n}\n\nfloat fbm(vec2 p) {\n  float value = 0.0;\n  float amplitude = 0.5;\n  for (int i = 0; i < 4; i++) {\n    value += amplitude * noise(p);\n    p = rotate2d(0.72) * p * 2.03 + 4.17;\n    amplitude *= 0.5;\n  }\n  return value;\n}\n\nvec3 softLight(vec3 base, vec3 glow, float amount) {\n  return mix(base, glow, saturate(amount));\n}\n`;\n\nconst fragmentFooter = `\nvoid main() {\n  vec2 uv = gl_FragCoord.xy / max(u_resolution.xy, vec2(1.0));\n  vec2 p = (gl_FragCoord.xy * 2.0 - u_resolution.xy) / max(min(u_resolution.x, u_resolution.y), 1.0);\n  vec2 pointer = u_pointer * 2.0 - 1.0;\n  pointer.x *= u_resolution.x / max(u_resolution.y, 1.0);\n\n  vec3 color = shaderColor(uv, p, u_time, pointer, u_intensity, u_isLight);\n  color = pow(max(color, vec3(0.0)), vec3(0.92));\n\n  gl_FragColor = vec4(color, 1.0);\n}\n`;\n\nexport const websiteShaderPresets: WebsiteShaderPreset[] = [\n  {\n    id: \"aurora-veil\",\n    title: \"Aurora veil\",\n    summary: \"Soft atmospheric color fields that sit well behind editorial copy.\",\n    intent: \"Use it as a low-pressure section backdrop for launch pages, portfolios, and app onboarding.\",\n    accent: \"#7bd8c4\",\n    interactive: false,\n    preview: {\n      dark: \"radial-gradient(circle at 30% 24%, rgba(89,216,190,0.5), transparent 31%), radial-gradient(circle at 80% 72%, rgba(236,92,19,0.3), transparent 34%), linear-gradient(140deg, #06110f, #151515 55%, #030303)\",\n      light:\n        \"radial-gradient(circle at 34% 22%, rgba(83,194,169,0.35), transparent 30%), radial-gradient(circle at 76% 72%, rgba(236,92,19,0.18), transparent 34%), linear-gradient(140deg, #f5faf6, #eee7dc 55%, #fffaf0)\",\n    },\n    fragment: `\nvec3 shaderColor(vec2 uv, vec2 p, float t, vec2 pointer, float intensity, float isLight) {\n  vec2 q = p;\n  q.x += sin(q.y * 2.0 + t * 0.18) * 0.22;\n  q.y += cos(q.x * 1.7 - t * 0.14) * 0.16;\n\n  float veilA = smoothstep(0.72, 0.04, abs(q.y + sin(q.x * 1.8 + t * 0.24) * 0.32));\n  float veilB = smoothstep(0.62, 0.02, abs(q.y * 0.85 - cos(q.x * 2.4 - t * 0.2) * 0.24));\n  float grain = fbm(q * 2.5 + t * 0.04);\n\n  vec3 base = mix(vec3(0.03, 0.04, 0.038), vec3(0.86, 0.83, 0.76), isLight);\n  vec3 green = vec3(0.28, 0.82, 0.72);\n  vec3 ember = vec3(0.95, 0.34, 0.1);\n  vec3 color = base + green * veilA * 0.46 + ember * veilB * 0.28;\n  color += (grain - 0.5) * 0.036;\n  return color * (0.84 + intensity * 0.22);\n}\n`,\n  },\n  {\n    id: \"kinetic-dots\",\n    title: \"Kinetic dots\",\n    summary: \"A hover-reactive cell field that fills the trail behind the pointer.\",\n    intent: \"Use it for interactive cards, playful analytics, and hero accents where the motion should come from the visitor.\",\n    accent: \"#f0d46a\",\n    interactive: true,\n    preview: {\n      dark: \"linear-gradient(90deg, rgba(240,212,106,0.13) 1px, transparent 1px), linear-gradient(0deg, rgba(236,92,19,0.09) 1px, transparent 1px), radial-gradient(circle at 58% 44%, rgba(236,92,19,0.18), transparent 24%), #090907\",\n      light:\n        \"linear-gradient(90deg, rgba(184,148,35,0.12) 1px, transparent 1px), linear-gradient(0deg, rgba(236,92,19,0.08) 1px, transparent 1px), radial-gradient(circle at 58% 44%, rgba(236,92,19,0.11), transparent 26%), #faf7ea\",\n    },\n    fragment: `\nvec3 shaderColor(vec2 uv, vec2 p, float t, vec2 pointer, float intensity, float isLight) {\n  vec2 gridSize = vec2(18.0, 12.0);\n  vec2 gridUv = uv * gridSize;\n  vec2 cell = floor(gridUv);\n  vec2 local = fract(gridUv);\n  vec2 centered = local - 0.5;\n  vec2 cellCenter = (cell + 0.5) / gridSize;\n  float seed = hash21(cell);\n\n  float edge = min(min(local.x, 1.0 - local.x), min(local.y, 1.0 - local.y));\n  float line = 1.0 - smoothstep(0.005, 0.032, edge);\n  float box = smoothstep(0.5, 0.38, max(abs(centered.x), abs(centered.y)));\n  float idle = pow(sin(seed * 6.2831 + t * 0.22) * 0.5 + 0.5, 13.0) * 0.014;\n  float hover = smoothstep(0.085, 0.0, distance((cellCenter - u_pointer) * vec2(1.0, 0.72), vec2(0.0))) * 0.42;\n  float fill = hover;\n  float trailAmount = 0.0;\n  vec3 fillColor = vec3(0.0);\n  vec3 gold = vec3(1.0, 0.78, 0.24);\n  vec3 orange = vec3(1.0, 0.36, 0.08);\n  vec3 rose = vec3(0.9, 0.28, 0.38);\n\n  for (int i = 0; i < 8; i++) {\n    vec4 trail = u_trails[i];\n    float distanceToTrail = distance((cellCenter - trail.xy) * vec2(1.0, 0.72), vec2(0.0));\n    float trailFill = smoothstep(0.16, 0.0, distanceToTrail) * trail.z;\n    trailFill *= 0.78 + hash21(cell + float(i) * 2.17) * 0.06;\n    fill = max(fill, trailFill);\n    trailAmount = max(trailAmount, trailFill);\n    fillColor += mix(mix(gold, orange, trail.w), rose, seed * 0.35) * trailFill;\n  }\n\n  fillColor = fillColor / max(trailAmount, 0.001);\n\n  vec3 base = mix(vec3(0.022, 0.021, 0.016), vec3(0.96, 0.93, 0.84), isLight);\n  vec3 lineColor = mix(vec3(0.9, 0.7, 0.25), vec3(0.42, 0.32, 0.1), isLight);\n  vec3 idleColor = mix(gold, orange, seed);\n  vec3 activeColor = mix(idleColor, fillColor, step(0.001, trailAmount));\n  vec3 color = base + lineColor * line * 0.034;\n  color += idleColor * idle * box;\n  color = mix(color, activeColor, saturate(fill * box * (0.82 + intensity * 0.12)));\n  color += activeColor * fill * smoothstep(0.64, 0.0, length(centered)) * 0.14;\n  color += (fbm(uv * 3.2) - 0.5) * 0.01;\n  return color;\n}\n`,\n  },\n];\n\nexport function getWebsiteShaderPreset(\n  value: WebsiteShaderId | string | undefined\n) {\n  if (!value) return undefined;\n\n  const normalized = value.replace(/^shader-/, \"\");\n  return websiteShaderPresets.find((preset) => preset.id === normalized);\n}\n\nexport function WebsiteShaderCanvas({\n  preset,\n  className,\n  tone = \"dark\",\n  intensity = 1,\n  animate = true,\n  maxPixelRatio = 1.35,\n  maxCanvasPixels = 620_000,\n  children,\n}: WebsiteShaderCanvasProps) {\n  const canvasRef = useRef<HTMLCanvasElement | null>(null);\n  const pointerRef = useRef({ x: 0.5, y: 0.5 });\n  const trailRef = useRef<{ x: number; y: number; createdAt: number }[]>([]);\n  const shouldReduceMotion = useReducedMotion();\n  const [contextEpoch, setContextEpoch] = useState(0);\n  const [failed, setFailed] = useState(false);\n  const activePreset = useMemo(\n    () => resolveShaderPreset(preset),\n    [preset]\n  );\n\n  const shouldAnimate = animate && !shouldReduceMotion;\n  const isInteractive = activePreset.interactive !== false;\n\n  useEffect(() => {\n    const canvas = canvasRef.current;\n    if (!canvas) return;\n    const canvasElement = canvas;\n\n    let disposed = false;\n    let visible = true;\n    let frame = 0;\n    let resizeObserver: ResizeObserver | undefined;\n    let intersectionObserver: IntersectionObserver | undefined;\n    let gl: WebGLRenderingContext | null = null;\n    let program: WebGLProgram | null = null;\n    let buffer: WebGLBuffer | null = null;\n\n    const handleContextLost = (event: Event) => {\n      event.preventDefault();\n      setFailed(true);\n      if (frame) cancelAnimationFrame(frame);\n      frame = 0;\n    };\n\n    const handleContextRestored = () => {\n      setFailed(false);\n      setContextEpoch((value) => value + 1);\n    };\n\n    canvasElement.addEventListener(\"webglcontextlost\", handleContextLost);\n    canvasElement.addEventListener(\"webglcontextrestored\", handleContextRestored);\n\n    try {\n      gl = canvasElement.getContext(\"webgl\", {\n        alpha: true,\n        antialias: false,\n        depth: false,\n        desynchronized: true,\n        failIfMajorPerformanceCaveat: false,\n        powerPreference: \"low-power\",\n        preserveDrawingBuffer: false,\n        stencil: false,\n      } as WebGLContextAttributes);\n\n      if (!gl) {\n        setFailed(true);\n        return cleanup;\n      }\n\n      program = createProgram(\n        gl,\n        vertexShaderSource,\n        createFragmentSource(activePreset.fragment)\n      );\n      buffer = gl.createBuffer();\n\n      if (!program || !buffer) {\n        setFailed(true);\n        return cleanup;\n      }\n\n      const positionLocation = gl.getAttribLocation(program, \"a_position\");\n      const resolutionLocation = gl.getUniformLocation(program, \"u_resolution\");\n      const timeLocation = gl.getUniformLocation(program, \"u_time\");\n      const pointerLocation = gl.getUniformLocation(program, \"u_pointer\");\n      const trailLocation = gl.getUniformLocation(program, \"u_trails[0]\");\n      const intensityLocation = gl.getUniformLocation(program, \"u_intensity\");\n      const isLightLocation = gl.getUniformLocation(program, \"u_isLight\");\n      const trailUniform = new Float32Array(32);\n\n      gl.bindBuffer(gl.ARRAY_BUFFER, buffer);\n      gl.bufferData(\n        gl.ARRAY_BUFFER,\n        new Float32Array([-1, -1, 3, -1, -1, 3]),\n        gl.STATIC_DRAW\n      );\n      gl.useProgram(program);\n      gl.enableVertexAttribArray(positionLocation);\n      gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);\n      setFailed(false);\n\n      const resize = () => {\n        if (!gl) return;\n\n        const rect = canvasElement.getBoundingClientRect();\n        const ratio = Math.min(window.devicePixelRatio || 1, maxPixelRatio);\n        let width = Math.max(1, Math.floor(rect.width * ratio));\n        let height = Math.max(1, Math.floor(rect.height * ratio));\n        const pixelCount = width * height;\n\n        if (pixelCount > maxCanvasPixels) {\n          const scale = Math.sqrt(maxCanvasPixels / pixelCount);\n          width = Math.max(1, Math.floor(width * scale));\n          height = Math.max(1, Math.floor(height * scale));\n        }\n\n        if (canvasElement.width !== width || canvasElement.height !== height) {\n          canvasElement.width = width;\n          canvasElement.height = height;\n        }\n\n        gl.viewport(0, 0, width, height);\n      };\n\n      const render = (now: number) => {\n        if (!gl || !program || disposed) return;\n\n        resize();\n        const nowSeconds = now * 0.001;\n        const time = shouldAnimate ? nowSeconds : 18.0;\n        const pointerValue = isInteractive ? pointerRef.current : { x: 0.5, y: 0.5 };\n        const liveTrails = isInteractive\n          ? trailRef.current.filter((trail) => nowSeconds - trail.createdAt < 1.1)\n          : [];\n        trailRef.current = liveTrails;\n        trailUniform.fill(0);\n\n        liveTrails.slice(0, 8).forEach((trail, index) => {\n          const offset = index * 4;\n          const strength = saturateNumber(1 - (nowSeconds - trail.createdAt) / 1.1);\n\n          trailUniform[offset] = trail.x;\n          trailUniform[offset + 1] = trail.y;\n          trailUniform[offset + 2] = strength;\n          trailUniform[offset + 3] = index / 7;\n        });\n\n        gl.useProgram(program);\n        gl.uniform2f(resolutionLocation, canvasElement.width, canvasElement.height);\n        gl.uniform1f(timeLocation, time);\n        gl.uniform2f(pointerLocation, pointerValue.x, pointerValue.y);\n        if (trailLocation) gl.uniform4fv(trailLocation, trailUniform);\n        gl.uniform1f(intensityLocation, intensity);\n        gl.uniform1f(isLightLocation, tone === \"light\" ? 1 : 0);\n        gl.drawArrays(gl.TRIANGLES, 0, 3);\n      };\n\n      const tick = (now: number) => {\n        if (disposed || !visible) {\n          frame = 0;\n          return;\n        }\n\n        render(now);\n        frame = requestAnimationFrame(tick);\n      };\n\n      const start = () => {\n        if (frame || disposed) return;\n        frame = requestAnimationFrame(tick);\n      };\n\n      resizeObserver = new ResizeObserver(() => render(performance.now()));\n      resizeObserver.observe(canvasElement);\n\n      intersectionObserver = new IntersectionObserver(\n        ([entry]) => {\n          visible = Boolean(entry?.isIntersecting);\n\n          if (visible && shouldAnimate) {\n            start();\n            return;\n          }\n\n          if (frame) {\n            cancelAnimationFrame(frame);\n            frame = 0;\n          }\n\n          if (visible) render(performance.now());\n        },\n        { threshold: 0.01 }\n      );\n      intersectionObserver.observe(canvasElement);\n\n      render(performance.now());\n      if (shouldAnimate) start();\n    } catch {\n      setFailed(true);\n    }\n\n    return cleanup;\n\n    function cleanup() {\n      disposed = true;\n      if (frame) cancelAnimationFrame(frame);\n      resizeObserver?.disconnect();\n      intersectionObserver?.disconnect();\n      canvasElement.removeEventListener(\"webglcontextlost\", handleContextLost);\n      canvasElement.removeEventListener(\"webglcontextrestored\", handleContextRestored);\n\n      if (gl) {\n        if (buffer) gl.deleteBuffer(buffer);\n        if (program) gl.deleteProgram(program);\n      }\n    }\n  }, [\n    activePreset.fragment,\n    contextEpoch,\n    intensity,\n    isInteractive,\n    maxCanvasPixels,\n    maxPixelRatio,\n    shouldAnimate,\n    tone,\n  ]);\n\n  const updatePointer = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {\n    const rect = event.currentTarget.getBoundingClientRect();\n    const nextPointer = {\n      x: saturateNumber((event.clientX - rect.left) / Math.max(rect.width, 1)),\n      y: 1 - saturateNumber((event.clientY - rect.top) / Math.max(rect.height, 1)),\n    };\n    const now = performance.now() * 0.001;\n    const lastTrail = trailRef.current[0];\n\n    pointerRef.current = nextPointer;\n\n    if (\n      !lastTrail ||\n      Math.hypot(nextPointer.x - lastTrail.x, nextPointer.y - lastTrail.y) > 0.018 ||\n      now - lastTrail.createdAt > 0.045\n    ) {\n      trailRef.current = [\n        { ...nextPointer, createdAt: now },\n        ...trailRef.current,\n      ].slice(0, 8);\n    }\n  }, []);\n\n  const fallback = tone === \"light\" ? activePreset.preview.light : activePreset.preview.dark;\n\n  return (\n    <div\n      className={cn(\"relative overflow-hidden bg-background\", className)}\n      style={{ background: fallback }}\n      onPointerMove={isInteractive ? updatePointer : undefined}\n      onPointerLeave={isInteractive ? () => {\n        pointerRef.current = { x: 0.5, y: 0.5 };\n      } : undefined}\n    >\n      <canvas\n        ref={canvasRef}\n        aria-hidden=\"true\"\n        className={cn(\n          \"pointer-events-none absolute inset-0 h-full w-full touch-none transition-opacity duration-300\",\n          failed ? \"opacity-0\" : \"opacity-100\"\n        )}\n      />\n      <div className=\"pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_50%_18%,rgba(255,255,255,0.12),transparent_36%)] opacity-70\" />\n      <div className=\"relative z-10 h-full w-full\">{children}</div>\n    </div>\n  );\n}\n\nexport function WebsiteShaderDemo({ preset, className }: WebsiteShaderDemoProps) {\n  const activePreset = resolveShaderPreset(preset);\n  const [mounted, setMounted] = useState(false);\n  const { resolvedTheme, theme } = useTheme();\n\n  useEffect(() => {\n    setMounted(true);\n  }, []);\n\n  const tone =\n    mounted && (theme === \"system\" ? resolvedTheme : theme) === \"light\"\n      ? \"light\"\n      : \"dark\";\n\n  return (\n    <div className={cn(\"w-full max-w-[900px]\", className)}>\n      <div className=\"relative overflow-hidden rounded-[22px] border border-border/50 bg-card shadow-[0_28px_80px_-48px_rgba(0,0,0,0.7)]\">\n        <WebsiteShaderCanvas\n          preset={activePreset}\n          tone={tone}\n          className=\"h-[min(62vw,470px)] min-h-[520px] w-full lg:min-h-[320px]\"\n        />\n      </div>\n\n      <div className=\"mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end\">\n        <div>\n          <h2 className=\"text-[22px] font-medium leading-tight tracking-[-0.025em] text-foreground\">\n            {activePreset.title}\n          </h2>\n          <p className=\"mt-2 max-w-[620px] text-[14px] leading-6 text-muted-foreground\">\n            {activePreset.summary}\n          </p>\n        </div>\n        <div className=\"grid grid-cols-3 gap-2 md:w-[270px]\">\n          {[\"1 draw\", \"No assets\", \"Auto pause\"].map((item) => (\n            <div\n              key={item}\n              className=\"rounded-lg border border-border/50 bg-background/60 px-2.5 py-2 text-center text-[11px] font-medium text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]\"\n            >\n              {item}\n            </div>\n          ))}\n        </div>\n      </div>\n    </div>\n  );\n}\n\nfunction resolveShaderPreset(\n  preset: WebsiteShaderId | string | WebsiteShaderPreset | undefined\n) {\n  if (typeof preset === \"object\" && preset) return preset;\n  return getWebsiteShaderPreset(preset) ?? websiteShaderPresets[0];\n}\n\nfunction createFragmentSource(fragmentBody: string) {\n  return `${fragmentHeader}\n${fragmentBody}\n${fragmentFooter}`;\n}\n\nfunction createProgram(\n  gl: WebGLRenderingContext,\n  vertexSource: string,\n  fragmentSource: string\n) {\n  const vertexShader = compileShader(gl, gl.VERTEX_SHADER, vertexSource);\n  const fragmentShader = compileShader(gl, gl.FRAGMENT_SHADER, fragmentSource);\n\n  if (!vertexShader || !fragmentShader) return null;\n\n  const program = gl.createProgram();\n  if (!program) return null;\n\n  gl.attachShader(program, vertexShader);\n  gl.attachShader(program, fragmentShader);\n  gl.linkProgram(program);\n  gl.deleteShader(vertexShader);\n  gl.deleteShader(fragmentShader);\n\n  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {\n    gl.deleteProgram(program);\n    return null;\n  }\n\n  return program;\n}\n\nfunction compileShader(\n  gl: WebGLRenderingContext,\n  type: number,\n  source: string\n) {\n  const shader = gl.createShader(type);\n  if (!shader) return null;\n\n  gl.shaderSource(shader, source);\n  gl.compileShader(shader);\n\n  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {\n    gl.deleteShader(shader);\n    return null;\n  }\n\n  return shader;\n}\n\nfunction saturateNumber(value: number) {\n  return Math.min(1, Math.max(0, value));\n}\n\nexport function getShaderPreviewStyle(\n  itemSlug: string,\n  isLight: boolean\n): CSSProperties {\n  const preset = getWebsiteShaderPreset(itemSlug) ?? websiteShaderPresets[0];\n  return {\n    background: isLight ? preset.preview.light : preset.preview.dark,\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/shaders/website-shader.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Shaders",
+    "registryUrl": "https://ui.isaiahbjork.com/shader-kinetic-dots.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/shader-kinetic-dots.json"
+  },
+  "type": "registry:component"
+}

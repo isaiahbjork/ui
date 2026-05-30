@@ -1,0 +1,183 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "financial-table",
+  "title": "Financial table",
+  "description": "Financial table is a production-ready tables component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/isaiahbjork/tables/financial-table.tsx",
+      "content": "\"use client\";\n\nimport { useState, useEffect } from \"react\";\nimport { motion, useReducedMotion } from \"framer-motion\";\nimport { useTheme } from \"next-themes\";\nimport { cn } from \"@/lib/utils\";\n\nexport interface MarketIndex {\n  id: string;\n  name: string;\n  country: string;\n  countryCode: string;\n  ytdReturn: number;\n  pltmEps: number | null;\n  divYield: number;\n  marketCap: number;\n  volume: number;\n  chartData: number[];\n  price: number;\n  dailyChange: number;\n  dailyChangePercent: number;\n}\n\ninterface FinancialTableProps {\n  title?: string;\n  indices?: MarketIndex[];\n  onIndexSelect?: (indexId: string) => void;\n  className?: string;\n}\n\nconst defaultIndices: MarketIndex[] = [\n  {\n    id: \"1\",\n    name: \"Dow Jones USA\",\n    country: \"USA\",\n    countryCode: \"US\",\n    ytdReturn: 0.40,\n    pltmEps: 18.74,\n    divYield: 2.00,\n    marketCap: 28.04,\n    volume: 1.7,\n    chartData: [330.5, 331.2, 330.8, 331.5, 332.1, 331.8, 332.4, 333.2, 333.9, 333.7],\n    price: 333.90,\n    dailyChange: -0.20,\n    dailyChangePercent: -0.06\n  },\n  {\n    id: \"2\",\n    name: \"S&P 500 USA\",\n    country: \"USA\",\n    countryCode: \"US\",\n    ytdReturn: 11.72,\n    pltmEps: 7.42,\n    divYield: 1.44,\n    marketCap: 399.6,\n    volume: 24.6,\n    chartData: [425.1, 426.3, 427.8, 428.1, 429.2, 428.9, 429.5, 429.1, 428.7, 428.9],\n    price: 428.72,\n    dailyChange: -0.82,\n    dailyChangePercent: -0.19\n  },\n  {\n    id: \"3\",\n    name: \"Nasdaq USA\",\n    country: \"USA\",\n    countryCode: \"US\",\n    ytdReturn: 36.59,\n    pltmEps: null,\n    divYield: 0.54,\n    marketCap: 199.9,\n    volume: 18.9,\n    chartData: [360.2, 361.8, 362.4, 363.1, 364.3, 363.8, 364.1, 363.5, 363.2, 362.97],\n    price: 362.97,\n    dailyChange: -1.73,\n    dailyChangePercent: -0.47\n  },\n  {\n    id: \"4\",\n    name: \"TSX Canada\",\n    country: \"Canada\",\n    countryCode: \"CA\",\n    ytdReturn: -0.78,\n    pltmEps: 6.06,\n    divYield: 2.56,\n    marketCap: 3.67,\n    volume: 771.5,\n    chartData: [32.1, 32.3, 32.5, 32.4, 32.7, 32.8, 32.9, 33.0, 32.9, 32.96],\n    price: 32.96,\n    dailyChange: 0.19,\n    dailyChangePercent: 0.58\n  },\n  {\n    id: \"5\",\n    name: \"Grupo BMV Mexico\",\n    country: \"Mexico\",\n    countryCode: \"MX\",\n    ytdReturn: 4.15,\n    pltmEps: 8.19,\n    divYield: 2.34,\n    marketCap: 1.22,\n    volume: 1.1,\n    chartData: [52.1, 52.8, 53.2, 53.5, 53.9, 54.1, 54.3, 54.0, 53.8, 53.7],\n    price: 53.70,\n    dailyChange: -1.01,\n    dailyChangePercent: -1.85\n  },\n  {\n    id: \"6\",\n    name: \"Ibovespa Brazil\",\n    country: \"Brazil\",\n    countryCode: \"BR\",\n    ytdReturn: 11.19,\n    pltmEps: 6.23,\n    divYield: 9.46,\n    marketCap: 4.87,\n    volume: 6.8,\n    chartData: [28.5, 28.8, 29.1, 29.3, 29.5, 29.4, 29.6, 29.5, 29.3, 29.28],\n    price: 29.28,\n    dailyChange: -0.06,\n    dailyChangePercent: -0.22\n  }\n];\n\nexport function FinancialTable({\n  title = \"Index\",\n  indices: initialIndices = defaultIndices,\n  onIndexSelect,\n  className = \"\"\n}: FinancialTableProps = {}) {\n  const indices = initialIndices;\n  const [selectedIndex, setSelectedIndex] = useState<string | null>(\"1\");\n  const [mounted, setMounted] = useState(false);\n  const shouldReduceMotion = useReducedMotion();\n  const { resolvedTheme } = useTheme();\n  const isDark = mounted ? resolvedTheme !== \"light\" : true;\n  const palette = {\n    container: isDark\n      ? \"border-[#232323] bg-[#111]\"\n      : \"border-[#ded7ca] bg-[#eee9df]\",\n    header: isDark\n      ? \"border-[#232323] bg-[#181818] text-[#ededed]/42\"\n      : \"border-[#ded7ca] bg-[#e5ded1] text-[#171717]/46\",\n    row: isDark\n      ? \"border-[#232323] hover:bg-[#181818]/70\"\n      : \"border-[#ded7ca] hover:bg-[#e7e1d5]/70\",\n    selectedRow: isDark\n      ? \"border-[#2a2a2a] bg-[#181818]\"\n      : \"border-[#d6cdbc] bg-[#e7e1d5]\",\n    primaryText: isDark ? \"text-[#ededed]/90\" : \"text-[#171717]/86\",\n    secondaryText: isDark ? \"text-[#ededed]/38\" : \"text-[#171717]/46\",\n    sparkline: isDark ? \"#ededed\" : \"#171717\",\n    orange: isDark ? \"text-[#d86a2c]\" : \"text-[#bd4514]\",\n  };\n\n  useEffect(() => {\n    setMounted(true);\n  }, []);\n\n  const handleIndexSelect = (indexId: string) => {\n    setSelectedIndex(indexId);\n    if (onIndexSelect) {\n      onIndexSelect(indexId);\n    }\n  };\n\n  const formatCurrency = (amount: number) => {\n    return `$${amount.toFixed(2)}`;\n  };\n\n  const formatLargeNumber = (amount: number, unit: string) => {\n    if (amount >= 1000) {\n      return `${(amount / 1000).toFixed(1)}${unit}`;\n    }\n    return `${amount.toFixed(1)}${unit}`;\n  };\n\n  const formatPercentage = (value: number) => {\n    const sign = value >= 0 ? \"+\" : \"\";\n    return `${sign}${value.toFixed(2)}%`;\n  };\n\n  const getPerformanceColor = (value: number) => {\n    if (!mounted) {\n      const isPositive = value >= 0;\n      return {\n        color: isPositive ? \"#22c55e\" : \"#f87171\",\n        bgColor: isPositive ? \"bg-green-500/10\" : \"bg-red-500/10\",\n        borderColor: isPositive ? \"border-green-500/30\" : \"border-red-500/30\",\n        textColor: isPositive ? \"text-green-400\" : \"text-red-400\"\n      };\n    }\n    \n    const isPositive = value >= 0;\n    const color = isPositive\n      ? (isDark ? \"#5f9f78\" : \"#47785c\")\n      : (isDark ? \"#c46a61\" : \"#9d5149\");\n    const bgColor = isPositive \n      ? (isDark ? \"bg-[#3e6f52]/18\" : \"bg-[#dce8dc]\")\n      : (isDark ? \"bg-[#87463f]/18\" : \"bg-[#eadad5]\");\n    const borderColor = isPositive \n      ? (isDark ? \"border-[#5f9f78]/28\" : \"border-[#bad0bd]\")\n      : (isDark ? \"border-[#c46a61]/28\" : \"border-[#d7bcb4]\");\n    const textColor = isPositive \n      ? (isDark ? \"text-[#77b58b]\" : \"text-[#47785c]\")\n      : (isDark ? \"text-[#cf7c72]\" : \"text-[#9d5149]\");\n    \n    return { color, bgColor, borderColor, textColor };\n  };\n\n  const getCountryFlag = (countryCode: string) => {\n    switch (countryCode) {\n      case \"US\":\n        return (\n          <svg width=\"32\" height=\"32\" viewBox=\"0 0 130 120\" fill=\"none\" className=\"scale-125\">\n            <rect y=\"0\" fill=\"#DC4437\" width=\"130\" height=\"13.3\"/>\n            <rect y=\"26.7\" fill=\"#DC4437\" width=\"130\" height=\"13.3\"/>\n            <rect y=\"80\" fill=\"#DC4437\" width=\"130\" height=\"13.3\"/>\n            <rect y=\"106.7\" fill=\"#DC4437\" width=\"130\" height=\"13.3\"/>\n            <rect y=\"53.3\" fill=\"#DC4437\" width=\"130\" height=\"13.3\"/>\n            <rect y=\"13.3\" fill=\"#FFFFFF\" width=\"130\" height=\"13.3\"/>\n            <rect y=\"40\" fill=\"#FFFFFF\" width=\"130\" height=\"13.3\"/>\n            <rect y=\"93.3\" fill=\"#FFFFFF\" width=\"130\" height=\"13.3\"/>\n            <rect y=\"66.7\" fill=\"#FFFFFF\" width=\"130\" height=\"13.3\"/>\n            <rect y=\"0\" fill=\"#2A66B7\" width=\"70\" height=\"66.7\"/>\n            <polygon fill=\"#FFFFFF\" points=\"13.5,4 15.8,8.9 21,9.7 17.2,13.6 18.1,19 13.5,16.4 8.9,19 9.8,13.6 6,9.7 11.2,8.9\"/>\n            <polygon fill=\"#FFFFFF\" points=\"34,4 36.3,8.9 41.5,9.7 37.8,13.6 38.6,19 34,16.4 29.4,19 30.2,13.6 26.5,9.7 31.7,8.9\"/>\n            <polygon fill=\"#FFFFFF\" points=\"54.5,4 56.8,8.9 62,9.7 58.2,13.6 59.1,19 54.5,16.4 49.9,19 50.8,13.6 47,9.7 52.2,8.9\"/>\n            <polygon fill=\"#FFFFFF\" points=\"24,24 26.3,28.9 31.5,29.7 27.8,33.6 28.6,39 24,36.4 19.4,39 20.2,33.6 16.5,29.7 21.7,28.9\"/>\n            <polygon fill=\"#FFFFFF\" points=\"44.5,24 46.8,28.9 52,29.7 48.2,33.6 49.1,39 44.5,36.4 39.9,39 40.8,33.6 37,29.7 42.2,28.9\"/>\n            <polygon fill=\"#FFFFFF\" points=\"13.5,45.2 15.8,50.1 21,50.9 17.2,54.7 18.1,60.2 13.5,57.6 8.9,60.2 9.8,54.7 6,50.9 11.2,50.1\"/>\n            <polygon fill=\"#FFFFFF\" points=\"34,45.2 36.3,50.1 41.5,50.9 37.8,54.7 38.6,60.2 34,57.6 29.4,60.2 30.2,54.7 26.5,50.9 31.7,50.1\"/>\n            <polygon fill=\"#FFFFFF\" points=\"54.5,45.2 56.8,50.1 62,50.9 58.2,54.7 59.1,60.2 54.5,57.6 49.9,60.2 50.8,54.7 47,50.9 52.2,50.1\"/>\n          </svg>\n        );\n      case \"CA\":\n        return (\n          <svg width=\"32\" height=\"32\" viewBox=\"0 0 90 60\" fill=\"none\" className=\"scale-150\">\n            <rect width=\"90\" height=\"60\" fill=\"#FF0000\"/>\n            <rect x=\"30\" width=\"30\" height=\"60\" fill=\"#FFFFFF\"/>\n            <polygon fill=\"#FF0000\" points=\"45,15 50,20 45,25 40,20\"/>\n            <polygon fill=\"#FF0000\" points=\"45,35 50,40 45,45 40,40\"/>\n          </svg>\n        );\n      case \"MX\":\n        return (\n          <svg width=\"32\" height=\"32\" viewBox=\"0 0 90 60\" fill=\"none\" className=\"scale-150\">\n            <rect width=\"30\" height=\"60\" fill=\"#006847\"/>\n            <rect x=\"30\" width=\"30\" height=\"60\" fill=\"#FFFFFF\"/>\n            <rect x=\"60\" width=\"30\" height=\"60\" fill=\"#CE1126\"/>\n          </svg>\n        );\n      case \"BR\":\n        return (\n          <svg width=\"32\" height=\"32\" viewBox=\"0 0 90 60\" fill=\"none\" className=\"scale-150\">\n            <rect width=\"90\" height=\"60\" fill=\"#009639\"/>\n            <polygon fill=\"#FEDD00\" points=\"45,30 20,15 20,45\"/>\n            <circle cx=\"45\" cy=\"30\" r=\"8\" fill=\"#002776\"/>\n          </svg>\n        );\n      default:\n        return (\n          <svg width=\"32\" height=\"32\" viewBox=\"0 0 32 32\" fill=\"none\" className=\"scale-125\">\n            <rect width=\"32\" height=\"32\" fill=\"#E5E7EB\" rx=\"4\"/>\n            <text x=\"16\" y=\"20\" textAnchor=\"middle\" fontSize=\"12\" fill=\"#6B7280\">?</text>\n          </svg>\n        );\n    }\n  };\n\n  const renderSparkline = (data: number[]) => {\n    const min = Math.min(...data);\n    const max = Math.max(...data);\n    const range = max - min || 1;\n    \n    const createPath = (dataPoints: number[]) => {\n      return dataPoints.map((value, index) => {\n        const x = (index / (dataPoints.length - 1)) * 60;\n        const y = 20 - ((value - min) / range) * 15;\n        return `${x},${y}`;\n      }).join(' ');\n    };\n\n    const fullPath = createPath(data);\n\n    return (\n      <div className=\"w-16 h-6\">\n        <motion.svg \n          width=\"60\" \n          height=\"20\" \n          viewBox=\"0 0 60 20\" \n          className=\"overflow-visible\"\n          initial={{ opacity: 0, scale: 0.95 }}\n          animate={{ opacity: 1, scale: 1 }}\n          transition={{ \n            type: \"spring\", \n            stiffness: 400, \n            damping: 25,\n            duration: shouldReduceMotion ? 0.2 : 0.5\n          }}\n        >\n          {/* Full line */}\n          {fullPath && (\n            <motion.polyline\n              points={fullPath}\n              fill=\"none\"\n              stroke={palette.sparkline}\n              strokeWidth=\"1.5\"\n              initial={{ pathLength: 0 }}\n              animate={{ pathLength: 1 }}\n              transition={{ \n                duration: shouldReduceMotion ? 0.3 : 0.8,\n                ease: \"easeOut\",\n                delay: 0.2\n              }}\n            />\n          )}\n        </motion.svg>\n      </div>\n    );\n  };\n\n  const containerVariants = {\n    visible: {\n      transition: {\n        staggerChildren: 0.04,\n        delayChildren: 0.1,\n      },\n    }\n  };\n\n  const rowVariants = {\n    hidden: { \n      opacity: 0, \n      y: 20,\n      scale: 0.98,\n      filter: \"blur(4px)\" \n    },\n    visible: {\n      opacity: 1,\n      y: 0,\n      scale: 1,\n      filter: \"blur(0px)\",\n      transition: {\n        type: \"spring\",\n        stiffness: 400,\n        damping: 25,\n        mass: 0.7,\n      },\n    },\n  };\n\n  return (\n    <div className={cn(\"mx-auto w-full max-w-[1040px]\", className)}>\n      {/* Table Container with horizontal scroll */}\n      <div className={cn(\"overflow-hidden rounded-[18px] border\", palette.container)}>\n        <div className=\"overflow-x-auto\">\n          <div className=\"min-w-[1000px]\">\n            {/* Table Headers */}\n            <div \n              className={cn(\"border-b px-8 py-3 text-left text-xs font-medium uppercase tracking-wide\", palette.header)}\n              style={{\n                display: 'grid',\n                gridTemplateColumns: '250px 100px minmax(60px, 1fr) minmax(60px, 1fr) minmax(60px, 1fr) minmax(60px, 1fr) minmax(96px, 1fr) minmax(60px, 1fr) minmax(100px, 1fr)',\n                columnGap: '6px'\n              }}\n            >\n              <div style={{ textAlign: 'left' }}>{title}</div>\n              <div style={{ textAlign: 'left' }}>YTD Return</div>\n              <div style={{ textAlign: 'left' }}>P/LTM EPS</div>\n              <div style={{ textAlign: 'left' }}>Div yield</div>\n              <div style={{ textAlign: 'left' }}>Mkt cap</div>\n              <div style={{ textAlign: 'left' }}>Volume</div>\n              <div style={{ textAlign: 'left' }}>2-day chart</div>\n              <div style={{ textAlign: 'left' }}>Price</div>\n              <div style={{ textAlign: 'left' }} className=\"pr-4\">Daily performance</div>\n            </div>\n\n            {/* Table Rows */}\n            <motion.div\n              variants={containerVariants}\n              initial=\"hidden\"\n              animate=\"visible\"\n            >\n              {indices.map((index, indexNum) => (\n                <motion.div key={index.id} variants={rowVariants}>\n                  <div\n                    className={cn(\n                      \"group relative cursor-pointer px-8 py-3 transition-all duration-200\",\n                      selectedIndex === index.id ? palette.selectedRow : palette.row,\n                      indexNum < indices.length - 1 && \"border-b\"\n                    )}\n                    style={{\n                      display: 'grid',\n                      gridTemplateColumns: '250px 100px minmax(60px, 1fr) minmax(60px, 1fr) minmax(60px, 1fr) minmax(60px, 1fr) minmax(96px, 1fr) minmax(60px, 1fr) minmax(100px, 1fr)',\n                      columnGap: '6px'\n                    }}\n                    onClick={() => handleIndexSelect(index.id)}\n                  >\n                {/* Market Info */}\n                <div className=\"flex items-center gap-4\">\n                  <div className={cn(\"flex h-8 w-8 items-center justify-center overflow-hidden rounded-full border\", isDark ? \"border-[#2a2a2a]\" : \"border-[#d4ccbe]\")}>\n                    <div className=\"w-full h-full\">\n                      {getCountryFlag(index.countryCode)}\n                    </div>\n                  </div>\n                  <div className=\"min-w-0\">\n                    <div className={cn(\"truncate font-medium\", palette.primaryText)}>{index.name}</div>\n                    <div className={cn(\"text-xs\", palette.secondaryText)}>{index.country}</div>\n                  </div>\n                </div>\n\n                {/* YTD Return */}\n                <div className=\"flex items-center\">\n                  {(() => {\n                    const { bgColor, borderColor, textColor } = getPerformanceColor(index.ytdReturn);\n                    return (\n                      <div className={`px-2 py-1 rounded-lg text-xs font-medium border ${bgColor} ${borderColor} ${textColor}`}>\n                        {formatPercentage(index.ytdReturn)}\n                      </div>\n                    );\n                  })()}\n                </div>\n\n                {/* P/LTM EPS */}\n                <div className=\"flex items-center\">\n                  <span className={cn(\"font-semibold\", palette.primaryText)}>\n                    {index.pltmEps ? index.pltmEps.toFixed(2) : \"N/A\"}\n                  </span>\n                </div>\n\n                {/* Dividend Yield */}\n                <div className=\"flex items-center\">\n                  <span className={cn(\"font-semibold\", palette.orange)}>\n                    {formatPercentage(index.divYield)}\n                  </span>\n                </div>\n\n                {/* Market Cap */}\n                <div className=\"flex items-center\">\n                  <span className={cn(\"font-semibold\", palette.primaryText)}>\n                    {formatLargeNumber(index.marketCap, \"B\")}\n                  </span>\n                </div>\n\n                {/* Volume */}\n                <div className=\"flex items-center\">\n                  <span className={cn(\"font-semibold\", palette.primaryText)}>\n                    {index.volume >= 1 ? formatLargeNumber(index.volume, \"M\") : `${(index.volume * 1000).toFixed(1)}k`}\n                  </span>\n                </div>\n\n                {/* 2-day Chart */}\n                <div className=\"flex items-center justify-start\">\n                  <div className=\"w-16\">\n                    {renderSparkline(index.chartData)}\n                  </div>\n                </div>\n\n                {/* Price */}\n                <div className=\"flex items-center\">\n                  <span className={cn(\"font-semibold\", palette.primaryText)}>\n                    {formatCurrency(index.price)}\n                  </span>\n                </div>\n\n                {/* Daily Performance */}\n                <div className=\"flex items-center gap-2 pr-4\">\n                  <span className={`font-semibold ${getPerformanceColor(index.dailyChange).textColor}`}>\n                    {index.dailyChange >= 0 ? \"+\" : \"\"}{index.dailyChange.toFixed(2)}\n                  </span>\n                  {(() => {\n                    const { bgColor, borderColor, textColor } = getPerformanceColor(index.dailyChangePercent);\n                    return (\n                      <div className={`px-2 py-1 rounded-lg text-xs font-medium border ${bgColor} ${borderColor} ${textColor}`}>\n                        {formatPercentage(index.dailyChangePercent)}\n                      </div>\n                    );\n                  })()}\n                </div>\n              </div>\n            </motion.div>\n          ))}\n            </motion.div>\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/tables/financial-table.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Tables",
+    "registryUrl": "https://ui.isaiahbjork.com/financial-table.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/financial-table.json"
+  },
+  "type": "registry:component"
+}

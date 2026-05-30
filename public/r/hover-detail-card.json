@@ -1,0 +1,191 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "hover-detail-card",
+  "title": "Hover detail card",
+  "description": "Hover detail card is a production-ready cards component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "class-variance-authority",
+    "clsx",
+    "framer-motion",
+    "lucide-react",
+    "tailwind-merge",
+    "web-haptics"
+  ],
+  "files": [
+    {
+      "path": "components/isaiahbjork/cards/hover-detail-card.tsx",
+      "content": "\"use client\";\n\nimport { motion, AnimatePresence, useReducedMotion } from \"framer-motion\";\nimport { Sparkles } from \"lucide-react\";\nimport { useState } from \"react\";\nimport { cn } from \"@/lib/utils\";\nimport { BjorkButton } from \"@/components/isaiahbjork/primitives/button\";\n\ninterface HoverDetailCardProps {\n  title?: string;\n  subtitle?: string;\n  images?: string[];\n  primaryButton?: {\n    text: string;\n    color?: string;\n    hoverColor?: string;\n    textColor?: string;\n  };\n  secondaryButton?: {\n    text: string;\n    color?: string;\n    hoverColor?: string;\n    textColor?: string;\n  };\n  pills?: {\n    left: {\n      text: string;\n      color?: string;\n      textColor?: string;\n    };\n    sparkle?: {\n      show: boolean;\n      color?: string;\n    };\n    right: {\n      text: string;\n      color?: string;\n      textColor?: string;\n    };\n  };\n  enableAnimations?: boolean;\n}\n\nconst defaultImages = [\n  \"https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop\",\n  \"https://images.unsplash.com/photo-1524863479829-916d8e77f114?w=200&h=200&fit=crop\",\n  \"https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop&flip=h\",\n  \"https://images.unsplash.com/photo-1524863479829-916d8e77f114?w=200&h=200&fit=crop&flip=h\",\n  \"https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=200&h=200&fit=crop\",\n  \"https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=200&h=200&fit=crop\",\n  \"https://images.unsplash.com/photo-1524863479829-916d8e77f114?w=200&h=200&fit=crop&sat=-100\",\n  \"https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&h=200&fit=crop\",\n  \"https://images.unsplash.com/photo-1475721027785-f74eccf877e2?w=200&h=200&fit=crop&flip=h\",\n  \"https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=200&h=200&fit=crop&sat=-50\",\n];\n\nexport function HoverDetailCard({\n  title = \"Studio shots\",\n  subtitle = \"52 tiles\",\n  images = defaultImages,\n  primaryButton = {\n    text: \"Go to collection\",\n    color: \"bg-[#ec5c13]\",\n    hoverColor: \"hover:bg-[#f06d27]\",\n    textColor: \"text-[#080808]\"\n  },\n  secondaryButton = {\n    text: \"Edit rules\",\n    color: \"bg-[#eee9df] dark:bg-[#090909]\",\n    hoverColor: \"hover:bg-[#e7e1d5] dark:hover:bg-[#141414]\",\n    textColor: \"text-[#171717] dark:text-[#ededed]\"\n  },\n  pills = {\n    left: { text: \"1×1\", color: \"bg-[#ec5c13]/12\", textColor: \"text-[#bd4514] dark:text-[#d86a2c]\" },\n    sparkle: { show: true, color: \"bg-[#eee9df] text-[#bd4514] dark:bg-[#090909] dark:text-[#d86a2c]\" },\n    right: { text: \"Published\", color: \"bg-[#8a7a60]/14\", textColor: \"text-[#6b5f4b] dark:text-[#b8aa91]\" }\n  },\n  enableAnimations = true\n}: HoverDetailCardProps) {\n  const [isHovered, setIsHovered] = useState(false);\n  const shouldReduceMotion = useReducedMotion();\n  const shouldAnimate = enableAnimations && !shouldReduceMotion;\n\n  // Animation variants\n  const containerVariants = {\n    hidden: { \n      opacity: 0, \n      y: 20,\n      scale: 0.95\n    },\n    visible: {\n      opacity: 1,\n      y: 0,\n      scale: 1,\n      transition: {\n        type: \"spring\",\n        stiffness: 300,\n        damping: 30,\n        staggerChildren: 0.08,\n        delayChildren: 0.1,\n      }\n    }\n  };\n\n  const imageVariants = {\n    hidden: { \n      opacity: 0, \n      scale: 0.8,\n      y: 10\n    },\n    visible: { \n      opacity: 1, \n      scale: 1,\n      y: 0,\n      transition: { \n        type: \"spring\", \n        stiffness: 400, \n        damping: 25 \n      }\n    }\n  };\n\n  const contentVariants = {\n    hidden: { \n      opacity: 0, \n      x: -25,\n      scale: 0.95,\n      filter: \"blur(4px)\",\n    },\n    visible: { \n      opacity: 1, \n      x: 0,\n      scale: 1,\n      filter: \"blur(0px)\",\n      transition: { \n        type: \"spring\", \n        stiffness: 400, \n        damping: 28,\n        mass: 0.6,\n      }\n    }\n  };\n\n  const bottomSectionVariants = {\n    hidden: { opacity: 0 },\n    visible: {\n      opacity: 1,\n      transition: {\n        staggerChildren: 0.08,\n        delayChildren: 0.4,\n      },\n    },\n  };\n\n  const pillVariants = {\n    hidden: { \n      opacity: 0, \n      x: -20,\n      scale: 0.9,\n      filter: \"blur(3px)\",\n    },\n    visible: {\n      opacity: 1,\n      x: 0,\n      scale: 1,\n      filter: \"blur(0px)\",\n      transition: {\n        type: \"spring\",\n        stiffness: 450,\n        damping: 25,\n        mass: 0.5,\n      },\n    },\n  };\n\n  const textVariants = {\n    hidden: { \n      opacity: 0, \n      y: 15,\n      scale: 0.95,\n      filter: \"blur(4px)\",\n    },\n    visible: {\n      opacity: 1,\n      y: 0,\n      scale: 1,\n      filter: \"blur(0px)\",\n      transition: {\n        type: \"spring\",\n        stiffness: 400,\n        damping: 30,\n        mass: 0.7,\n      },\n    },\n  };\n\n  return (\n    <motion.div\n      className=\"w-full max-w-md\"\n      initial={shouldAnimate ? \"hidden\" : \"visible\"}\n      animate=\"visible\"\n      variants={shouldAnimate ? containerVariants : {}}\n    >\n      <motion.div \n        className=\"overflow-hidden rounded-[20px] border border-[#d8d3c7] bg-[#f4f1e9] text-[#171717] shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_18px_34px_-16px_rgba(55,47,36,0.28)] transition-shadow duration-300 hover:shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_22px_38px_-18px_rgba(55,47,36,0.34)] dark:border-[#161616] dark:bg-[#121212] dark:text-[#ededed] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_18px_34px_-16px_rgba(0,0,0,0.9)] dark:hover:shadow-[inset_0_7px_14px_rgba(255,255,255,0.04),inset_0_0.5px_0.5px_rgba(255,255,255,0.08),0_22px_38px_-18px_rgba(0,0,0,0.95)]\"\n        variants={shouldAnimate ? contentVariants : {}}\n      >\n        {/* Top Image Section */}\n        <motion.div \n          className=\"relative border-b border-[#d8d3c7] bg-[#eee9df] p-4 dark:border-[#232323] dark:bg-[#090909]\"\n          onHoverStart={() => setIsHovered(true)}\n          onHoverEnd={() => setIsHovered(false)}\n          variants={shouldAnimate ? contentVariants : {}}\n        >\n          <div className=\"grid grid-cols-5 gap-2 relative\">\n            {images.slice(0, 10).map((src, index) => (\n              <motion.div\n                key={index}\n                className=\"relative aspect-square overflow-hidden rounded-lg\"\n                variants={shouldAnimate ? imageVariants : {}}\n                custom={index}\n                animate={{\n                  scale: isHovered ? 0.85 : 1,\n                }}\n                transition={{\n                  type: \"spring\",\n                  stiffness: 300,\n                  damping: 25,\n                }}\n              >\n                <img\n                  src={src}\n                  alt={`${title} ${index + 1}`}\n                  className=\"w-full h-full object-cover\"\n                />\n              </motion.div>\n            ))}\n          </div>\n\n          {/* Blur Overlay */}\n          <AnimatePresence>\n            {isHovered && (\n              <motion.div\n                initial={{ opacity: 0 }}\n                animate={{ opacity: 1 }}\n                exit={{ opacity: 0 }}\n                transition={{ duration: 0.2 }}\n                className=\"absolute inset-0 bg-background/60 backdrop-blur-sm flex items-center justify-center\"\n              >\n                {/* Buttons Container */}\n                <div className=\"flex gap-3 mx-auto\">\n                  <BjorkButton\n                    variant=\"accent\"\n                    size=\"sm\"\n                    initial={{ y: -20, opacity: 0 }}\n                    animate={{ y: 0, opacity: 1 }}\n                    exit={{ y: -20, opacity: 0 }}\n                    transition={{\n                      type: \"spring\",\n                      stiffness: 400,\n                      damping: 25,\n                      delay: 0.1,\n                    }}\n                    className=\"h-8 px-3\"\n                  >\n                    {primaryButton.text}\n                  </BjorkButton>\n                  <BjorkButton\n                    variant=\"outline\"\n                    size=\"sm\"\n                    initial={{ y: -20, opacity: 0 }}\n                    animate={{ y: 0, opacity: 1 }}\n                    exit={{ y: -20, opacity: 0 }}\n                    transition={{\n                      type: \"spring\",\n                      stiffness: 400,\n                      damping: 25,\n                      delay: 0.2,\n                    }}\n                    className=\"h-8 px-3\"\n                  >\n                    {secondaryButton.text}\n                  </BjorkButton>\n                </div>\n              </motion.div>\n            )}\n          </AnimatePresence>\n        </motion.div>\n\n        {/* Bottom Content Section */}\n        <motion.div \n          className=\"p-4\"\n          variants={shouldAnimate ? bottomSectionVariants : {}}\n        >\n          {/* Bottom Pills and Content */}\n          <motion.div \n            className=\"flex items-center justify-between mb-3\"\n            variants={shouldAnimate ? contentVariants : {}}\n          >\n            <motion.div \n              className=\"flex items-center gap-2\"\n              variants={shouldAnimate ? bottomSectionVariants : {}}\n            >\n              <motion.div \n                className={cn(pills.left.color, pills.left.textColor, \"rounded-lg border border-[#ec5c13]/18 px-3 py-1 text-sm font-medium\")}\n                variants={shouldAnimate ? pillVariants : {}}\n              >\n                {pills.left.text}\n              </motion.div>\n              {pills.sparkle?.show && (\n                <motion.div \n                  className={cn(pills.sparkle.color, \"rounded-lg border border-[#d8d3c7] p-2 dark:border-[#232323]\")}\n                  variants={shouldAnimate ? pillVariants : {}}\n                  whileHover={shouldAnimate ? { \n                    rotate: 15,\n                    scale: 1.1,\n                    transition: { type: \"spring\", stiffness: 400, damping: 25 }\n                  } : {}}\n                >\n                  <Sparkles className=\"w-3 h-3\" />\n                </motion.div>\n              )}\n            </motion.div>\n            <motion.div \n              className={cn(pills.right.color, pills.right.textColor, \"rounded-lg border border-[#d8d3c7] px-3 py-1 text-sm font-medium dark:border-[#232323]\")}\n              variants={shouldAnimate ? pillVariants : {}}\n            >\n              {pills.right.text}\n            </motion.div>\n          </motion.div>\n\n          {/* Title and Subtitle */}\n          <motion.div\n            variants={shouldAnimate ? bottomSectionVariants : {}}\n          >\n            <motion.h3 \n              className=\"text-2xl font-bold text-foreground mb-1\"\n              variants={shouldAnimate ? textVariants : {}}\n            >\n              {title}\n            </motion.h3>\n            <motion.p \n              className=\"text-muted-foreground text-lg\"\n              variants={shouldAnimate ? textVariants : {}}\n            >\n              {subtitle}\n            </motion.p>\n          </motion.div>\n        </motion.div>\n      </motion.div>\n    </motion.div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/cards/hover-detail-card.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/isaiahbjork/primitives/button.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { motion, useReducedMotion, type HTMLMotionProps } from \"framer-motion\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport { useWebHaptics } from \"web-haptics/react\";\nimport type { HapticInput, TriggerOptions } from \"web-haptics\";\nimport { cn } from \"@/lib/utils\";\n\nconst bjorkButtonVariants = cva(\n  \"inline-flex shrink-0 transform-gpu items-center justify-center gap-2 whitespace-nowrap rounded-[13px] text-sm font-medium tracking-[-0.01em] outline-none backdrop-blur-md transition-[background-color,border-color,color,box-shadow,opacity] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-[#ec5c13]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bjork-ring-offset)] disabled:pointer-events-none disabled:opacity-35 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0\",\n  {\n    variants: {\n      variant: {\n        default:\n          \"border border-transparent bg-[var(--bjork-field)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-surface)] hover:bg-[var(--bjork-surface-hover)]\",\n        secondary:\n          \"border border-[color:var(--bjork-border)] bg-[var(--bjork-surface-active)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)] hover:bg-[var(--bjork-surface-hover)]\",\n        outline:\n          \"border border-[color:var(--bjork-border)] bg-[var(--bjork-field-inset)] text-[color:var(--bjork-text-strong)] shadow-[var(--bjork-shadow-soft)] hover:border-[color:var(--bjork-border-strong)] hover:bg-[var(--bjork-surface)] hover:text-[color:var(--bjork-text)]\",\n        ghost:\n          \"border border-transparent bg-transparent text-[color:var(--bjork-text-muted)] hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)]\",\n        quiet:\n          \"border border-transparent bg-[var(--bjork-field-muted)] text-[color:var(--bjork-text-soft)] hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text-medium)]\",\n        accent:\n          \"bjork-layered-button-accent tracking-tight text-white\",\n        raised:\n          \"bjork-layered-button-raised tracking-tight\",\n      },\n      size: {\n        sm: \"h-8 px-3 text-xs\",\n        md: \"h-[45px] px-4\",\n        lg: \"h-12 px-5 text-[15px]\",\n        icon: \"size-[45px] p-0\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"md\",\n    },\n  },\n);\n\nexport interface BjorkButtonProps\n  extends Omit<HTMLMotionProps<\"button\">, \"ref\" | \"size\">,\n    VariantProps<typeof bjorkButtonVariants> {\n  haptics?: boolean;\n  hapticPattern?: HapticInput;\n  hapticOptions?: TriggerOptions;\n}\n\nexport function BjorkButton({\n  className,\n  variant,\n  size,\n  disabled,\n  haptics = true,\n  hapticPattern = \"light\",\n  hapticOptions,\n  onPointerDown,\n  ...props\n}: BjorkButtonProps) {\n  const shouldReduceMotion = useReducedMotion();\n  const { trigger } = useWebHaptics();\n\n  const handlePointerDown = React.useCallback(\n    (event: React.PointerEvent<HTMLButtonElement>) => {\n      if (!disabled && haptics) {\n        void trigger(hapticPattern, hapticOptions);\n      }\n\n      onPointerDown?.(event);\n    },\n    [disabled, hapticOptions, hapticPattern, haptics, onPointerDown, trigger],\n  );\n\n  return (\n    <motion.button\n      data-slot=\"bjork-button\"\n      className={cn(bjorkButtonVariants({ variant, size, className }))}\n      disabled={disabled}\n      onPointerDown={handlePointerDown}\n      whileHover={disabled || shouldReduceMotion ? undefined : { scale: 1.05 }}\n      whileTap={disabled || shouldReduceMotion ? undefined : { scale: 0.95 }}\n      transition={{ type: \"spring\", stiffness: 400, damping: 25 }}\n      {...props}\n    />\n  );\n}\n\nexport { bjorkButtonVariants };\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/primitives/button.tsx"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Cards",
+    "registryUrl": "https://ui.isaiahbjork.com/hover-detail-card.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/hover-detail-card.json"
+  },
+  "type": "registry:component"
+}

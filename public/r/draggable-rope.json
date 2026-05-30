@@ -1,0 +1,183 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "draggable-rope",
+  "title": "Draggable rope",
+  "description": "Draggable rope is a production-ready interactive component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "gsap",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/isaiahbjork/interactive/draggable-rope.tsx",
+      "content": "\"use client\";\n\nimport React, { useEffect, useRef, useState } from \"react\";\nimport { gsap } from \"gsap\";\nimport { Draggable } from \"gsap/Draggable\";\nimport { cn } from \"@/lib/utils\";\nimport { useTheme } from \"next-themes\";\n\n// Register GSAP plugins\nif (typeof window !== \"undefined\") {\n  gsap.registerPlugin(Draggable);\n}\n\ninterface DraggableRopeProps {\n  className?: string;\n  minAngle?: number;\n  initialAngle?: number;\n  gravity?: number;\n  ropeHeight?: number;\n  ropeWidth?: number;\n  iconSize?: number;\n}\n\nexport function DraggableRope({ \n  className,\n  minAngle = 8,\n  initialAngle = 8,\n  gravity = 18,\n  ropeHeight = 290,\n  ropeWidth = 2,\n  iconSize = 120\n}: DraggableRopeProps) {\n  const { resolvedTheme } = useTheme();\n  const [mounted, setMounted] = useState(false);\n  const isLight = mounted && resolvedTheme === \"light\";\n  const ropeRef = useRef<HTMLDivElement>(null);\n  const swingAnimationRef = useRef<gsap.core.Tween | null>(null);\n\n  useEffect(() => {\n    setMounted(true);\n  }, []);\n\n  useEffect(() => {\n    if (!ropeRef.current) return;\n\n    const rope = ropeRef.current;\n\n    // Settings from props\n    const MIN_ANGLE = minAngle;\n    let ANGLE = initialAngle;\n    let DIRECTION = -1;\n    const GRAVITY = gravity;\n\n    // Start Swing Animation\n    function startSwing() {\n      swingAnimationRef.current = gsap.to(rope, {\n        rotation: DIRECTION * ANGLE,\n        duration: 1.8 + ANGLE / 50,\n        ease: \"power1.inOut\",\n        onComplete: () => {\n          // Update swing angle for the next animation\n          ANGLE = Math.max(ANGLE - GRAVITY, MIN_ANGLE);\n\n          // Alternate swing direction\n          DIRECTION *= -1;\n\n          // Start the next swing\n          startSwing();\n        },\n      });\n    }\n\n    // Start swinging\n    startSwing();\n\n    // Make Rope Draggable\n    const draggable = Draggable.create(rope, {\n      type: \"rotation\",\n      inertia: true,\n      bounds: { minRotation: -85, maxRotation: 85 },\n      dragResistance: 0.5,\n      throwResistance: 1600,\n      edgeResistance: 1,\n      onPress: function () {\n        if (swingAnimationRef.current) {\n          swingAnimationRef.current.kill();\n        }\n      },\n      onRelease: function () {\n        const instance = this as unknown as {\n          rotation: number;\n          tween?: gsap.core.Tween;\n        };\n        const delayMs = (instance.tween?.duration() ?? 0) * 900;\n        setTimeout(() => {\n          DIRECTION = instance.rotation >= 0 ? -1 : 1;\n          ANGLE = Math.max(Math.abs(instance.rotation) - GRAVITY, MIN_ANGLE);\n          startSwing();\n        }, delayMs);\n      },\n    });\n\n    // Cleanup\n    return () => {\n      if (swingAnimationRef.current) {\n        swingAnimationRef.current.kill();\n      }\n      if (draggable && draggable[0]) {\n        draggable[0].kill();\n      }\n    };\n  }, [minAngle, initialAngle, gravity]);\n\n  const Icon = (\n    <svg viewBox=\"0 0 64 64\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"#000000\">\n      <g id=\"SVGRepo_bgCarrier\" strokeWidth=\"0\"></g>\n      <g\n        id=\"SVGRepo_tracerCarrier\"\n        strokeLinecap=\"round\"\n        strokeLinejoin=\"round\"\n      ></g>\n      <g id=\"SVGRepo_iconCarrier\">\n        {\" \"}\n        <path\n          d=\"m12.11 9.68c.82.08 3.34 3.08 4.46 4.2s1.38 2 2.67 2.5 1.41.55 1.5.38a12.33 12.33 0 0 0 .26-1.29s-1.46-.38-1.67-.92 3-9 3.63-9.33 1.45 0 1.33.33-3.92 8.25-3.67 8.54a2.86 2.86 0 0 0 .79.54s.67-1 1-1a3.66 3.66 0 0 1 1.17.59s.29-.8.79-.67a2.63 2.63 0 0 1 1 .75s.13-.54.55-.33 3.16 1.75 3.16 1.75a10 10 0 0 1 2.57-9.92c4.42-4.33 9-3.92 14-1s4.13 7.92 4.09 10-2 4.87-4.25 6.54-3.17 1.66-3.17 1.66 3.42 1 3.38 1.62a14.74 14.74 0 0 1 -1.3 2.84 13.45 13.45 0 0 0 4.09 2.75c2.83 1.33 7.58 2.25 8.62 3.41a5.63 5.63 0 0 1 .38 6.17c-1.29 2.58-3.21 2.88-6.42 1.5s-4.29-2.58-6-3.08a17.12 17.12 0 0 1 -3.07-1.08c-.75-.37-1.21-1.79-1.75-1.33a39.43 39.43 0 0 0 -4 6.54 76.88 76.88 0 0 0 -3.68 7.66c-.46 1.33-2.62 6.79-3.67 8.21s-2 3.16-2.91 3.25-5.29-1.88-6-2.34-2-1.33-1.54-2.5 4.16-8.36 5.08-10.62 1.42-3 1.12-3.29-2-.55-2.25 0-4.4 9.97-5.4 11.67-3.34 2-5.67 1-4.21-2.91-4.46-3.66a3.33 3.33 0 0 1 0-2.29c.29-.71 3.54-5.92 4.13-7.34a18.31 18.31 0 0 1 2.12-3.87c.71-.92 3.13-5.59 4.84-8.59s2-4.16 1.7-4.33a13.5 13.5 0 0 0 -3.66-1.12c-1 0-3 .16-3.59-.34a79.39 79.39 0 0 1 -4.62-7c-1.25-2-2.29-2.83-1.92-3.91a5.7 5.7 0 0 1 3-2.75 6.59 6.59 0 0 1 3.24-.5z\"\n          fill=\"#1d1d1b\"\n        ></path>{\" \"}\n        <path\n          d=\"m11.53 11.76a2.78 2.78 0 0 1 1.37 1c.46.58 1.71 2 1.34 2.25s-2.09 1.29-2.71 1.79-.71 1.13-1 .84-2.5-3.8-2.42-4.38 1.13-1.88 3.42-1.5z\"\n          fill=\"#85bfe9\"\n        ></path>{\" \"}\n        <path\n          d=\"m14.82 16c.23 0 1.71 1.92 4.25 2.62a28.38 28.38 0 0 0 6.71 1.42c2 0 4.67-.21 5-.08s0 1.37 3.5 2.54a21.44 21.44 0 0 0 5.5 1c.17.17 2.17 4.71 3.38 5.92s7 3.41 6.79 3.79a35 35 0 0 0 -1.29 3.46c-.13.5 0 .79-.38.7s-3.79-1.45-4.25-1.66-.79-.09-1.33-.75-1.5-2.54-2.17-2.59a1.39 1.39 0 0 0 -1.33.63c-.21.37-2.8 4.08-3.59 5.54s-2.66 6.25-3.16 7-.71 1.71-.92 1.58a32.79 32.79 0 0 0 -3-1.87c-.37-.09-2.17-.54-2.08-.75s1.33-2.42.54-3a17.75 17.75 0 0 0 -4.42-1.38c-.5-.12-1.87 2.18-1.87 2.18a34.93 34.93 0 0 0 -3.17-2.17c-1-.54-2.71-.87-2.63-1.16s4.34-8 5.42-9.84 2.42-4.29 1.46-4.79a27.66 27.66 0 0 0 -5.38-1.58 5.23 5.23 0 0 1 -2.25-.17c-.45-.29-3-3.5-2.79-4.08a11.11 11.11 0 0 1 3.46-2.51z\"\n          fill=\"#cbe7f5\"\n        ></path>{\" \"}\n        <path\n          d=\"m22.49 14.84c.3 0 .46 0 .37.46s-.37 2-.54 1.92-.71-.09-.62-.25a16.21 16.21 0 0 1 .79-2.13z\"\n          fill=\"#f2910d\"\n        ></path>{\" \"}\n        <path\n          d=\"m24.4 14.76s.71.17.63.33-.5 2.42-.71 2.38-.5 0-.54-.17.62-2.54.62-2.54z\"\n          fill=\"#f2910d\"\n        ></path>{\" \"}\n        <path\n          d=\"m26.11 15.47c.27-.21 2.92 1.16 3.17 1.46s.62.83.42.87-2.13.08-2.84.13-1.46 0-1.41-.17a10.72 10.72 0 0 1 .66-2.29z\"\n          fill=\"#e7413e\"\n        ></path>{\" \"}\n        <path\n          d=\"m37.61 4.84c2.86-.54 5.92.79 8.29 2.5s2.8 5.5 1.84 8.29-3.54 5.5-6.74 5.75-6-.29-8.34-2.7-1.66-7.55-.66-9.55a7.82 7.82 0 0 1 5.61-4.29z\"\n          fill=\"#85bfe9\"\n        ></path>{\" \"}\n        <path\n          d=\"m35.45 7.22a32.21 32.21 0 0 0 6.7 3.41c3.71 1.34 5.21 1.75 5.17 2.3s-.32 5.07-3.92 6.79a8.72 8.72 0 0 1 -9.7-1.42c-2.42-2.17-2.05-5.37-.92-7.79s2.46-3.42 2.67-3.29z\"\n          fill=\"#1d1d1b\"\n        ></path>{\" \"}\n        <path\n          d=\"m36 9.8c.44.1 2.79 1.38 5.37 2.5s4 1.33 3.92 1.83a7 7 0 0 1 -2.59 3.71c-1.58 1-3.54 1.25-6-.25s-2.58-3-2.29-4.62 1.16-3.25 1.59-3.17z\"\n          fill=\"#1f4863\"\n        ></path>{\" \"}\n        <path\n          d=\"m40.11 13c.5.33 1.71 1.83 1.42 2.12s-.17.67-.67.46a5 5 0 0 1 -1.66-2.12c.08-.28.91-.46.91-.46z\"\n          fill=\"#1d1d1b\"\n        ></path>{\" \"}\n        <path\n          d=\"m37.74 13.88c.12-.05 2.25 2.67 2 3s-.79.63-.92.54-2.16-2.75-2-3 .58-.37.92-.54z\"\n          fill=\"#1d1d1b\"\n        ></path>{\" \"}\n        <path\n          d=\"m42.45 24c-.16-.16 1.87.54 1.79.92s0 1.29-.42 1.12-1.29-1.95-1.37-2.04z\"\n          fill=\"#e7413e\"\n        ></path>{\" \"}\n        <path\n          d=\"m51.24 33.72c.17-.08 3.91 1 4.5 1.75s.29 2.5-.25 3.46-.79 1.07-1.42 1.07a17 17 0 0 1 -4.21-1.83c-.25-.29 1-4.29 1.38-4.45z\"\n          fill=\"#85bfe9\"\n        ></path>{\" \"}\n        <path\n          d=\"m27.07 23.13c.32-.2 9.54 4.21 9.42 4.92s-3 7.54-4 7.88-8.75-3.5-9-4.25 3.12-8.25 3.58-8.55z\"\n          fill=\"#1d1d1b\"\n        ></path>{\" \"}\n        <path\n          d=\"m27.57 24.68c.2-.08 7.63 3.33 7.54 3.7s-3 6.17-3.16 6.17-6.95-3.21-6.95-3.55 2.24-6.2 2.57-6.32z\"\n          fill=\"#e7413e\"\n        ></path>{\" \"}\n        <g fill=\"#1d1d1b\">\n          {\" \"}\n          <path d=\"m31.05 28c.31-.63 1.22-.87 2.3 0s-.63 2.83-1.85 2-.63-1.61-.45-2z\"></path>{\" \"}\n          <path d=\"m30 31.14c.26-.52 1-.72 1.91 0s-.52 2.35-1.54 1.62-.52-1.33-.37-1.62z\"></path>{\" \"}\n          <path d=\"m35 35.63s.71 1 .5 1.38-.33.67-.54.5a2.26 2.26 0 0 1 -.59-1.17c.08-.25.63-.71.63-.71z\"></path>{\" \"}\n          <path d=\"m32.9 36.93c.17.12 1.25 1.87 1 2.29s-.25.5-.45.5a6.56 6.56 0 0 1 -1.45-2.21c0-.21.9-.58.9-.58z\"></path>{\" \"}\n          <path d=\"m31.32 38.13c.25.09 1.83 2.34 1.71 2.71a2.39 2.39 0 0 1 -.5.75s-2.21-2.66-2-2.91a2.66 2.66 0 0 1 .79-.55z\"></path>{\" \"}\n          <path d=\"m29.86 39.3s2.21 2.88 2 3.33 0 .55-.41.46-2.59-2.79-2.38-3.09a4.7 4.7 0 0 1 .79-.7z\"></path>{\" \"}\n        </g>{\" \"}\n        <path\n          d=\"m14.4 39.93c.14-.17 1.38.75 1.92 1.12a2.39 2.39 0 0 0 1.21.63 2.33 2.33 0 0 1 1.21.62c.37.29 1.46.71 1.33.92s-1.5 3.91-1.79 4.54-.67 1.29-.67 1.29-.12.25-.5-.25-1.11-1.37-1.46-1.37-.91.5-1.37.16-1.17-2.08-1.67-2.21-.87.13-.87-.16a52.35 52.35 0 0 1 2.66-5.29z\"\n          fill=\"#85bfe9\"\n        ></path>{\" \"}\n        <path\n          d=\"m26.24 45.63a6.93 6.93 0 0 1 2.12.8c.88.45 1 1 1.71 1.33s1.08.21 1.08.54-1.5 4.25-1.83 4.29a5 5 0 0 1 -2.25-.46c-.42-.33-.79-1.16-1.37-1.08a4.68 4.68 0 0 1 -1.5 0c-.42-.08-.75-.12-.63-.54s2.29-4.79 2.67-4.88z\"\n          fill=\"#85bfe9\"\n        ></path>{\" \"}\n        <path\n          d=\"m27.24 47.51c.38 0 .46.37 1 .46s.79.16.7.41-.12.67-.33.55a2.4 2.4 0 0 0 -.87-.46c-.34 0-.75-.09-.8-.25a1.11 1.11 0 0 1 .3-.71z\"\n          fill=\"#1d1d1b\"\n        ></path>{\" \"}\n        <path\n          d=\"m25.74 49.26c.33 0 .46.46 1 .62s.91.09.83.46 0 .67-.29.59-.75-.46-1.17-.55-.66.09-.79-.29a.79.79 0 0 1 .42-.83z\"\n          fill=\"#1d1d1b\"\n        ></path>{\" \"}\n        <path\n          d=\"m16.61 42.43c.21 0 0 .29.59.5s.91.29.83.5-.17.45-.42.45a3.87 3.87 0 0 1 -1-.37c-.42-.17-.5-.21-.5-.38a1.64 1.64 0 0 1 .5-.7z\"\n          fill=\"#1d1d1b\"\n        ></path>{\" \"}\n        <path\n          d=\"m14 43.38c.27-.26.58.88 1.25 1.09s1 .25 1.08.46.17.62-.12.7a1.25 1.25 0 0 1 -1.13-.29c-.46-.33-.79-.87-1.21-1s-.58 0-.54-.2.57-.63.67-.76z\"\n          fill=\"#1d1d1b\"\n        ></path>{\" \"}\n        <path\n          d=\"m11.28 46.22c.18-.18 1.08-.25 1.25.21s.21 2.12 1.08 2.37 1.17-.58 1.71-.17.67.92 1 1 .75.12.71.29-1.62 3.12-2.33 3.58-1.38.5-3.21-.46-2.63-1.53-2.49-2.49 2-4.04 2.28-4.33z\"\n          fill=\"#cbe7f5\"\n        ></path>{\" \"}\n        <path\n          d=\"m23 51.63c.27-.26.25.75 1 .8s1.08-.17 1.63 0 .66.91 1.54 1.08 1.62.33 1.58.5-2.75 5.25-3.08 5.21a34.19 34.19 0 0 1 -3.43-1.22c-1-.42-1.38-.92-1.29-1.29a44.9 44.9 0 0 1 2.05-5.08z\"\n          fill=\"#cbe7f5\"\n        ></path>{\" \"}\n      </g>\n    </svg>\n  );\n\n  return (\n    <div\n      className={cn(\n        \"flex h-full min-h-[520px] flex-col items-center justify-center font-['Helvetica_Neue',Helvetica,sans-serif]\",\n        isLight ? \"text-[#171717]\" : \"text-[#ededed]\",\n        className\n      )}\n    >\n      <div\n        ref={ropeRef}\n        className=\"rope relative transform-gpu cursor-grab select-none\"\n        style={{\n          width: ropeWidth,\n          height: ropeHeight,\n          backgroundColor: isLight ? \"#9b9284\" : \"#3b3d40\",\n          transformOrigin: \"top center\",\n          marginTop: \"-3rem\",\n          marginBottom: \"50px\",\n          willChange: \"transform\",\n          transform: `rotate(${initialAngle}deg)`, // Set initial angle\n        }}\n      >\n        <div\n          className=\"icon absolute flex items-center justify-center cursor-grab transform-gpu\"\n          style={{\n            width: iconSize,\n            height: iconSize,\n            top: \"100%\",\n            left: \"50%\",\n            transform: \"translateX(-50%)\",\n            transition: \"transform 400ms ease\",\n            willChange: \"transform\",\n          }}\n          onMouseEnter={(e) => {\n            gsap.to(e.currentTarget, {\n              scale: 1.16,\n              duration: 0.4,\n              ease: \"power2.out\",\n            });\n          }}\n          onMouseLeave={(e) => {\n            gsap.to(e.currentTarget, {\n              scale: 1,\n              duration: 0.4,\n              ease: \"power2.out\",\n            });\n          }}\n        >\n          <div \n            style={{ \n              width: iconSize, \n              height: iconSize \n            }}\n            className=\"-mt-10\"\n          >\n            {Icon}\n          </div>\n        </div>\n      </div>\n\n      <p\n        className=\"mt-auto mb-5 text-sm\"\n      >\n      </p>\n    </div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/interactive/draggable-rope.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Interactive",
+    "registryUrl": "https://ui.isaiahbjork.com/draggable-rope.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/draggable-rope.json"
+  },
+  "type": "registry:component"
+}

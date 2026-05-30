@@ -1,0 +1,218 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "primitive-combobox",
+  "title": "Combobox",
+  "description": "Combobox is a production-ready ui component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "@radix-ui/react-dialog",
+    "@radix-ui/react-popover",
+    "class-variance-authority",
+    "clsx",
+    "cmdk",
+    "framer-motion",
+    "lucide-react",
+    "tailwind-merge",
+    "web-haptics"
+  ],
+  "files": [
+    {
+      "path": "components/isaiahbjork/primitives/combobox.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { Check, ChevronsUpDown } from \"lucide-react\";\nimport {\n  Command,\n  CommandEmpty,\n  CommandGroup,\n  CommandInput,\n  CommandItem,\n  CommandList,\n} from \"@/components/ui/command\";\nimport { Popover, PopoverContent, PopoverTrigger } from \"@/components/ui/popover\";\nimport { cn } from \"@/lib/utils\";\nimport { BjorkButton } from \"./button\";\nimport { bjorkMenu, bjorkMenuItem } from \"./_shared\";\n\nconst comboboxOptions = [\"Revenue\", \"Activation\", \"Retention\", \"Expansion\", \"Support\"];\n\nexport function BjorkCombobox() {\n  const [open, setOpen] = React.useState(false);\n  const [value, setValue] = React.useState(\"Revenue\");\n\n  return (\n    <Popover open={open} onOpenChange={setOpen}>\n      <PopoverTrigger asChild>\n        <BjorkButton\n          variant=\"default\"\n          role=\"combobox\"\n          aria-expanded={open}\n          className=\"w-[220px] justify-between\"\n        >\n          {value}\n          <ChevronsUpDown className=\"opacity-45\" aria-hidden=\"true\" />\n        </BjorkButton>\n      </PopoverTrigger>\n      <PopoverContent className={cn(\"w-[220px] p-0\", bjorkMenu)}>\n        <Command className=\"bg-transparent text-[color:var(--bjork-text)]\">\n          <CommandInput\n            placeholder=\"Search metric...\"\n            className=\"text-[color:var(--bjork-text)] placeholder:text-[color:var(--bjork-text-faint)]\"\n          />\n          <CommandList>\n            <CommandEmpty className=\"py-6 text-center text-sm text-[color:var(--bjork-text-soft)]\">\n              No metric found.\n            </CommandEmpty>\n            <CommandGroup>\n              {comboboxOptions.map((option) => (\n                <CommandItem\n                  key={option}\n                  value={option}\n                  onSelect={(currentValue) => {\n                    setValue(currentValue);\n                    setOpen(false);\n                  }}\n                  className={bjorkMenuItem}\n                >\n                  <Check\n                    className={cn(\n                      \"mr-1 size-4 text-[color:var(--bjork-accent)]\",\n                      value === option ? \"opacity-100\" : \"opacity-0\",\n                    )}\n                    aria-hidden=\"true\"\n                  />\n                  {option}\n                </CommandItem>\n              ))}\n            </CommandGroup>\n          </CommandList>\n        </Command>\n      </PopoverContent>\n    </Popover>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/primitives/combobox.tsx"
+    },
+    {
+      "path": "components/ui/command.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { Command as CommandPrimitive } from \"cmdk\"\nimport { SearchIcon } from \"lucide-react\"\n\nimport { cn } from \"@/lib/utils\"\nimport {\n  Dialog,\n  DialogContent,\n  DialogDescription,\n  DialogHeader,\n  DialogTitle,\n} from \"@/components/ui/dialog\"\n\nfunction Command({\n  className,\n  ...props\n}: React.ComponentProps<typeof CommandPrimitive>) {\n  return (\n    <CommandPrimitive\n      data-slot=\"command\"\n      className={cn(\n        \"bg-popover text-popover-foreground flex h-full w-full flex-col overflow-hidden rounded-xl\",\n        className\n      )}\n      {...props}\n    />\n  )\n}\n\nfunction CommandDialog({\n  title = \"Command Palette\",\n  description = \"Search for a command to run...\",\n  children,\n  ...props\n}: React.ComponentProps<typeof Dialog> & {\n  title?: string\n  description?: string\n}) {\n  return (\n    <Dialog {...props}>\n      <DialogHeader className=\"sr-only\">\n        <DialogTitle>{title}</DialogTitle>\n        <DialogDescription>{description}</DialogDescription>\n      </DialogHeader>\n      <DialogContent className=\"overflow-hidden p-0\">\n        <Command className=\"[&_[cmdk-group-heading]]:text-muted-foreground **:data-[slot=command-input-wrapper]:h-12 rounded-3xl [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group]]:px-2 [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_svg]:h-5 [&_[cmdk-item]_svg]:w-5\">\n          {children}\n        </Command>\n      </DialogContent>\n    </Dialog>\n  )\n}\n\nfunction CommandInput({\n  className,\n  ...props\n}: React.ComponentProps<typeof CommandPrimitive.Input>) {\n  return (\n    <div\n      data-slot=\"command-input-wrapper\"\n      className=\"bg-muted/70 relative flex h-11 items-center gap-2 rounded-2xl border border-border/50 px-3\"\n    >\n      <SearchIcon className=\"size-4 shrink-0 opacity-50\" />\n      <CommandPrimitive.Input\n        data-slot=\"command-input\"\n        className={cn(\n          \"placeholder:text-muted-foreground flex h-10 w-full rounded-md bg-transparent py-2 text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50\",\n          className\n        )}\n        {...props}\n      />\n    </div>\n  )\n}\n\nfunction CommandList({\n  className,\n  ...props\n}: React.ComponentProps<typeof CommandPrimitive.List>) {\n  return (\n    <CommandPrimitive.List\n      data-slot=\"command-list\"\n      className={cn(\n        \"max-h-[300px] scroll-py-1 overflow-x-hidden overflow-y-auto\",\n        className\n      )}\n      {...props}\n    />\n  )\n}\n\nfunction CommandEmpty({\n  ...props\n}: React.ComponentProps<typeof CommandPrimitive.Empty>) {\n  return (\n    <CommandPrimitive.Empty\n      data-slot=\"command-empty\"\n      className=\"py-6 text-center text-sm\"\n      {...props}\n    />\n  )\n}\n\nfunction CommandGroup({\n  className,\n  ...props\n}: React.ComponentProps<typeof CommandPrimitive.Group>) {\n  return (\n    <CommandPrimitive.Group\n      data-slot=\"command-group\"\n      className={cn(\n        \"text-foreground [&_[cmdk-group-heading]]:text-muted-foreground overflow-hidden p-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium\",\n        className\n      )}\n      {...props}\n    />\n  )\n}\n\nfunction CommandSeparator({\n  className,\n  ...props\n}: React.ComponentProps<typeof CommandPrimitive.Separator>) {\n  return (\n    <CommandPrimitive.Separator\n      data-slot=\"command-separator\"\n      className={cn(\"bg-border -mx-1 h-px\", className)}\n      {...props}\n    />\n  )\n}\n\nfunction CommandItem({\n  className,\n  ...props\n}: React.ComponentProps<typeof CommandPrimitive.Item>) {\n  return (\n    <CommandPrimitive.Item\n      data-slot=\"command-item\"\n      className={cn(\n        \"data-[selected=true]:bg-accent data-[selected=true]:text-accent-foreground [&_svg:not([class*='text-'])]:text-muted-foreground relative flex cursor-default items-center gap-2 rounded-xl px-2 py-1.5 text-sm outline-hidden select-none data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4\",\n        className\n      )}\n      {...props}\n    />\n  )\n}\n\nfunction CommandShortcut({\n  className,\n  ...props\n}: React.ComponentProps<\"span\">) {\n  return (\n    <span\n      data-slot=\"command-shortcut\"\n      className={cn(\n        \"text-muted-foreground ml-auto text-xs tracking-widest\",\n        className\n      )}\n      {...props}\n    />\n  )\n}\n\nexport {\n  Command,\n  CommandDialog,\n  CommandInput,\n  CommandList,\n  CommandEmpty,\n  CommandGroup,\n  CommandItem,\n  CommandShortcut,\n  CommandSeparator,\n}\n",
+      "type": "registry:ui",
+      "target": "@ui/command.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/ui/dialog.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as DialogPrimitive from \"@radix-ui/react-dialog\"\nimport { XIcon } from \"lucide-react\"\n\nimport { cn } from \"@/lib/utils\"\n\nfunction Dialog({\n  ...props\n}: React.ComponentProps<typeof DialogPrimitive.Root>) {\n  return <DialogPrimitive.Root data-slot=\"dialog\" {...props} />\n}\n\nfunction DialogTrigger({\n  ...props\n}: React.ComponentProps<typeof DialogPrimitive.Trigger>) {\n  return <DialogPrimitive.Trigger data-slot=\"dialog-trigger\" {...props} />\n}\n\nfunction DialogPortal({\n  ...props\n}: React.ComponentProps<typeof DialogPrimitive.Portal>) {\n  return <DialogPrimitive.Portal data-slot=\"dialog-portal\" {...props} />\n}\n\nfunction DialogClose({\n  ...props\n}: React.ComponentProps<typeof DialogPrimitive.Close>) {\n  return <DialogPrimitive.Close data-slot=\"dialog-close\" {...props} />\n}\n\nfunction DialogOverlay({\n  className,\n  ...props\n}: React.ComponentProps<typeof DialogPrimitive.Overlay>) {\n  return (\n    <DialogPrimitive.Overlay\n      data-slot=\"dialog-overlay\"\n      className={cn(\n        \"data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 bg-black/50\",\n        className\n      )}\n      {...props}\n    />\n  )\n}\n\nfunction DialogContent({\n  className,\n  children,\n  ...props\n}: React.ComponentProps<typeof DialogPrimitive.Content>) {\n  return (\n    <DialogPortal data-slot=\"dialog-portal\">\n      <DialogOverlay />\n      <DialogPrimitive.Content\n        data-slot=\"dialog-content\"\n        className={cn(\n          \"bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg\",\n          className\n        )}\n        {...props}\n      >\n        {children}\n        <DialogPrimitive.Close\n          data-slot=\"dialog-close\"\n          className=\"ring-offset-background focus:ring-ring data-[state=open]:bg-accent data-[state=open]:text-muted-foreground absolute top-4 right-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4\"\n        >\n          <XIcon />\n          <span className=\"sr-only\">Close</span>\n        </DialogPrimitive.Close>\n      </DialogPrimitive.Content>\n    </DialogPortal>\n  )\n}\n\nfunction DialogHeader({ className, ...props }: React.ComponentProps<\"div\">) {\n  return (\n    <div\n      data-slot=\"dialog-header\"\n      className={cn(\"flex flex-col gap-2 text-center sm:text-left\", className)}\n      {...props}\n    />\n  )\n}\n\nfunction DialogFooter({ className, ...props }: React.ComponentProps<\"div\">) {\n  return (\n    <div\n      data-slot=\"dialog-footer\"\n      className={cn(\n        \"flex flex-col-reverse gap-2 sm:flex-row sm:justify-end\",\n        className\n      )}\n      {...props}\n    />\n  )\n}\n\nfunction DialogTitle({\n  className,\n  ...props\n}: React.ComponentProps<typeof DialogPrimitive.Title>) {\n  return (\n    <DialogPrimitive.Title\n      data-slot=\"dialog-title\"\n      className={cn(\"text-lg leading-none font-semibold\", className)}\n      {...props}\n    />\n  )\n}\n\nfunction DialogDescription({\n  className,\n  ...props\n}: React.ComponentProps<typeof DialogPrimitive.Description>) {\n  return (\n    <DialogPrimitive.Description\n      data-slot=\"dialog-description\"\n      className={cn(\"text-muted-foreground text-sm\", className)}\n      {...props}\n    />\n  )\n}\n\nexport {\n  Dialog,\n  DialogClose,\n  DialogContent,\n  DialogDescription,\n  DialogFooter,\n  DialogHeader,\n  DialogOverlay,\n  DialogPortal,\n  DialogTitle,\n  DialogTrigger,\n}\n",
+      "type": "registry:ui",
+      "target": "@ui/dialog.tsx"
+    },
+    {
+      "path": "components/ui/popover.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport * as PopoverPrimitive from \"@radix-ui/react-popover\"\n\nimport { cn } from \"@/lib/utils\"\n\nfunction Popover({\n  ...props\n}: React.ComponentProps<typeof PopoverPrimitive.Root>) {\n  return <PopoverPrimitive.Root data-slot=\"popover\" {...props} />\n}\n\nfunction PopoverTrigger({\n  ...props\n}: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {\n  return <PopoverPrimitive.Trigger data-slot=\"popover-trigger\" {...props} />\n}\n\nfunction PopoverContent({\n  className,\n  align = \"center\",\n  sideOffset = 4,\n  ...props\n}: React.ComponentProps<typeof PopoverPrimitive.Content>) {\n  return (\n    <PopoverPrimitive.Portal>\n      <PopoverPrimitive.Content\n        data-slot=\"popover-content\"\n        align={align}\n        sideOffset={sideOffset}\n        className={cn(\n          \"bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 z-50 w-72 origin-(--radix-popover-content-transform-origin) rounded-md border p-4 shadow-md outline-hidden\",\n          className\n        )}\n        {...props}\n      />\n    </PopoverPrimitive.Portal>\n  )\n}\n\nfunction PopoverAnchor({\n  ...props\n}: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {\n  return <PopoverPrimitive.Anchor data-slot=\"popover-anchor\" {...props} />\n}\n\nexport { Popover, PopoverTrigger, PopoverContent, PopoverAnchor }\n",
+      "type": "registry:ui",
+      "target": "@ui/popover.tsx"
+    },
+    {
+      "path": "components/isaiahbjork/primitives/button.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { motion, useReducedMotion, type HTMLMotionProps } from \"framer-motion\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport { useWebHaptics } from \"web-haptics/react\";\nimport type { HapticInput, TriggerOptions } from \"web-haptics\";\nimport { cn } from \"@/lib/utils\";\n\nconst bjorkButtonVariants = cva(\n  \"inline-flex shrink-0 transform-gpu items-center justify-center gap-2 whitespace-nowrap rounded-[13px] text-sm font-medium tracking-[-0.01em] outline-none backdrop-blur-md transition-[background-color,border-color,color,box-shadow,opacity] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-[#ec5c13]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bjork-ring-offset)] disabled:pointer-events-none disabled:opacity-35 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0\",\n  {\n    variants: {\n      variant: {\n        default:\n          \"border border-transparent bg-[var(--bjork-field)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-surface)] hover:bg-[var(--bjork-surface-hover)]\",\n        secondary:\n          \"border border-[color:var(--bjork-border)] bg-[var(--bjork-surface-active)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)] hover:bg-[var(--bjork-surface-hover)]\",\n        outline:\n          \"border border-[color:var(--bjork-border)] bg-[var(--bjork-field-inset)] text-[color:var(--bjork-text-strong)] shadow-[var(--bjork-shadow-soft)] hover:border-[color:var(--bjork-border-strong)] hover:bg-[var(--bjork-surface)] hover:text-[color:var(--bjork-text)]\",\n        ghost:\n          \"border border-transparent bg-transparent text-[color:var(--bjork-text-muted)] hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)]\",\n        quiet:\n          \"border border-transparent bg-[var(--bjork-field-muted)] text-[color:var(--bjork-text-soft)] hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text-medium)]\",\n        accent:\n          \"bjork-layered-button-accent tracking-tight text-white\",\n        raised:\n          \"bjork-layered-button-raised tracking-tight\",\n      },\n      size: {\n        sm: \"h-8 px-3 text-xs\",\n        md: \"h-[45px] px-4\",\n        lg: \"h-12 px-5 text-[15px]\",\n        icon: \"size-[45px] p-0\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"md\",\n    },\n  },\n);\n\nexport interface BjorkButtonProps\n  extends Omit<HTMLMotionProps<\"button\">, \"ref\" | \"size\">,\n    VariantProps<typeof bjorkButtonVariants> {\n  haptics?: boolean;\n  hapticPattern?: HapticInput;\n  hapticOptions?: TriggerOptions;\n}\n\nexport function BjorkButton({\n  className,\n  variant,\n  size,\n  disabled,\n  haptics = true,\n  hapticPattern = \"light\",\n  hapticOptions,\n  onPointerDown,\n  ...props\n}: BjorkButtonProps) {\n  const shouldReduceMotion = useReducedMotion();\n  const { trigger } = useWebHaptics();\n\n  const handlePointerDown = React.useCallback(\n    (event: React.PointerEvent<HTMLButtonElement>) => {\n      if (!disabled && haptics) {\n        void trigger(hapticPattern, hapticOptions);\n      }\n\n      onPointerDown?.(event);\n    },\n    [disabled, hapticOptions, hapticPattern, haptics, onPointerDown, trigger],\n  );\n\n  return (\n    <motion.button\n      data-slot=\"bjork-button\"\n      className={cn(bjorkButtonVariants({ variant, size, className }))}\n      disabled={disabled}\n      onPointerDown={handlePointerDown}\n      whileHover={disabled || shouldReduceMotion ? undefined : { scale: 1.05 }}\n      whileTap={disabled || shouldReduceMotion ? undefined : { scale: 0.95 }}\n      transition={{ type: \"spring\", stiffness: 400, damping: 25 }}\n      {...props}\n    />\n  );\n}\n\nexport { bjorkButtonVariants };\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/primitives/button.tsx"
+    },
+    {
+      "path": "components/isaiahbjork/primitives/_shared.ts",
+      "content": "export const bjorkSurface =\n  \"border border-[color:var(--bjork-border)] bg-[var(--bjork-field)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-surface)]\";\n\nexport const bjorkSoftSurface =\n  \"border border-[color:var(--bjork-border)] bg-[var(--bjork-surface-muted)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)]\";\n\nexport const bjorkPanel =\n  \"rounded-[18px] border border-[color:var(--bjork-border)] bg-[var(--bjork-panel)] shadow-[var(--bjork-shadow-panel)]\";\n\nexport const bjorkMenu =\n  \"z-50 rounded-[16px] border border-[color:var(--bjork-border)] bg-[var(--bjork-menu)] p-1 text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-menu)] backdrop-blur-xl\";\n\nexport const bjorkMenuItem =\n  \"rounded-[11px] px-3 py-2 text-sm text-[color:var(--bjork-text-medium)] outline-none transition hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)] focus:bg-[var(--bjork-surface-hover)] focus:text-[color:var(--bjork-text)] data-[highlighted]:bg-[var(--bjork-surface-hover)] data-[highlighted]:text-[color:var(--bjork-text)] data-[selected=true]:!bg-[var(--bjork-surface-hover)] data-[selected=true]:!text-[color:var(--bjork-text)] aria-selected:!bg-[var(--bjork-surface-hover)] aria-selected:!text-[color:var(--bjork-text)]\";\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/primitives/_shared.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "UI",
+    "registryUrl": "https://ui.isaiahbjork.com/primitive-combobox.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/primitive-combobox.json"
+  },
+  "type": "registry:component"
+}

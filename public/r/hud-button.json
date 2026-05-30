@@ -1,0 +1,189 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "hud-button",
+  "title": "HUD button",
+  "description": "HUD button is a production-ready hud component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/isaiahbjork/hud/hud-button.tsx",
+      "content": "\"use client\"\n\nimport { motion, useReducedMotion } from \"framer-motion\"\nimport type React from \"react\"\nimport { useId, useState } from \"react\"\nimport { useTheme } from \"next-themes\"\nimport { HyperText } from \"@/components/ui/hyper-text\"\n\ninterface HudButtonProps {\n  children: React.ReactNode\n  variant?: \"primary\" | \"secondary\"\n  style?: \"style1\" | \"style2\"\n  size?: \"small\" | \"default\" | \"large\"\n  onClick?: () => void\n  delay?: number\n  enableAnimations?: boolean\n}\n\nexport function HudButton({ \n  children, \n  variant = \"primary\", \n  style = \"style1\",\n  size = \"default\",\n  onClick, \n  delay = 0,\n  enableAnimations = true\n}: HudButtonProps) {\n  const shouldReduceMotion = useReducedMotion()\n  const shouldAnimate = enableAnimations && !shouldReduceMotion\n  const [isHovered, setIsHovered] = useState(false)\n  const { resolvedTheme } = useTheme()\n  const isDark = resolvedTheme !== \"light\"\n\n  // Theme-aware color system\n  const getColors = () => {\n    if (variant === \"primary\") {\n      return {\n        main: isDark ? \"#4ade80\" : \"#16a34a\", // Keep dark green, slightly darker for light\n        gradient: isDark ? \"#4ade80\" : \"#16a34a\",\n        text: isDark ? \"text-green-300\" : \"text-green-700\",\n        glow: isDark ? \"rgba(74, 222, 128, 0.3)\" : \"rgba(22, 163, 74, 0.2)\",\n        border: isDark ? \"#4ade80\" : \"#16a34a\"\n      }\n    } else {\n      return {\n        main: isDark ? \"#64748b\" : \"#374151\", // Keep dark slate, darker for light\n        gradient: isDark ? \"#64748b\" : \"#374151\", \n        text: isDark ? \"text-slate-600 dark:text-slate-300\" : \"text-gray-600\",\n        glow: isDark ? \"rgba(100, 116, 139, 0.2)\" : \"rgba(55, 65, 81, 0.1)\",\n        border: isDark ? \"#64748b\" : \"#374151\"\n      }\n    }\n  }\n\n  const colors = getColors()\n\n  const buttonVariants = {\n    hidden: {\n      opacity: 0,\n      y: 20,\n      scale: 0.95,\n      filter: shouldAnimate ? \"blur(4px)\" : \"blur(0px)\",\n    },\n    show: {\n      opacity: 1,\n      y: 0,\n      scale: 1,\n      filter: \"blur(0px)\",\n      transition: {\n        type: \"spring\",\n        stiffness: 300,\n        damping: 25,\n        mass: 0.8,\n        delay,\n        duration: shouldAnimate ? undefined : 0,\n      },\n    },\n  }\n\n  const containerVariants = {\n    hover: {\n      scale: 1.02,\n      y: -2,\n      rotateX: 2,\n      transition: {\n        type: \"spring\",\n        stiffness: 400,\n        damping: 25,\n        mass: 0.6,\n      },\n    },\n    tap: {\n      scale: 0.98,\n      y: 0,\n      rotateX: 0,\n      transition: {\n        type: \"spring\",\n        stiffness: 500,\n        damping: 30,\n        mass: 0.5,\n      },\n    },\n  }\n\n  const glowVariants = {\n    initial: {\n      opacity: 0,\n      scale: 0.8,\n    },\n    hover: {\n      opacity: variant === \"primary\" ? (isDark ? 0.6 : 0.4) : (isDark ? 0.3 : 0.2),\n      scale: 1.1,\n      transition: {\n        type: \"spring\",\n        stiffness: 300,\n        damping: 20,\n      },\n    },\n  }\n\n  const dotVariants = {\n    hidden: { \n      scale: 0, \n      opacity: 0,\n      filter: \"blur(2px)\"\n    },\n    show: (i: number) => ({\n      scale: 1,\n      opacity: 1,\n      filter: \"blur(0px)\",\n      transition: {\n        type: \"spring\",\n        stiffness: 400,\n        damping: 25,\n        delay: delay + 0.3 + (i * 0.05),\n        duration: shouldAnimate ? undefined : 0,\n      },\n    }),\n    hover: {\n      scale: 1.2,\n      opacity: 1,\n      transition: {\n        type: \"spring\",\n        stiffness: 500,\n        damping: 25,\n        mass: 0.4,\n      },\n    },\n  }\n\n  const shimmerVariants = {\n    initial: {\n      x: \"-100%\",\n      opacity: 0,\n    },\n    animate: {\n      x: \"100%\",\n      opacity: [0, 0.5, 0],\n      transition: {\n        duration: 2,\n        repeat: Infinity,\n        repeatDelay: 3,\n        ease: \"easeInOut\",\n      },\n    },\n  }\n\n  const uniqueId = useId()\n  const gradientId1 = `gradient1-${uniqueId}`\n  const gradientId2 = `gradient2-${uniqueId}`\n  const gradientId = `gradient-${uniqueId}`\n\n  const getSizeStyles = () => {\n    if (style === \"style1\") {\n      return {\n        width: \"182px\",\n        height: \"44px\",\n        textClass: \"text-sm tracking-wider\"\n      }\n    }\n    \n    switch (size) {\n      case \"small\":\n        return {\n          width: \"140px\",\n          height: \"39px\",\n          textClass: \"text-xs tracking-wide\"\n        }\n      case \"large\":\n        return {\n          width: \"234px\",\n          height: \"65px\",\n          textClass: \"text-base tracking-wider\"\n        }\n      default:\n        return {\n          width: \"187px\",\n          height: \"52px\",\n          textClass: \"text-sm tracking-wider\"\n        }\n    }\n  }\n\n  const sizeStyles = getSizeStyles()\n\n  const renderStyle1SVG = () => (\n    <svg\n      xmlns=\"http://www.w3.org/2000/svg\"\n      width=\"182.288\"\n      height=\"43.721\"\n      viewBox=\"0 0 182.288 43.721\"\n      className=\"w-full h-full\"\n    >\n      <defs>\n        <linearGradient\n          id={gradientId}\n          x1=\"93.198\"\n          y1=\"-53.343\"\n          x2=\"93.198\"\n          y2=\"68.841\"\n          gradientUnits=\"userSpaceOnUse\"\n        >\n          <stop offset=\"0\" stopColor={colors.gradient} />\n          <stop offset=\"0.005\" stopColor={colors.gradient} stopOpacity=\"0.986\" />\n          <stop offset=\"0.085\" stopColor={colors.gradient} stopOpacity=\"0.781\" />\n          <stop offset=\"0.17\" stopColor={colors.gradient} stopOpacity=\"0.596\" />\n          <stop offset=\"0.258\" stopColor={colors.gradient} stopOpacity=\"0.436\" />\n          <stop offset=\"0.351\" stopColor={colors.gradient} stopOpacity=\"0.301\" />\n          <stop offset=\"0.449\" stopColor={colors.gradient} stopOpacity=\"0.191\" />\n          <stop offset=\"0.554\" stopColor={colors.gradient} stopOpacity=\"0.106\" />\n          <stop offset=\"0.669\" stopColor={colors.gradient} stopOpacity=\"0.046\" />\n          <stop offset=\"0.804\" stopColor={colors.gradient} stopOpacity=\"0.011\" />\n          <stop offset=\"1\" stopColor={colors.gradient} stopOpacity=\"0\" />\n        </linearGradient>\n      </defs>\n      <g>\n        <g>\n          <motion.path \n            d=\"M181.788.5H13.7L4.609,9.593V43.221H170.048l11.74-11.74Z\" \n            fill={`url(#${gradientId})`}\n            initial={{ pathLength: 0, opacity: 0 }}\n            animate={{ pathLength: 1, opacity: 1 }}\n            transition={{ \n              duration: shouldAnimate ? 0.8 : 0, \n              delay: delay + 0.2,\n              ease: \"easeOut\" \n            }}\n          />\n          <motion.path\n            d=\"M170.256,43.721H4.108V9.386L13.494,0H182.288V31.688Zm-165.148-1H169.842l11.446-11.447V1H13.908l-8.8,8.8Z\"\n            fill={colors.border}\n            initial={{ pathLength: 0, opacity: 0 }}\n            animate={{ pathLength: 1, opacity: 1 }}\n            transition={{ \n              duration: shouldAnimate ? 0.6 : 0, \n              delay: delay + 0.4,\n              ease: \"easeOut\" \n            }}\n          />\n          <g>\n            {[\n              { cx: \"169.908\", cy: \"7.326\", index: 0 },\n              { cx: \"169.908\", cy: \"11.908\", index: 1 },\n              { cx: \"174.373\", cy: \"7.326\", index: 2 },\n              { cx: \"174.373\", cy: \"11.908\", index: 3 },\n            ].map((dot) => (\n              <motion.circle\n                key={`${dot.cx}-${dot.cy}`}\n                cx={dot.cx}\n                cy={dot.cy}\n                r=\"1.161\"\n                fill={colors.main}\n                variants={dotVariants}\n                initial=\"hidden\"\n                animate=\"show\"\n                whileHover=\"hover\"\n                custom={dot.index}\n              />\n            ))}\n          </g>\n        </g>\n        <g>\n          {[\n            { cx: \"0.621\", cy: \"19.214\", index: 4 },\n            { cx: \"0.621\", cy: \"24.506\", index: 5 },\n          ].map((dot) => (\n            <motion.circle\n              key={`${dot.cx}-${dot.cy}`}\n              cx={dot.cx}\n              cy={dot.cy}\n              r=\"0.621\"\n              fill={colors.main}\n              variants={dotVariants}\n              initial=\"hidden\"\n              animate=\"show\"\n              whileHover=\"hover\"\n              custom={dot.index}\n            />\n          ))}\n        </g>\n      </g>\n    </svg>\n  )\n\n  const renderStyle2SVG = () => (\n    <svg\n      width={sizeStyles.width}\n      height={sizeStyles.height}\n      viewBox=\"0 0 187 52\"\n      fill=\"none\"\n      xmlns=\"http://www.w3.org/2000/svg\"\n      className=\"w-full h-full\"\n    >\n      <defs>\n        <linearGradient id={gradientId1} x1=\"94.9995\" y1=\"-62.017\" x2=\"94.9995\" y2=\"80.9853\" gradientUnits=\"userSpaceOnUse\">\n          <stop stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#1a1a1a\" : \"#f8f9fa\")} stopOpacity=\"0.95\" />\n          <stop offset=\"0.005\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#1a1a1a\" : \"#f8f9fa\")} stopOpacity=\"0.92\" />\n          <stop offset=\"0.085\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#1a1a1a\" : \"#f8f9fa\")} stopOpacity=\"0.85\" />\n          <stop offset=\"0.17\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#1a1a1a\" : \"#f8f9fa\")} stopOpacity=\"0.75\" />\n          <stop offset=\"0.258\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#1a1a1a\" : \"#f8f9fa\")} stopOpacity=\"0.65\" />\n          <stop offset=\"0.351\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#1a1a1a\" : \"#f8f9fa\")} stopOpacity=\"0.55\" />\n          <stop offset=\"0.449\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#1a1a1a\" : \"#f8f9fa\")} stopOpacity=\"0.45\" />\n          <stop offset=\"0.554\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#1a1a1a\" : \"#f8f9fa\")} stopOpacity=\"0.35\" />\n          <stop offset=\"0.669\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#1a1a1a\" : \"#f8f9fa\")} stopOpacity=\"0.25\" />\n          <stop offset=\"0.804\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#1a1a1a\" : \"#f8f9fa\")} stopOpacity=\"0.15\" />\n          <stop offset=\"1\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#1a1a1a\" : \"#f8f9fa\")} stopOpacity=\"0\" />\n        </linearGradient>\n        <linearGradient id={gradientId2} x1=\"95.4995\" y1=\"-65.5377\" x2=\"95.4995\" y2=\"83.1847\" gradientUnits=\"userSpaceOnUse\">\n          <stop stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#2a2a2a\" : \"#e5e7eb\")} stopOpacity=\"0.8\" />\n          <stop offset=\"0.005\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#2a2a2a\" : \"#e5e7eb\")} stopOpacity=\"0.75\" />\n          <stop offset=\"0.085\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#2a2a2a\" : \"#e5e7eb\")} stopOpacity=\"0.65\" />\n          <stop offset=\"0.17\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#2a2a2a\" : \"#e5e7eb\")} stopOpacity=\"0.55\" />\n          <stop offset=\"0.258\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#2a2a2a\" : \"#e5e7eb\")} stopOpacity=\"0.45\" />\n          <stop offset=\"0.351\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#2a2a2a\" : \"#e5e7eb\")} stopOpacity=\"0.35\" />\n          <stop offset=\"0.449\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#2a2a2a\" : \"#e5e7eb\")} stopOpacity=\"0.25\" />\n          <stop offset=\"0.554\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#2a2a2a\" : \"#e5e7eb\")} stopOpacity=\"0.18\" />\n          <stop offset=\"0.669\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#2a2a2a\" : \"#e5e7eb\")} stopOpacity=\"0.12\" />\n          <stop offset=\"0.804\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#2a2a2a\" : \"#e5e7eb\")} stopOpacity=\"0.06\" />\n          <stop offset=\"1\" stopColor={variant === \"primary\" ? colors.gradient : (isDark ? \"#2a2a2a\" : \"#e5e7eb\")} stopOpacity=\"0\" />\n        </linearGradient>\n      </defs>\n      \n      {/* Corner dots - top right */}\n      {[\n        { cx: \"174.161\", cy: \"7.161\", index: 0 },\n        { cx: \"174.161\", cy: \"11.739\", index: 1 },\n        { cx: \"178.63\", cy: \"7.161\", index: 2 },\n        { cx: \"178.63\", cy: \"11.739\", index: 3 },\n      ].map((dot) => (\n        <motion.circle\n          key={`${dot.cx}-${dot.cy}`}\n          cx={dot.cx}\n          cy={dot.cy}\n          r=\"1.161\"\n          fill={variant === \"primary\" ? colors.main : (isDark ? \"#EFEFEF\" : \"#374151\")}\n          variants={dotVariants}\n          initial=\"hidden\"\n          animate=\"show\"\n          whileHover=\"hover\"\n          custom={dot.index}\n        />\n      ))}\n      \n      {/* Main button shape */}\n      <motion.path \n        d=\"M4.5 6L10 0.5H181L186.5 6V46L181 51.5H10L4.5 45.7834V6Z\" \n        fill={`url(#${gradientId1})`} \n        stroke={variant === \"primary\" ? colors.border : (isDark ? \"white\" : \"#374151\")} \n        strokeWidth=\"0.5\"\n        initial={{ pathLength: 0, opacity: 0 }}\n        animate={{ pathLength: 1, opacity: 1 }}\n        transition={{ \n          duration: shouldAnimate ? 0.8 : 0, \n          delay: delay + 0.2,\n          ease: \"easeOut\" \n        }}\n      />\n      \n      {/* Side dots - left */}\n      {[\n        { cx: \"0.621\", cy: \"23.621\", index: 4 },\n        { cx: \"0.621\", cy: \"28.91\", index: 5 },\n      ].map((dot) => (\n        <motion.circle\n          key={`${dot.cx}-${dot.cy}`}\n          cx={dot.cx}\n          cy={dot.cy}\n          r=\"0.621\"\n          fill={variant === \"primary\" ? colors.main : (isDark ? \"#EFEFEF\" : \"#374151\")}\n          variants={dotVariants}\n          initial=\"hidden\"\n          animate=\"show\"\n          whileHover=\"hover\"\n          custom={dot.index}\n        />\n      ))}\n      \n      {/* Border outline */}\n      <motion.path \n        d=\"M181.07 52H9.9311L4 46.1001V5.8994L9.9311 0H181.07L187 5.8994V46.1001L181.07 52ZM10.1235 51.5332H180.876L186.531 45.9069V6.09266L180.876 0.466799L10 0.5L4.5 6L4.46916 45.9069L10.1235 51.5332Z\" \n        fill={isDark ? \"white\" : \"#374151\"}\n        initial={{ pathLength: 0, opacity: 0 }}\n        animate={{ pathLength: 1, opacity: 1 }}\n        transition={{ \n          duration: shouldAnimate ? 0.6 : 0, \n          delay: delay + 0.4,\n          ease: \"easeOut\" \n        }}\n      />\n      <motion.path \n        d=\"M181.07 52H9.9311L4 46.1001V5.8994L9.9311 0H181.07L187 5.8994V46.1001L181.07 52ZM10.1235 51.5332H180.876L186.531 45.9069V6.09266L180.876 0.466799L10 0.5L4.5 6L4.46916 45.9069L10.1235 51.5332Z\" \n        fill={`url(#${gradientId2})`}\n        initial={{ pathLength: 0, opacity: 0 }}\n        animate={{ pathLength: 1, opacity: 1 }}\n        transition={{ \n          duration: shouldAnimate ? 0.6 : 0, \n          delay: delay + 0.5,\n          ease: \"easeOut\" \n        }}\n      />\n    </svg>\n  )\n\n  return (\n    <motion.button\n      className=\"relative cursor-pointer transform-gpu\"\n      variants={shouldAnimate ? buttonVariants : {}}\n      initial={shouldAnimate ? \"hidden\" : \"show\"}\n      animate=\"show\"\n      whileHover=\"hover\"\n      whileTap=\"tap\"\n      onClick={onClick}\n      onHoverStart={() => setIsHovered(true)}\n      onHoverEnd={() => setIsHovered(false)}\n      style={{ \n        width: sizeStyles.width, \n        height: sizeStyles.height,\n        perspective: \"1000px\"\n      }}\n    >\n      {/* Background glow effect */}\n      <motion.div\n        className=\"absolute inset-0 rounded-lg\"\n        style={{\n          background: `radial-gradient(circle, ${colors.glow} 0%, transparent 70%)`,\n          filter: \"blur(10px)\",\n        }}\n        variants={shouldAnimate ? glowVariants : {}}\n        initial=\"initial\"\n        animate={isHovered ? \"hover\" : \"initial\"}\n      />\n\n      {/* Shimmer effect */}\n      {shouldAnimate && variant === \"primary\" && (\n        <div className=\"absolute inset-0 overflow-hidden rounded-lg\">\n          <motion.div\n            className=\"absolute inset-0\"\n            style={{\n              background: \"linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent)\",\n              width: \"30%\",\n              height: \"100%\",\n            }}\n            variants={shimmerVariants}\n            initial=\"initial\"\n            animate=\"animate\"\n          />\n        </div>\n      )}\n\n      <motion.div \n        variants={shouldAnimate ? containerVariants : {}}\n        className=\"relative cursor-pointer h-full w-full\"\n        style={{ transformStyle: \"preserve-3d\" }}\n      >\n        {style === \"style1\" ? renderStyle1SVG() : renderStyle2SVG()}\n\n        {/* Text overlay */}\n        <div className=\"absolute inset-0 flex items-center justify-center\">\n          <motion.div\n            initial={{ opacity: 0, y: 10 }}\n            animate={{ \n              opacity: 1, \n              y: 0,\n              transition: { \n                delay: delay + 0.6,\n                duration: shouldAnimate ? 0.4 : 0,\n                type: \"spring\",\n                stiffness: 300,\n                damping: 25\n              }\n            }}\n          >\n            <HyperText\n              text={children as string}\n              className={`cursor-pointer ${sizeStyles.textClass} ${colors.text}`}\n              duration={shouldAnimate ? 800 : 0}\n              animateOnLoad={shouldAnimate}\n            />\n          </motion.div>\n        </div>\n\n\n      </motion.div>\n    </motion.button>\n  )\n}\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/hud/hud-button.tsx"
+    },
+    {
+      "path": "components/ui/hyper-text.tsx",
+      "content": "\"use client\";\n\nimport { AnimatePresence, motion, Variants } from \"framer-motion\";\nimport { useEffect, useRef, useState } from \"react\";\n\nimport { cn } from \"@/lib/utils\";\n\ninterface HyperTextProps {\n  text: string;\n  duration?: number;\n  framerProps?: Variants;\n  className?: string;\n  animateOnLoad?: boolean;\n  trigger?: boolean;\n}\n\nconst alphabets = \"ABCDEFGHIJKLMNOPQRSTUVWXYZ\".split(\"\");\n\nconst getRandomInt = (max: number) => Math.floor(Math.random() * max);\n\nexport function HyperText({\n  text,\n  duration = 800,\n  framerProps = {\n    initial: { opacity: 0, y: -10 },\n    animate: { opacity: 1, y: 0 },\n    exit: { opacity: 0, y: 3 },\n  },\n  className,\n  animateOnLoad = true,\n  trigger = true,\n}: HyperTextProps) {\n  const [displayText, setDisplayText] = useState(text.split(\"\"));\n  const [isAnimating, setIsAnimating] = useState(false);\n  const interations = useRef(0);\n  const isFirstRender = useRef(true);\n\n  const triggerAnimation = () => {\n    interations.current = 0;\n    setIsAnimating(true);\n  };\n\n  // Update displayText when text prop changes\n  useEffect(() => {\n    setDisplayText(text.split(\"\"));\n  }, [text]);\n\n  useEffect(() => {\n    if (trigger) {\n      triggerAnimation();\n    }\n  }, [trigger]);\n\n  useEffect(() => {\n    if (!isAnimating) return;\n    \n    const interval = setInterval(\n      () => {\n        if (!animateOnLoad && isFirstRender.current) {\n          clearInterval(interval);\n          isFirstRender.current = false;\n          return;\n        }\n        if (interations.current < text.length) {\n          setDisplayText((t) =>\n            t.map((l, i) =>\n              l === \" \"\n                ? l\n                : i <= interations.current\n                  ? text[i]\n                  : alphabets[getRandomInt(26)],\n            ),\n          );\n          interations.current = interations.current + 0.1;\n        } else {\n          setIsAnimating(false);\n          clearInterval(interval);\n        }\n      },\n      duration / (text.length * 10),\n    );\n    // Clean up interval on unmount\n    return () => clearInterval(interval);\n  }, [text, duration, isAnimating, animateOnLoad]);\n\n  return (\n    <div\n      className=\"flex scale-100 cursor-default overflow-hidden py-2\"\n      onMouseEnter={triggerAnimation}\n    >\n      <AnimatePresence mode=\"wait\">\n        {displayText.map((letter, i) => (\n          <motion.span\n            key={i}\n            className={cn(\"font-mono\", letter === \" \" ? \"w-3\" : \"\", className)}\n            {...framerProps}\n          >\n            {letter.toUpperCase()}\n          </motion.span>\n        ))}\n      </AnimatePresence>\n    </div>\n  );\n} ",
+      "type": "registry:ui",
+      "target": "@ui/hyper-text.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "HUD",
+    "registryUrl": "https://ui.isaiahbjork.com/hud-button.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/hud-button.json"
+  },
+  "type": "registry:component"
+}

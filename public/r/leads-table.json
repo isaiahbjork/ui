@@ -1,0 +1,182 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "leads-table",
+  "title": "Leads table",
+  "description": "Leads table is a production-ready tables component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "framer-motion",
+    "lucide-react",
+    "next-themes"
+  ],
+  "files": [
+    {
+      "path": "components/isaiahbjork/tables/leads-table.tsx",
+      "content": "\"use client\";\n\nimport { useState } from \"react\";\nimport { motion, AnimatePresence } from \"framer-motion\";\nimport { useTheme } from \"next-themes\";\nimport { ChevronDown, MoreHorizontal } from \"lucide-react\";\nimport {\n  getBjorkSignalPalette,\n  getBjorkTablePalette,\n} from \"./table-theme\";\n\nexport interface Lead {\n  id: string;\n  name: string;\n  email: string;\n  source: string;\n  sourceType: \"organic\" | \"campaign\";\n  status: \"pre-sale\" | \"closed\" | \"lost\" | \"closing\" | \"new\";\n  size: number;\n  interest: number[];\n  probability: \"low\" | \"mid\" | \"high\";\n  lastAction: string;\n}\n\ninterface LeadsTableProps {\n  title?: string;\n  leads?: Lead[];\n  onLeadAction?: (leadId: string, action: string) => void;\n  className?: string;\n}\n\nconst defaultLeads: Lead[] = [\n  {\n    id: \"1\",\n    name: \"Andy Shepard\",\n    email: \"a.shepard@gmail.com\",\n    source: \"ORGANIC\",\n    sourceType: \"organic\",\n    status: \"pre-sale\",\n    size: 120000,\n    interest: [45, 52, 48, 55, 58, 60, 57, 62, 65, 63],\n    probability: \"mid\",\n    lastAction: \"Sep 12, 2024\"\n  },\n  {\n    id: \"2\", \n    name: \"Emily Thompson\",\n    email: \"a.shepard@gmail.com\",\n    source: \"SB2024\",\n    sourceType: \"campaign\",\n    status: \"closed\",\n    size: 200000,\n    interest: [30, 35, 42, 48, 55, 62, 68, 70, 75, 78],\n    probability: \"high\",\n    lastAction: \"Sep 13, 2024\"\n  },\n  {\n    id: \"3\",\n    name: \"Michael Carter\",\n    email: \"a.shepard@gmail.com\", \n    source: \"SUMMER2\",\n    sourceType: \"campaign\",\n    status: \"pre-sale\",\n    size: 45000,\n    interest: [70, 68, 65, 60, 58, 55, 52, 48, 45, 42],\n    probability: \"low\",\n    lastAction: \"Sep 12, 2024\"\n  },\n  {\n    id: \"4\",\n    name: \"David Anderson\", \n    email: \"a.shepard@gmail.com\",\n    source: \"DTJ25\",\n    sourceType: \"campaign\",\n    status: \"pre-sale\",\n    size: 80000,\n    interest: [25, 28, 32, 38, 45, 52, 58, 62, 68, 70],\n    probability: \"high\",\n    lastAction: \"Sep 12, 2024\"\n  },\n  {\n    id: \"5\",\n    name: \"Lily Hernandez\",\n    email: \"a.shepard@gmail.com\",\n    source: \"ORGANIC\", \n    sourceType: \"organic\",\n    status: \"lost\",\n    size: 110000,\n    interest: [60, 58, 55, 50, 45, 42, 38, 35, 30, 28],\n    probability: \"low\",\n    lastAction: \"Sep 12, 2024\"\n  },\n  {\n    id: \"6\",\n    name: \"Christopher Wilson\",\n    email: \"a.shepard@gmail.com\",\n    source: \"SB2024\",\n    sourceType: \"campaign\", \n    status: \"closed\",\n    size: 2120000,\n    interest: [40, 42, 45, 48, 50, 52, 55, 58, 60, 62],\n    probability: \"mid\",\n    lastAction: \"Sep 12, 2024\"\n  },\n  {\n    id: \"7\",\n    name: \"Isabella Lopez\",\n    email: \"a.shepard@gmail.com\",\n    source: \"ORGANIC\",\n    sourceType: \"organic\",\n    status: \"closing\", \n    size: 20000,\n    interest: [35, 38, 42, 46, 50, 55, 60, 65, 68, 72],\n    probability: \"high\",\n    lastAction: \"Sep 12, 2024\"\n  },\n  {\n    id: \"8\",\n    name: \"Sophia Morgan\",\n    email: \"a.shepard@gmail.com\",\n    source: \"AFF20\",\n    sourceType: \"campaign\",\n    status: \"new\",\n    size: 95000,\n    interest: [55, 52, 48, 45, 40, 38, 35, 32, 30, 28],\n    probability: \"low\",\n    lastAction: \"Sep 11, 2024\"\n  },\n  {\n    id: \"9\", \n    name: \"John Davis\",\n    email: \"a.shepard@gmail.com\",\n    source: \"ORGANIC\",\n    sourceType: \"organic\",\n    status: \"pre-sale\",\n    size: 200000,\n    interest: [30, 35, 40, 45, 50, 55, 60, 58, 62, 65],\n    probability: \"mid\", \n    lastAction: \"Sep 11, 2024\"\n  }\n];\n\nexport function LeadsTable({\n  title = \"Leads\",\n  leads: initialLeads = defaultLeads,\n  onLeadAction,\n  className = \"\"\n}: LeadsTableProps = {}) {\n  const [leads, setLeads] = useState<Lead[]>(initialLeads);\n  const [selectedLeads, setSelectedLeads] = useState<Set<string>>(new Set());\n  const [hoveredAction, setHoveredAction] = useState<string | null>(null);\n  const [sortOrder, setSortOrder] = useState<\"asc\" | \"desc\">(\"desc\");\n  const { resolvedTheme } = useTheme();\n  const isDark = resolvedTheme !== \"light\";\n  const palette = getBjorkTablePalette(isDark);\n\n  const handleLeadSelection = (leadId: string, selected: boolean) => {\n    const newSelected = new Set(selectedLeads);\n    if (selected) {\n      newSelected.add(leadId);\n    } else {\n      newSelected.delete(leadId);\n    }\n    setSelectedLeads(newSelected);\n  };\n\n  const handleSelectAll = (selected: boolean) => {\n    if (selected) {\n      setSelectedLeads(new Set(leads.map(lead => lead.id)));\n    } else {\n      setSelectedLeads(new Set());\n    }\n  };\n\n  const isSelected = (leadId: string) => selectedLeads.has(leadId);\n  const isAllSelected = selectedLeads.size === leads.length && leads.length > 0;\n  const isIndeterminate = selectedLeads.size > 0 && selectedLeads.size < leads.length;\n\n  const handleLeadAction = (leadId: string, action: string) => {\n    if (onLeadAction) {\n      onLeadAction(leadId, action);\n    }\n  };\n\n  const handleSort = () => {\n    const newOrder = sortOrder === \"asc\" ? \"desc\" : \"asc\";\n    setSortOrder(newOrder);\n    \n    const sortedLeads = [...leads].sort((a, b) => {\n      const aDate = new Date(a.lastAction === \"Engage\" ? \"2024-09-15\" : a.lastAction);\n      const bDate = new Date(b.lastAction === \"Engage\" ? \"2024-09-15\" : b.lastAction);\n      return newOrder === \"asc\" ? aDate.getTime() - bDate.getTime() : bDate.getTime() - aDate.getTime();\n    });\n    \n    setLeads(sortedLeads);\n  };\n\n  const formatCurrency = (amount: number) => {\n    if (amount >= 1000000) {\n      return `$${(amount / 1000000).toFixed(1)}M`;\n    } else if (amount >= 1000) {\n      return `$${(amount / 1000).toFixed(0)}K`;\n    }\n    return `$${amount.toLocaleString()}`;\n  };\n\n  const getSourcePill = (source: string, sourceType: \"organic\" | \"campaign\") => {\n    const isOrganic = sourceType === \"organic\";\n    \n    const { bgColor, borderColor, textColor } = getBjorkSignalPalette(\n      isOrganic ? \"green\" : \"orange\",\n      isDark\n    );\n\n    return (\n      <div className={`rounded-lg border px-2 py-1 text-xs font-medium ${bgColor} ${borderColor} ${textColor}`}>\n        {source}\n        {!isOrganic && (\n          <span className=\"ml-1 text-xs opacity-60\">↗</span>\n        )}\n      </div>\n    );\n  };\n\n  const getStatusPill = (status: Lead[\"status\"]) => {\n    const statusConfig = {\n      \"pre-sale\": {\n        tone: \"orange\" as const,\n        label: \"PRE-SALE\"\n      },\n      \"closed\": {\n        tone: \"green\" as const,\n        label: \"CLOSED\"\n      },\n      \"lost\": {\n        tone: \"red\" as const,\n        label: \"LOST\"\n      },\n      \"closing\": {\n        tone: \"neutral\" as const,\n        label: \"CLOSING\"\n      },\n      \"new\": {\n        tone: \"neutral\" as const,\n        label: \"NEW\"\n      }\n    };\n\n    const config = statusConfig[status];\n    const { bgColor, borderColor, textColor } = getBjorkSignalPalette(config.tone, isDark);\n    return (\n      <div className={`rounded-lg border px-2 py-1 text-xs font-medium ${bgColor} ${borderColor} ${textColor}`}>\n        {config.label}\n      </div>\n    );\n  };\n\n  const renderSparkline = (data: number[]) => {\n    const min = Math.min(...data);\n    const max = Math.max(...data);\n    const range = max - min || 1;\n    const isUpTrend = data[data.length - 1] > data[0];\n    \n    const points = data.map((value, index) => {\n      const x = (index / (data.length - 1)) * 60;\n      const y = 20 - ((value - min) / range) * 15;\n      return `${x},${y}`;\n    }).join(' ');\n\n    // Better colors for dark mode\n    const upColor = getBjorkSignalPalette(\"green\", isDark).color;\n    const downColor = getBjorkSignalPalette(\"red\", isDark).color;\n\n    return (\n      <div className=\"w-16 h-6\">\n        <svg width=\"60\" height=\"20\" viewBox=\"0 0 60 20\" className=\"overflow-visible\">\n          <polyline\n            points={points}\n            fill=\"none\"\n            stroke={isUpTrend ? upColor : downColor}\n            strokeWidth=\"2\"\n            className=\"drop-shadow-sm\"\n          />\n          <circle\n            cx={data.length === 1 ? 30 : ((data.length - 1) / (data.length - 1)) * 60}\n            cy={20 - ((data[data.length - 1] - min) / range) * 15}\n            r=\"2\"\n            fill={isUpTrend ? upColor : downColor}\n          />\n        </svg>\n      </div>\n    );\n  };\n\n  const getProbabilityIcon = (probability: Lead[\"probability\"]) => {\n    const barCount = probability === \"low\" ? 1 : probability === \"mid\" ? 2 : 3;\n    const probabilityColors = {\n      low: getBjorkSignalPalette(\"orange\", isDark),\n      mid: getBjorkSignalPalette(\"neutral\", isDark),\n      high: getBjorkSignalPalette(\"green\", isDark),\n    };\n    const colors = probabilityColors[probability];\n    \n    return (\n      <div className={`flex items-center gap-2 rounded-lg border px-2 py-1 text-xs font-medium ${colors.bgColor} ${colors.borderColor} ${colors.textColor}`}>\n        <div className=\"flex items-end gap-0.5\">\n          {[1, 2, 3].map((bar) => (\n            <div\n              key={bar}\n              className={`w-1 rounded-full ${\n                bar <= barCount \n                  ? \"bg-current\" \n                  : \"bg-current/30\"\n              }`}\n              style={{ \n                height: bar === 1 ? '4px' : bar === 2 ? '8px' : '12px' \n              }}\n            />\n          ))}\n        </div>\n        <span className=\"uppercase tracking-wide\">\n          {probability}\n        </span>\n      </div>\n    );\n  };\n\n  const containerVariants = {\n    visible: {\n      transition: {\n        staggerChildren: 0.04,\n        delayChildren: 0.1,\n      }\n    }\n  };\n\n  const rowVariants = {\n    hidden: { \n      opacity: 0, \n      y: 20,\n      scale: 0.98,\n      filter: \"blur(4px)\" \n    },\n    visible: {\n      opacity: 1,\n      y: 0,\n      scale: 1,\n      filter: \"blur(0px)\",\n      transition: {\n        type: \"spring\",\n        stiffness: 400,\n        damping: 25,\n        mass: 0.7,\n      },\n    },\n  };\n\n  const gridTemplateColumns = \"280px 120px 130px 110px 130px 140px minmax(180px,1fr)\";\n\n  return (\n    <div className={`relative mx-auto w-full max-w-[1180px] ${className}`}>\n      {/* Table Container */}\n      <div className={`overflow-hidden rounded-[18px] border ${palette.container}`}>\n        <div className=\"overflow-x-auto\">\n          <div className=\"min-w-[1120px] w-full\">\n        {/* Table Headers */}\n        <div\n          className={`grid w-full border-b px-6 py-3 text-xs font-medium uppercase tracking-wide ${palette.header}`}\n          style={{ gridTemplateColumns, columnGap: \"18px\" }}\n        >\n              <div className=\"flex items-center gap-3\">\n                <div className=\"relative\">\n                  <input\n                    type=\"checkbox\"\n                    checked={isAllSelected}\n                    ref={(el) => {\n                      if (el) el.indeterminate = isIndeterminate;\n                    }}\n                    onChange={(e) => handleSelectAll(e.target.checked)}\n                    className=\"h-4 w-4 rounded border-muted-foreground/40 bg-transparent focus:ring-2 focus:ring-[#ec5c13]/20\"\n                    style={{ accentColor: palette.checkboxAccent }}\n                  />\n                </div>\n                <span>{title}</span>\n              </div>\n              <div>Source</div>\n              <div>Status</div>\n              <div>Size</div>\n              <div>Interest</div>\n              <div>Probability</div>\n              <div className=\"flex items-center gap-2 cursor-pointer\" onClick={handleSort}>\n                Last Action\n                <ChevronDown className={`w-4 h-4 transition-transform ${sortOrder === \"asc\" ? \"rotate-180\" : \"\"}`} />\n              </div>\n            </div>\n\n        {/* Table Rows */}\n        <motion.div\n          variants={containerVariants}\n          initial=\"hidden\"\n          animate=\"visible\"\n        >\n          {leads.map((lead, index) => (\n            <motion.div key={lead.id} variants={rowVariants}>\n              <div\n                className={`group relative grid w-full cursor-pointer px-6 py-2 transition-colors ${\n                  isSelected(lead.id) ? palette.selectedRow : palette.row\n                } ${index < leads.length - 1 ? \"border-b\" : \"\"}`}\n                style={{ gridTemplateColumns, columnGap: \"18px\" }}\n                onMouseEnter={() => {\n                  setHoveredAction(lead.id);\n                }}\n                onMouseLeave={() => {\n                  setHoveredAction(null);\n                }}\n              >\n                  {/* Lead Info */}\n                  <div className=\"flex items-center gap-3\">\n                    <input\n                      type=\"checkbox\"\n                      checked={isSelected(lead.id)}\n                      onChange={(e) => handleLeadSelection(lead.id, e.target.checked)}\n                      className=\"h-4 w-4 rounded border-muted-foreground/40 bg-transparent focus:ring-2 focus:ring-[#ec5c13]/20\"\n                      style={{ accentColor: palette.checkboxAccent }}\n                    />\n                    <div className=\"flex items-center gap-3 min-w-0\">\n                      <div className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border ${palette.divider} ${palette.mutedSurface}`}>\n                        <span className={`text-sm font-medium ${palette.secondaryText}`}>\n                          {lead.name.charAt(0)}\n                        </span>\n                      </div>\n                      <div className=\"min-w-0\">\n                        <div className={`truncate font-medium ${palette.primaryText}`}>{lead.name}</div>\n                        <div className={`truncate text-xs ${palette.secondaryText}`}>{lead.email}</div>\n                      </div>\n                    </div>\n                  </div>\n\n                  {/* Source */}\n                  <div className=\"flex items-center\">\n                    {getSourcePill(lead.source, lead.sourceType)}\n                  </div>\n\n                  {/* Status */}\n                  <div className=\"flex items-center\">\n                    {getStatusPill(lead.status)}\n                  </div>\n\n                  {/* Size */}\n                  <div className=\"flex items-center\">\n                    <span className={`font-semibold ${palette.primaryText}`}>\n                      {formatCurrency(lead.size)}\n                    </span>\n                  </div>\n\n                  {/* Interest */}\n                  <div className=\"flex items-center\">\n                    {renderSparkline(lead.interest)}\n                  </div>\n\n                  {/* Probability */}\n                  <div className=\"flex items-center\">\n                    {getProbabilityIcon(lead.probability)}\n                  </div>\n\n                  {/* Last Action */}\n                  <div className=\"flex items-center\">\n                    <AnimatePresence mode=\"wait\">\n                      {hoveredAction === lead.id ? (\n                        <motion.button\n                          initial={{ opacity: 0, x: -10, filter: \"blur(4px)\" }}\n                          animate={{ opacity: 1, x: 0, filter: \"blur(0px)\" }}\n                          exit={{ opacity: 0, x: -10, filter: \"blur(4px)\" }}\n                          transition={{ \n                            type: \"spring\", \n                            stiffness: 500, \n                            damping: 25,\n                            duration: 0.1\n                          }}\n                          onClick={() => handleLeadAction(lead.id, \"engage\")}\n                            className={`flex cursor-pointer items-center gap-2 rounded-lg border px-2 py-1 text-xs font-medium transition-all duration-200 ${palette.accentBg} ${palette.accentBorder} ${palette.accent}`}\n                        >\n                          Engage\n                          <div className=\"w-px h-3 bg-primary/30 mx-1\" />\n                          <MoreHorizontal className=\"w-3 h-3\" />\n                        </motion.button>\n                      ) : (\n                        <motion.span\n                          initial={{ opacity: 0, x: 10 }}\n                          animate={{ opacity: 1, x: 0 }}\n                          exit={{ opacity: 0, x: 10 }}\n                          transition={{ duration: 0.05 }}\n                          className={`text-xs ${palette.secondaryText}`}\n                        >\n                          {lead.lastAction}\n                        </motion.span>\n                      )}\n                    </AnimatePresence>\n                  </div>\n                </div>\n              </motion.div>\n            ))}\n        </motion.div>\n          </div>\n        </div>\n      </div>\n\n      {/* Bottom Action Bar */}\n      <AnimatePresence>\n        {selectedLeads.size > 0 && (\n          <motion.div\n            initial={{ y: 100, opacity: 0, filter: \"blur(8px)\" }}\n            animate={{ y: 0, opacity: 1, filter: \"blur(0px)\" }}\n            exit={{ y: 100, opacity: 0, filter: \"blur(8px)\" }}\n            transition={{ \n              type: \"spring\", \n              stiffness: 400, \n              damping: 30,\n              mass: 0.8 \n            }}\n            className=\"absolute bottom-6 left-1/2 z-50 -translate-x-1/2\"\n          >\n            <div className={`rounded-xl border px-4 py-2 backdrop-blur-lg ${palette.menu}`}>\n              <div className=\"flex items-center gap-4\">\n                <span className={`text-xs font-medium ${palette.primaryText}`}>\n                  {selectedLeads.size} selected leads\n                </span>\n                \n                <div className=\"flex items-center gap-2\">\n                  <button\n                    onClick={() => console.log(\"Engage leads\")}\n                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${palette.accentBg} ${palette.accentBorder} ${palette.accent}`}\n                  >\n                    Engage\n                  </button>\n                  \n                  <button\n                    onClick={() => console.log(\"Create group\")}\n                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${palette.control}`}\n                  >\n                    Create group\n                  </button>\n                  \n                  <button\n                    onClick={() => console.log(\"Download CSV\")}\n                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${palette.control}`}\n                  >\n                    Download as .CSV\n                  </button>\n                  \n                  <button\n                    onClick={() => console.log(\"Delete leads\")}\n                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${getBjorkSignalPalette(\"red\", isDark).bgColor} ${getBjorkSignalPalette(\"red\", isDark).borderColor} ${getBjorkSignalPalette(\"red\", isDark).textColor}`}\n                  >\n                    Delete leads\n                  </button>\n                </div>\n              </div>\n            </div>\n          </motion.div>\n        )}\n      </AnimatePresence>\n    </div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/tables/leads-table.tsx"
+    },
+    {
+      "path": "components/isaiahbjork/tables/table-theme.ts",
+      "content": "export function getBjorkTablePalette(isDark: boolean) {\n  return {\n    container: isDark\n      ? \"border-[#232323] bg-[#111]\"\n      : \"border-[#ded7ca] bg-[#eee9df]\",\n    header: isDark\n      ? \"border-[#232323] bg-[#181818] text-[#ededed]/42\"\n      : \"border-[#ded7ca] bg-[#e5ded1] text-[#171717]/46\",\n    row: isDark\n      ? \"border-[#232323] hover:bg-[#181818]/70\"\n      : \"border-[#ded7ca] hover:bg-[#e7e1d5]/70\",\n    selectedRow: isDark\n      ? \"border-[#2a2a2a] bg-[#181818]\"\n      : \"border-[#d6cdbc] bg-[#e7e1d5]\",\n    control: isDark\n      ? \"border-[#232323] bg-[#181818] text-[#ededed]/70 hover:bg-[#202020]\"\n      : \"border-[#d8d3c7] bg-[#eee9df] text-[#171717]/68 hover:bg-[#e4ded3]\",\n    menu: isDark\n      ? \"border-[#232323] bg-[#181818] text-[#ededed]/76 shadow-[0_18px_60px_rgba(0,0,0,0.42)]\"\n      : \"border-[#d8d3c7] bg-[#eee9df] text-[#171717]/76 shadow-[0_18px_60px_rgba(62,52,38,0.14)]\",\n    menuItem: isDark ? \"hover:bg-[#232323]\" : \"hover:bg-[#e4ded3]\",\n    menuActive: isDark ? \"bg-[#232323]\" : \"bg-[#e4ded3]\",\n    divider: isDark ? \"border-[#232323]\" : \"border-[#d8d3c7]\",\n    primaryText: isDark ? \"text-[#ededed]/90\" : \"text-[#171717]/86\",\n    secondaryText: isDark ? \"text-[#ededed]/38\" : \"text-[#171717]/46\",\n    mutedSurface: isDark ? \"bg-[#181818]\" : \"bg-[#e7e1d5]\",\n    popover: isDark ? \"bg-[#111] text-[#ededed]\" : \"bg-[#eee9df] text-[#171717]\",\n    accent: isDark ? \"text-[#d86a2c]\" : \"text-[#bd4514]\",\n    accentBg: isDark ? \"bg-[#ec5c13]/12\" : \"bg-[#ec5c13]/14\",\n    accentBorder: isDark ? \"border-[#ec5c13]/24\" : \"border-[#bd4514]/22\",\n    checkboxAccent: isDark ? \"#d86a2c\" : \"#bd4514\",\n  };\n}\n\nexport function getBjorkSignalPalette(\n  tone: \"green\" | \"red\" | \"orange\" | \"neutral\",\n  isDark: boolean\n) {\n  const palettes = {\n    green: {\n      bgColor: isDark ? \"bg-[#3e6f52]/18\" : \"bg-[#dce8dc]\",\n      borderColor: isDark ? \"border-[#5f9f78]/28\" : \"border-[#bad0bd]\",\n      textColor: isDark ? \"text-[#77b58b]\" : \"text-[#47785c]\",\n      dotColor: isDark ? \"bg-[#77b58b]\" : \"bg-[#47785c]\",\n      color: isDark ? \"#77b58b\" : \"#47785c\",\n    },\n    red: {\n      bgColor: isDark ? \"bg-[#87463f]/18\" : \"bg-[#eadad5]\",\n      borderColor: isDark ? \"border-[#c46a61]/28\" : \"border-[#d7bcb4]\",\n      textColor: isDark ? \"text-[#cf7c72]\" : \"text-[#9d5149]\",\n      dotColor: isDark ? \"bg-[#cf7c72]\" : \"bg-[#9d5149]\",\n      color: isDark ? \"#cf7c72\" : \"#9d5149\",\n    },\n    orange: {\n      bgColor: isDark ? \"bg-[#ec5c13]/14\" : \"bg-[#ead9cb]\",\n      borderColor: isDark ? \"border-[#ec5c13]/28\" : \"border-[#d5b59f]\",\n      textColor: isDark ? \"text-[#d86a2c]\" : \"text-[#9f4317]\",\n      dotColor: isDark ? \"bg-[#d86a2c]\" : \"bg-[#9f4317]\",\n      color: isDark ? \"#d86a2c\" : \"#9f4317\",\n    },\n    neutral: {\n      bgColor: isDark ? \"bg-[#ededed]/8\" : \"bg-[#ded7ca]\",\n      borderColor: isDark ? \"border-[#ededed]/14\" : \"border-[#cfc6b7]\",\n      textColor: isDark ? \"text-[#ededed]/58\" : \"text-[#171717]/58\",\n      dotColor: isDark ? \"bg-[#ededed]/45\" : \"bg-[#171717]/42\",\n      color: isDark ? \"#a3a3a3\" : \"#706b62\",\n    },\n  } as const;\n\n  return palettes[tone];\n}\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/tables/table-theme.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Tables",
+    "registryUrl": "https://ui.isaiahbjork.com/leads-table.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/leads-table.json"
+  },
+  "type": "registry:component"
+}

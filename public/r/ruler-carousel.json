@@ -1,0 +1,184 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "ruler-carousel",
+  "title": "Ruler carousel",
+  "description": "Ruler carousel is a production-ready galleries component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "lucide-react",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/isaiahbjork/galleries/ruler-carousel.tsx",
+      "content": "\"use client\";\n\nimport { useState, useRef, useEffect } from \"react\";\nimport { motion } from \"framer-motion\";\nimport { Rewind, FastForward } from \"lucide-react\";\nimport { useTheme } from \"next-themes\";\nimport { cn } from \"@/lib/utils\";\n\nexport interface CarouselItem {\n  id: number;\n  title: string;\n}\n\ntype InfiniteCarouselItem = Omit<CarouselItem, \"id\"> & {\n  id: string;\n  originalIndex: number;\n};\n\n// Create infinite items by triplicating the array\nconst createInfiniteItems = (originalItems: CarouselItem[]) => {\n  const items: InfiniteCarouselItem[] = [];\n  for (let i = 0; i < 3; i++) {\n    originalItems.forEach((item, index) => {\n      items.push({\n        ...item,\n        id: `${i}-${item.id}`,\n        originalIndex: index,\n      });\n    });\n  }\n  return items;\n};\n\nconst RulerLines = ({\n  top = true,\n  totalLines = 100,\n  isDark,\n}: {\n  top?: boolean;\n  totalLines?: number;\n  isDark: boolean;\n}) => {\n  const lines = [];\n  const lineSpacing = 100 / (totalLines - 1);\n\n  for (let i = 0; i < totalLines; i++) {\n    const isFifth = i % 5 === 0;\n    const isCenter = i === Math.floor(totalLines / 2);\n\n    let height = \"h-3\";\n    let color = isDark ? \"#ededed55\" : \"#17171733\";\n\n    if (isCenter) {\n      height = \"h-8\";\n      color = \"#ec5c13\";\n    } else if (isFifth) {\n      height = \"h-4\";\n      color = isDark ? \"#edededcc\" : \"#171717aa\";\n    }\n\n    const positionClass = top ? \"\" : \"bottom-0\";\n\n    lines.push(\n      <div\n        key={i}\n        className={`absolute w-0.5 ${height} ${positionClass}`}\n        style={{ left: `${i * lineSpacing}%`, backgroundColor: color }}\n      />\n    );\n  }\n\n  return <div className=\"relative w-full h-8 px-4\">{lines}</div>;\n};\n\nexport function RulerCarousel({\n  originalItems,\n}: {\n  originalItems: CarouselItem[];\n}) {\n  const { resolvedTheme } = useTheme();\n  const isDark = resolvedTheme !== \"light\";\n  const infiniteItems = createInfiniteItems(originalItems);\n  const itemsPerSet = originalItems.length;\n\n  // Start with the middle set, item 4 (UNIQLO)\n  const [activeIndex, setActiveIndex] = useState(itemsPerSet + 4);\n  const [isResetting, setIsResetting] = useState(false);\n  const previousIndexRef = useRef(itemsPerSet + 4);\n\n  const handleItemClick = (newIndex: number) => {\n    if (isResetting) return;\n\n    // Find the original item index (0-8)\n    const targetOriginalIndex = newIndex % itemsPerSet;\n\n    // Find all instances of this item across the 3 copies\n    const possibleIndices = [\n      targetOriginalIndex, // First copy\n      targetOriginalIndex + itemsPerSet, // Second copy\n      targetOriginalIndex + itemsPerSet * 2, // Third copy\n    ];\n\n    // Find the closest index to current position\n    let closestIndex = possibleIndices[0];\n    let smallestDistance = Math.abs(possibleIndices[0] - activeIndex);\n\n    for (const index of possibleIndices) {\n      const distance = Math.abs(index - activeIndex);\n      if (distance < smallestDistance) {\n        smallestDistance = distance;\n        closestIndex = index;\n      }\n    }\n\n    previousIndexRef.current = activeIndex;\n    setActiveIndex(closestIndex);\n  };\n\n  const handlePrevious = () => {\n    if (isResetting) return;\n    setActiveIndex((prev) => prev - 1);\n  };\n\n  const handleNext = () => {\n    if (isResetting) return;\n    setActiveIndex((prev) => prev + 1);\n  };\n\n  // Handle infinite scrolling\n  useEffect(() => {\n    if (isResetting) return;\n\n    // If we're in the first set, jump to the equivalent position in the middle set\n    if (activeIndex < itemsPerSet) {\n      setIsResetting(true);\n      setTimeout(() => {\n        setActiveIndex(activeIndex + itemsPerSet);\n        setIsResetting(false);\n      }, 0);\n    }\n    // If we're in the last set, jump to the equivalent position in the middle set\n    else if (activeIndex >= itemsPerSet * 2) {\n      setIsResetting(true);\n      setTimeout(() => {\n        setActiveIndex(activeIndex - itemsPerSet);\n        setIsResetting(false);\n      }, 0);\n    }\n  }, [activeIndex, itemsPerSet, isResetting]);\n\n  // Add keyboard navigation\n  useEffect(() => {\n    const handleKeyDown = (event: KeyboardEvent) => {\n      if (isResetting) return;\n\n      if (event.key === \"ArrowLeft\") {\n        event.preventDefault();\n        setActiveIndex((prev) => prev - 1);\n      } else if (event.key === \"ArrowRight\") {\n        event.preventDefault();\n        setActiveIndex((prev) => prev + 1);\n      }\n    };\n\n    window.addEventListener(\"keydown\", handleKeyDown);\n    return () => window.removeEventListener(\"keydown\", handleKeyDown);\n  }, [isResetting]);\n\n  // Calculate target position - center the active item\n  const centerPosition = 5; // We want item 5 (index 4) to be centered initially\n  const targetX = -500 + (centerPosition - (activeIndex % itemsPerSet)) * 500;\n\n  // Get current page info\n  const currentPage = (activeIndex % itemsPerSet) + 1;\n  const totalPages = itemsPerSet;\n\n  return (\n    <div className=\"flex h-full min-h-[440px] w-full flex-col items-center justify-center bg-transparent\">\n      <div className=\"relative flex h-[200px] w-full flex-col justify-center\">\n        <div className=\"flex items-center justify-center\">\n          <RulerLines top isDark={isDark} />\n        </div>\n        <div className=\"relative flex h-full w-full items-center justify-center overflow-hidden\">\n          <motion.div\n            className=\"flex items-center gap-[100px]\"\n            animate={{\n              x: isResetting ? targetX : targetX,\n            }}\n            transition={\n              isResetting\n                ? { duration: 0 }\n                : {\n                    type: \"spring\",\n                    stiffness: 260,\n                    damping: 20,\n                    mass: 1,\n                  }\n            }\n          >\n            {infiniteItems.map((item, index) => {\n              const isActive = index === activeIndex;\n\n              return (\n                <motion.button\n                  key={item.id}\n                  onClick={() => handleItemClick(index)}\n                  className={cn(\n                    \"flex cursor-pointer items-center justify-center whitespace-nowrap text-4xl font-bold tracking-[-0.055em] md:text-6xl\",\n                    isActive\n                      ? \"text-[#ec5c13]\"\n                      : isDark\n                        ? \"text-[#ededed]/28 hover:text-[#ededed]/54\"\n                        : \"text-[#171717]/28 hover:text-[#171717]/58\"\n                  )}\n                  animate={{\n                    scale: isActive ? 1 : 0.75,\n                    opacity: isActive ? 1 : 0.4,\n                  }}\n                  transition={\n                    isResetting\n                      ? { duration: 0 }\n                      : {\n                          type: \"spring\",\n                          stiffness: 400,\n                          damping: 25,\n                        }\n                  }\n                  style={{\n                    width: \"400px\",\n                  }}\n                >\n                  {item.title}\n                </motion.button>\n              );\n            })}\n          </motion.div>\n        </div>\n\n        <div className=\"flex items-center justify-center\">\n          <RulerLines top={false} isDark={isDark} />\n        </div>\n      </div>\n\n      <div className={cn(\"mt-10 flex items-center justify-center gap-4\", isDark ? \"text-[#ededed]/52\" : \"text-[#171717]/48\")}>\n        <button\n          onClick={handlePrevious}\n          disabled={isResetting}\n          className=\"flex cursor-pointer items-center justify-center transition hover:text-[#ec5c13]\"\n          aria-label=\"Previous item\"\n        >\n          <Rewind className=\"h-5 w-5\" />\n        </button>\n\n        <div className=\"flex items-center gap-2\">\n          <span className=\"text-sm font-medium\">\n            {currentPage}\n          </span>\n          <span className=\"text-sm opacity-55\">\n            /\n          </span>\n          <span className=\"text-sm font-medium\">\n            {totalPages}\n          </span>\n        </div>\n\n        <button\n          onClick={handleNext}\n          disabled={isResetting}\n          className=\"flex cursor-pointer items-center justify-center transition hover:text-[#ec5c13]\"\n          aria-label=\"Next item\"\n        >\n          <FastForward className=\"h-5 w-5\" />\n        </button>\n      </div>\n    </div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/galleries/ruler-carousel.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Galleries",
+    "registryUrl": "https://ui.isaiahbjork.com/ruler-carousel.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/ruler-carousel.json"
+  },
+  "type": "registry:component"
+}

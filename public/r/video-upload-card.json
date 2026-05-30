@@ -1,0 +1,191 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "video-upload-card",
+  "title": "Video upload card",
+  "description": "Video upload card is a production-ready cards component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "class-variance-authority",
+    "clsx",
+    "framer-motion",
+    "lucide-react",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/isaiahbjork/cards/video-upload-card.tsx",
+      "content": "\"use client\";\n\nimport React, { useState, useEffect, useCallback, useRef } from \"react\";\nimport { motion, AnimatePresence } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { Upload, X, Play, Pause } from \"lucide-react\";\nimport { useTheme } from \"next-themes\";\nimport { BjorkCard } from \"@/components/isaiahbjork/primitives/card\";\n\ninterface VideoUploadCardProps {\n  className?: string;\n  triggerAnimation?: boolean;\n  onAnimationComplete?: () => void;\n  title?: string;\n  description?: string;\n}\n\ninterface VideoComponentProps {\n  isAnimating: boolean;\n  onAnimationComplete?: () => void;\n  filename?: string;\n  onRemove?: () => void;\n  videoUrl?: string;\n  palette: UploadPalette;\n}\n\ninterface UploadCardBaseProps {\n  children?: React.ReactNode;\n  className?: string;\n  isDragOver?: boolean;\n  isUploading?: boolean;\n  palette: UploadPalette;\n}\n\nconst uploadPalettes = {\n  dark: {\n    card: \"border-[#161616] bg-[#121212] text-[#ededed]\",\n    mask: \"bg-[#121212]\",\n    drop: \"bg-[#090909] shadow-[inset_0_12px_24px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.035)]\",\n    dropHover:\n      \"hover:bg-[#0c0c0c] hover:shadow-[inset_0_16px_30px_rgba(0,0,0,0.56),inset_0_1px_0_rgba(255,255,255,0.05),inset_0_0_0_1px_rgba(255,255,255,0.025),0_10px_22px_-18px_rgba(0,0,0,0.9)]\",\n    dropDrag: \"bg-[#140f0b] shadow-[inset_0_12px_24px_rgba(0,0,0,0.42),inset_0_0_0_1px_rgba(236,92,19,0.18)]\",\n    dropUploading: \"bg-[#160f0b] shadow-[inset_0_12px_24px_rgba(0,0,0,0.42),inset_0_0_0_1px_rgba(236,92,19,0.14)]\",\n    dash: \"border-[#2a2a2a]\",\n    dashActive: \"border-[#bd4514]/70\",\n    icon: \"text-[#464646]\",\n    iconActive: \"text-[#d86a2c]\",\n    videoShell:\n      \"border border-[#242424] bg-[#121212] shadow-[inset_0_7px_14px_rgba(255,255,255,0.035),0_18px_34px_-16px_rgba(0,0,0,0.9)]\",\n    remove: \"bg-[#2a1711] text-[#ffb087] hover:bg-[#3a1e14]\",\n    preview:\n      \"bg-[linear-gradient(135deg,rgba(189,69,20,0.2),rgba(237,237,237,0.035))] hover:bg-[linear-gradient(135deg,rgba(189,69,20,0.27),rgba(237,237,237,0.055))]\",\n    playBg: \"bg-[#ec5c13]/16 hover:bg-[#ec5c13]/24\",\n    playText: \"text-[#d86a2c]\",\n    overlay: \"bg-[#181818]\",\n    spinner: \"border-[#d86a2c]\",\n    title: \"text-[#ededed]\",\n    description: \"text-[#ededed]/46\",\n    filename: \"text-[#ededed]/58\",\n    videoBorder: \"border-[#2a2a2a]\",\n  },\n  light: {\n    card:\n      \"border-[#d8d3c7] bg-[#f4f1e9] text-[#171717] shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_14px_24px_-10px_rgba(55,47,36,0.2)]\",\n    mask: \"bg-[#f4f1e9]\",\n    drop: \"bg-[#e8e3d9] shadow-[inset_0_12px_24px_rgba(68,54,34,0.08),inset_0_1px_0_rgba(255,255,255,0.7)]\",\n    dropHover:\n      \"hover:bg-[#e2ddd2] hover:shadow-[inset_0_16px_30px_rgba(68,54,34,0.12),inset_0_1px_0_rgba(255,255,255,0.82),inset_0_0_0_1px_rgba(80,62,38,0.055),0_10px_22px_-18px_rgba(55,47,36,0.34)]\",\n    dropDrag: \"bg-[#e5d5c8] shadow-[inset_0_12px_24px_rgba(68,54,34,0.08),inset_0_0_0_1px_rgba(236,92,19,0.16)]\",\n    dropUploading: \"bg-[#e9d8cc] shadow-[inset_0_12px_24px_rgba(68,54,34,0.08),inset_0_0_0_1px_rgba(236,92,19,0.14)]\",\n    dash: \"border-[#d2c8b9]\",\n    dashActive: \"border-[#bd4514]/65\",\n    icon: \"text-[#b9b0a4]\",\n    iconActive: \"text-[#bd4514]\",\n    videoShell:\n      \"border border-[#d6cdbc] bg-[#eee9df] shadow-[inset_0_7px_14px_rgba(255,255,255,0.55),0_14px_34px_rgba(40,31,21,0.12)]\",\n    remove: \"bg-[#2a1711] text-[#ffb087] hover:bg-[#3a1e14]\",\n    preview:\n      \"bg-[linear-gradient(135deg,rgba(236,92,19,0.2),rgba(23,23,23,0.035))] hover:bg-[linear-gradient(135deg,rgba(236,92,19,0.27),rgba(23,23,23,0.055))]\",\n    playBg: \"bg-[#ec5c13]/16 hover:bg-[#ec5c13]/24\",\n    playText: \"text-[#bd4514]\",\n    overlay: \"bg-[#e7e1d5]\",\n    spinner: \"border-[#bd4514]\",\n    title: \"text-[#171717]\",\n    description: \"text-[#171717]/54\",\n    filename: \"text-[#171717]/58\",\n    videoBorder: \"border-[#d6cdbc]\",\n  },\n};\n\ntype UploadPalette = (typeof uploadPalettes)[\"dark\"];\n\n// Utility function to truncate filename\nconst truncateFilename = (filename: string, maxLength: number = 30) => {\n  if (filename.length <= maxLength) return filename;\n  const extension = filename.split(\".\").pop();\n  const nameWithoutExt = filename.replace(`.${extension}`, \"\");\n  const truncatedName = nameWithoutExt.substring(\n    0,\n    maxLength - 3 - extension!.length\n  );\n  return `${truncatedName}...${extension}`;\n};\n\nconst VideoComponent = ({\n  isAnimating,\n  onAnimationComplete,\n  filename = \"video.mp4\",\n  onRemove,\n  videoUrl,\n  palette,\n}: VideoComponentProps) => {\n  const [isRemoving, setIsRemoving] = useState(false);\n  const [shouldShow, setShouldShow] = useState(false);\n  const [isPlaying, setIsPlaying] = useState(false);\n  const [videoLoaded, setVideoLoaded] = useState(false);\n  const videoRef = useRef<HTMLVideoElement>(null);\n\n  // Update shouldShow when isAnimating changes\n  useEffect(() => {\n    if (isAnimating) {\n      setShouldShow(true);\n    }\n  }, [isAnimating]);\n\n  // Reset video loaded state when video URL changes\n  useEffect(() => {\n    if (videoUrl) {\n      setVideoLoaded(false);\n    }\n  }, [videoUrl]);\n\n  // Don't render if we shouldn't show and we're not removing\n  if (!shouldShow && !isRemoving) return null;\n\n  const displayName = truncateFilename(filename);\n\n  const handleRemove = () => {\n    setIsRemoving(true);\n    setIsPlaying(false);\n  };\n\n  const handleRemoveComplete = () => {\n    setShouldShow(false);\n    setIsRemoving(false);\n    onRemove?.();\n  };\n\n  const handlePlayClick = () => {\n    if (videoRef.current) {\n      if (isPlaying) {\n        videoRef.current.pause();\n        setIsPlaying(false);\n      } else {\n        videoRef.current.play();\n        setIsPlaying(true);\n      }\n    }\n  };\n\n  // Handle video loading\n  const handleVideoLoadedData = () => {\n    setVideoLoaded(true);\n    if (videoRef.current) {\n      videoRef.current.addEventListener(\"ended\", handleVideoEnd);\n      // Pause immediately to show first frame\n      videoRef.current.pause();\n      // Set to a small time offset to show first frame\n      videoRef.current.currentTime = 0.01;\n    }\n  };\n\n  const handleVideoEnd = () => {\n    setIsPlaying(false);\n  };\n\n  return (\n    <AnimatePresence>\n      {shouldShow && (\n        <motion.div\n          className=\"absolute z-10\" // Between border (z-20) and upload area (z-0)\n          initial={{\n            // Start way above the screen so you first see the bottom edge\n            left: \"50%\",\n            top: \"-300px\", // Way above the screen\n            x: \"-50%\",\n            y: 0,\n            opacity: 1, // Fully visible from start\n          }}\n          animate={\n            isRemoving\n              ? {\n                  scale: 0,\n                  opacity: 0,\n                  filter: \"blur(8px)\",\n                  transition: {\n                    duration: 0.4,\n                    ease: [0.23, 1, 0.32, 1],\n                  },\n                }\n              : {\n                  // Vending machine drop - slow start, fast finish\n                  left: \"50%\",\n                  top: \"calc(50% - 0px)\", // Center of upload area\n                  x: \"-50%\",\n                  y: \"-50%\",\n                  opacity: 1,\n                  transition: {\n                    duration: 1.2, // Slightly longer for dramatic effect\n                    ease: [0.55, 0.055, 0.675, 0.19], // Vending machine gravity curve - slow start, fast finish\n                  },\n                }\n          }\n          exit={{\n            scale: 0,\n            opacity: 0,\n            filter: \"blur(8px)\",\n            transition: {\n              duration: 0.4,\n              ease: [0.23, 1, 0.32, 1],\n            },\n          }}\n          style={{\n            transformOrigin: \"center\",\n          }}\n          onAnimationComplete={\n            isRemoving ? handleRemoveComplete : onAnimationComplete\n          }\n        >\n          <motion.div\n            initial={{ scale: 0.9 }}\n            animate={\n              isRemoving\n                ? {\n                    scale: 0,\n                    transition: { duration: 0.4 },\n                  }\n                : {\n                    scale: 1.0,\n                    transition: {\n                      type: \"spring\",\n                      stiffness: 250,\n                      damping: 15, // Less damping for more bounce on landing\n                      mass: 1.2,\n                      delay: 0.7, // Delay until the drop is almost complete\n                    },\n                  }\n            }\n            className={cn(\n              \"relative group min-w-[400px] rounded-lg backdrop-blur-sm\",\n              palette.videoShell\n            )}\n          >\n            {/* X button */}\n            <button\n              onClick={handleRemove}\n              className={cn(\n                \"absolute -right-2 -top-2 z-30 flex h-5 w-5 items-center justify-center rounded-full opacity-0 transition duration-200 hover:scale-110 group-hover:opacity-100\",\n                palette.remove\n              )}\n            >\n              <X size={12} />\n            </button>\n\n            {/* Video Preview or Video Player */}\n            <div className=\"relative\">\n              {videoUrl ? (\n                <div className=\"relative\">\n                  <video\n                    ref={videoRef}\n                    src={videoUrl}\n                    className={cn(\n                      \"aspect-video w-full rounded-md border-l border-r border-t object-cover\",\n                      palette.videoBorder\n                    )}\n                    onEnded={handleVideoEnd}\n                    onLoadedData={handleVideoLoadedData}\n                    controls={false}\n                    muted\n                    playsInline\n                  />\n                  {/* Loading overlay - shows until video loads */}\n                  {!videoLoaded && (\n                    <div\n                      className={cn(\n                        \"absolute inset-0 flex items-center justify-center rounded-md\",\n                        palette.overlay\n                      )}\n                    >\n                      <div\n                        className={cn(\n                          \"h-8 w-8 animate-spin rounded-full border-2 border-t-transparent\",\n                          palette.spinner\n                        )}\n                      ></div>\n                    </div>\n                  )}\n                  {/* Play button in bottom left corner */}\n                  <button\n                    onClick={handlePlayClick}\n                    className=\"absolute bottom-0 left-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 group\"\n                  >\n                    {isPlaying ? (\n                      <Pause size={14} className=\"text-white ml-0.5\" />\n                    ) : (\n                      <Play size={14} className=\"text-white ml-0.5\" />\n                    )}\n                  </button>\n                </div>\n              ) : (\n                <div\n                  className={cn(\n                    \"flex aspect-[21/9] w-full cursor-pointer items-center justify-center rounded-md transition-colors duration-200\",\n                    palette.preview\n                  )}\n                >\n                  <div\n                    className={cn(\n                      \"flex h-20 w-20 items-center justify-center rounded-full transition-colors duration-200\",\n                      palette.playBg\n                    )}\n                  >\n                    <Play size={28} className={cn(\"ml-1\", palette.playText)} />\n                  </div>\n                </div>\n              )}\n            </div>\n\n            <div className=\"mt-2 px-2 pb-2\">\n              <span className={cn(\"block text-left text-xs font-medium\", palette.filename)}>\n                {displayName}\n              </span>\n            </div>\n          </motion.div>\n        </motion.div>\n      )}\n    </AnimatePresence>\n  );\n};\n\nconst UploadCardBase = ({\n  children,\n  className,\n  isDragOver = false,\n  isUploading = false,\n  palette,\n}: UploadCardBaseProps) => {\n  const hasChildren = React.Children.count(children) > 0;\n\n  return (\n    <div className=\"relative\">\n      {/* Background upload area - z-0 */}\n      <div\n        className={cn(\n          \"relative z-0 flex min-h-[310px] items-center justify-center rounded-xl transition-[background-color,box-shadow] duration-200\",\n          // Add cursor pointer when clickable and not uploading\n          !isUploading && cn(\"cursor-pointer\", palette.dropHover),\n          // Background color changes based on state\n          isUploading\n            ? palette.dropUploading\n            : isDragOver\n              ? palette.dropDrag\n              : palette.drop,\n          className\n        )}\n      >\n        {/* Upload icon in background - only shows when no children */}\n        {!hasChildren && (\n          <div className=\"absolute inset-0 flex items-center justify-center pointer-events-none\">\n            <Upload\n              size={48}\n              className={cn(\n                \"transition-colors duration-200\",\n                isDragOver || isUploading ? palette.iconActive : palette.icon\n              )}\n            />\n          </div>\n        )}\n\n        {/* Content layer - above the background icon */}\n        <div className=\"relative z-10 w-full\">{children}</div>\n      </div>\n\n      {/* Dashed border overlay - z-20, sits above video component */}\n      <div\n        className={cn(\n          \"absolute inset-0 rounded-xl border-2 border-dashed pointer-events-none z-20\",\n          isUploading || isDragOver ? palette.dashActive : palette.dash\n        )}\n      />\n    </div>\n  );\n};\n\nexport function VideoUploadCard({\n  className,\n  triggerAnimation = false,\n  onAnimationComplete,\n  title = \"Upload Your Video\",\n  description = \"Drop in your videos and start playing instantly.\",\n}: VideoUploadCardProps) {\n  const { resolvedTheme } = useTheme();\n  const [mounted, setMounted] = useState(false);\n  const [isAnimating, setIsAnimating] = useState(false);\n  const [isDragOver, setIsDragOver] = useState(false);\n  const [isUploading, setIsUploading] = useState(false);\n  const [uploadedFile, setUploadedFile] = useState<File | null>(null);\n  const [videoUrl, setVideoUrl] = useState<string | null>(null);\n  const fileInputRef = React.useRef<HTMLInputElement>(null);\n  const palette =\n    mounted && resolvedTheme === \"light\"\n      ? uploadPalettes.light\n      : uploadPalettes.dark;\n\n  useEffect(() => {\n    setMounted(true);\n  }, []);\n\n  useEffect(() => {\n    if (triggerAnimation) {\n      setIsAnimating(true);\n    }\n  }, [triggerAnimation]);\n\n  const handleAnimationComplete = () => {\n    // Don't automatically stop the animation - keep it visible\n    onAnimationComplete?.();\n  };\n\n  const handleDragOver = useCallback((e: React.DragEvent) => {\n    e.preventDefault();\n    e.stopPropagation();\n    setIsDragOver(true);\n  }, []);\n\n  const handleDragLeave = useCallback((e: React.DragEvent) => {\n    e.preventDefault();\n    e.stopPropagation();\n    setIsDragOver(false);\n  }, []);\n\n  const handleDrop = useCallback((e: React.DragEvent) => {\n    e.preventDefault();\n    e.stopPropagation();\n    setIsDragOver(false);\n\n    const files = Array.from(e.dataTransfer.files);\n    const videoFile = files.find((file) => file.type.startsWith(\"video/\"));\n\n    if (videoFile) {\n      setUploadedFile(videoFile);\n      setIsUploading(true);\n\n      // Create object URL for video preview\n      const url = URL.createObjectURL(videoFile);\n      setVideoUrl(url);\n\n      // Simulate upload process\n      setTimeout(() => {\n        setIsUploading(false);\n        setIsAnimating(true); // Trigger animation after upload\n      }, 200); // Much faster upload simulation\n    }\n  }, []);\n\n  const handleFileSelect = useCallback(\n    (e: React.ChangeEvent<HTMLInputElement>) => {\n      const file = e.target.files?.[0];\n      if (file && file.type.startsWith(\"video/\")) {\n        setUploadedFile(file);\n        setIsUploading(true);\n\n        // Create object URL for video preview\n        const url = URL.createObjectURL(file);\n        setVideoUrl(url);\n\n        // Simulate upload process\n        setTimeout(() => {\n          setIsUploading(false);\n          setIsAnimating(true); // Trigger animation after upload\n        }, 200); // Much faster upload simulation\n      }\n    },\n    []\n  );\n\n  const handleRemoveFile = useCallback(() => {\n    setUploadedFile(null);\n    setIsAnimating(false);\n    if (videoUrl) {\n      URL.revokeObjectURL(videoUrl);\n      setVideoUrl(null);\n    }\n    // Reset the file input so it can trigger onChange again for the same file\n    if (fileInputRef.current) {\n      fileInputRef.current.value = \"\";\n    }\n  }, [videoUrl]);\n\n  const handleBaseClick = useCallback(() => {\n    if (!isUploading && !uploadedFile) {\n      fileInputRef.current?.click();\n    }\n  }, [isUploading, uploadedFile]);\n\n  return (\n    <motion.div\n      className={cn(\"relative w-full max-w-lg mx-auto\", className)}\n      initial={{ opacity: 0, y: 20 }}\n      animate={{ opacity: 1, y: 0 }}\n      transition={{ type: \"spring\", stiffness: 300, damping: 30 }}\n    >\n      <BjorkCard\n        variant=\"elevated\"\n        padding=\"none\"\n        className={cn(\n          \"relative text-center\",\n          palette.card\n        )}\n      >\n        {/* Top masking area - z-30, covers video until it reaches upload area */}\n        <div \n          className={cn(\"pointer-events-none absolute left-0 right-0 top-0 z-30\", palette.mask)}\n          style={{ \n            height: '24px', // Covers area above upload zone\n            borderRadius: '12px 12px 0 0' \n          }}\n        />\n\n        <div className=\"flex flex-col justify-center space-y-8 p-6\">\n          <div className=\"relative w-full mx-auto\">\n            <div\n              className=\"relative\"\n              onDragOver={handleDragOver}\n              onDragLeave={handleDragLeave}\n              onDrop={handleDrop}\n              onClick={handleBaseClick}\n            >\n              <UploadCardBase\n                isDragOver={isDragOver}\n                isUploading={isUploading}\n                palette={palette}\n              />\n\n              {/* Video Component - positioned relative to upload area */}\n              <VideoComponent\n                isAnimating={isAnimating}\n                onAnimationComplete={handleAnimationComplete}\n                filename={uploadedFile?.name}\n                onRemove={handleRemoveFile}\n                videoUrl={videoUrl || undefined}\n                palette={palette}\n              />\n\n              {/* Hidden file input for click-to-upload */}\n              <input\n                ref={fileInputRef}\n                type=\"file\"\n                accept=\"video/*\"\n                onChange={handleFileSelect}\n                className=\"sr-only\"\n              />\n            </div>\n          </div>\n\n          <div className=\"flex flex-col items-start\">\n            <h2 className={cn(\"text-left text-lg font-semibold\", palette.title)}>\n              {title}\n            </h2>\n\n            <p className={cn(\"text-left text-sm\", palette.description)}>\n              {description}\n            </p>\n          </div>\n        </div>\n      </BjorkCard>\n    </motion.div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/cards/video-upload-card.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/isaiahbjork/primitives/card.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { motion, useReducedMotion, type HTMLMotionProps } from \"framer-motion\";\nimport { cva, type VariantProps } from \"class-variance-authority\";\nimport { cn } from \"@/lib/utils\";\n\nconst bjorkCardVariants = cva(\n  \"relative flex flex-col overflow-hidden rounded-[20px] border text-[color:var(--bjork-text)] outline-none transition-[background-color,border-color,box-shadow,opacity,transform] duration-300 focus-visible:ring-2 focus-visible:ring-[#ec5c13]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bjork-ring-offset)]\",\n  {\n    variants: {\n      variant: {\n        surface:\n          \"border-[color:var(--bjork-border-muted)] bg-[var(--bjork-surface)] shadow-[var(--bjork-shadow-surface)]\",\n        elevated:\n          \"border-[color:var(--bjork-border-muted)] bg-[var(--bjork-surface)] shadow-[var(--bjork-shadow-surface)]\",\n        quiet:\n          \"border-[color:var(--bjork-border-muted)] bg-[var(--bjork-panel)] shadow-[var(--bjork-shadow-soft)]\",\n        interactive:\n          \"cursor-pointer border-[color:var(--bjork-border-muted)] bg-[var(--bjork-surface)] shadow-[var(--bjork-shadow-surface)] hover:border-[color:var(--bjork-border)] hover:bg-[var(--bjork-surface-hover)]\",\n      },\n      padding: {\n        none: \"p-0\",\n        sm: \"p-3\",\n        md: \"p-4\",\n        lg: \"p-5\",\n      },\n    },\n    defaultVariants: {\n      variant: \"surface\",\n      padding: \"md\",\n    },\n  },\n);\n\nexport interface BjorkCardProps\n  extends Omit<HTMLMotionProps<\"div\">, \"ref\">,\n    VariantProps<typeof bjorkCardVariants> {}\n\nexport function BjorkCard({\n  className,\n  variant,\n  padding,\n  ...props\n}: BjorkCardProps) {\n  const shouldReduceMotion = useReducedMotion();\n  const isInteractive = variant === \"interactive\" || props.role === \"button\";\n\n  return (\n    <motion.div\n      data-slot=\"bjork-card\"\n      className={cn(bjorkCardVariants({ variant, padding, className }))}\n      whileHover={isInteractive && !shouldReduceMotion ? { y: -2, scale: 1.005 } : undefined}\n      whileTap={isInteractive && !shouldReduceMotion ? { scale: 0.995 } : undefined}\n      transition={{ type: \"spring\", stiffness: 260, damping: 28, mass: 0.8 }}\n      {...props}\n    />\n  );\n}\n\nexport function BjorkCardHeader({\n  className,\n  ...props\n}: React.ComponentProps<\"div\">) {\n  return (\n    <div\n      data-slot=\"bjork-card-header\"\n      className={cn(\"flex items-start justify-between gap-4\", className)}\n      {...props}\n    />\n  );\n}\n\nexport function BjorkCardTitle({\n  className,\n  ...props\n}: React.ComponentProps<\"h3\">) {\n  return (\n    <h3\n      data-slot=\"bjork-card-title\"\n      className={cn(\"text-base font-semibold leading-none tracking-[-0.02em] text-[color:var(--bjork-text)]\", className)}\n      {...props}\n    />\n  );\n}\n\nexport function BjorkCardDescription({\n  className,\n  ...props\n}: React.ComponentProps<\"p\">) {\n  return (\n    <p\n      data-slot=\"bjork-card-description\"\n      className={cn(\"text-sm leading-6 text-[color:var(--bjork-text-soft)]\", className)}\n      {...props}\n    />\n  );\n}\n\nexport function BjorkCardContent({\n  className,\n  ...props\n}: React.ComponentProps<\"div\">) {\n  return (\n    <div\n      data-slot=\"bjork-card-content\"\n      className={cn(\"mt-5 text-[color:var(--bjork-text-medium)]\", className)}\n      {...props}\n    />\n  );\n}\n\nexport function BjorkCardFooter({\n  className,\n  ...props\n}: React.ComponentProps<\"div\">) {\n  return (\n    <div\n      data-slot=\"bjork-card-footer\"\n      className={cn(\"mt-5 flex items-center gap-3\", className)}\n      {...props}\n    />\n  );\n}\n\nexport { bjorkCardVariants };\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/primitives/card.tsx"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Cards",
+    "registryUrl": "https://ui.isaiahbjork.com/video-upload-card.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/video-upload-card.json"
+  },
+  "type": "registry:component"
+}

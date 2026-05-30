@@ -1,0 +1,7 @@
+.codex/
+.cursor/
+.env*
+.next/
+NaN.png
+node_modules/
+*.tsbuildinfo

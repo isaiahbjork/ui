@@ -1,0 +1,198 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "primitive-calendar",
+  "title": "Calendar",
+  "description": "Calendar is a production-ready ui component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "@radix-ui/react-slot",
+    "class-variance-authority",
+    "clsx",
+    "framer-motion",
+    "lucide-react",
+    "react-day-picker",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/isaiahbjork/primitives/calendar.tsx",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { Calendar } from \"@/components/ui/calendar\";\nimport { cn } from \"@/lib/utils\";\n\nexport function BjorkCalendar({\n  className,\n  classNames,\n  ...props\n}: React.ComponentProps<typeof Calendar>) {\n  return (\n    <Calendar\n      className={cn(\n        \"rounded-[18px] border border-[color:var(--bjork-border)] bg-[var(--bjork-bg)] p-3 text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)]\",\n        className,\n      )}\n      classNames={{\n        caption_label: \"text-sm font-medium text-[color:var(--bjork-text-strong)]\",\n        head_cell: \"w-8 rounded-md text-[0.72rem] font-normal text-[color:var(--bjork-text-soft)]\",\n        cell: \"relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:rounded-[10px]\",\n        day: \"size-8 rounded-[10px] p-0 text-sm font-normal text-[color:var(--bjork-text-medium)] hover:bg-[var(--bjork-accent-soft)] hover:text-[color:var(--bjork-text)] focus:bg-[var(--bjork-accent-soft)]\",\n        day_selected:\n          \"bg-[var(--bjork-accent)] text-[color:var(--bjork-accent-foreground)] hover:bg-[var(--bjork-accent-hover)] hover:text-[color:var(--bjork-accent-foreground)] focus:bg-[var(--bjork-accent-hover)] focus:text-[color:var(--bjork-accent-foreground)]\",\n        day_today: \"bg-[var(--bjork-surface-active)] text-[color:var(--bjork-text)]\",\n        day_outside: \"text-[color:var(--bjork-text-faint)] opacity-40\",\n        day_disabled: \"text-[color:var(--bjork-text-faint)] opacity-70\",\n        nav_button:\n          \"inline-flex size-8 items-center justify-center rounded-full border-0 bg-transparent p-0 text-[color:var(--bjork-text-muted)] opacity-100 shadow-none hover:bg-transparent hover:text-[color:var(--bjork-text)] focus:bg-transparent\",\n        nav_button_previous: \"absolute left-0\",\n        nav_button_next: \"absolute right-0\",\n        ...classNames,\n      }}\n      {...props}\n    />\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/isaiahbjork/primitives/calendar.tsx"
+    },
+    {
+      "path": "components/ui/calendar.tsx",
+      "content": "\"use client\"\n\nimport * as React from \"react\"\nimport { AnimatePresence, motion, useReducedMotion } from \"framer-motion\"\nimport { ChevronLeft, ChevronRight } from \"lucide-react\"\nimport {\n  CaptionLabel,\n  DayContent,\n  DayPicker,\n  type CaptionLabelProps,\n  type DayContentProps,\n} from \"react-day-picker\"\n\nimport { cn } from \"@/lib/utils\"\nimport { buttonVariants } from \"@/components/ui/button\"\n\nfunction Calendar({\n  className,\n  classNames,\n  components,\n  month,\n  defaultMonth,\n  onMonthChange,\n  showOutsideDays = true,\n  ...props\n}: React.ComponentProps<typeof DayPicker>) {\n  const shouldReduceMotion = useReducedMotion()\n  const [visibleMonth, setVisibleMonth] = React.useState(\n    () => month ?? defaultMonth ?? new Date()\n  )\n\n  React.useEffect(() => {\n    if (month) {\n      setVisibleMonth(month)\n    }\n  }, [month])\n\n  const handleMonthChange = React.useCallback(\n    (nextMonth: Date) => {\n      if (!month) {\n        setVisibleMonth(nextMonth)\n      }\n\n      onMonthChange?.(nextMonth)\n    },\n    [month, onMonthChange]\n  )\n\n  const transition = React.useMemo(\n    () =>\n      shouldReduceMotion\n        ? { duration: 0 }\n        : { type: \"spring\" as const, stiffness: 360, damping: 34, mass: 0.7 },\n    [shouldReduceMotion]\n  )\n  const contentTransition = React.useMemo(\n    () =>\n      shouldReduceMotion\n        ? { duration: 0 }\n        : { type: \"spring\" as const, stiffness: 420, damping: 30, mass: 0.55 },\n    [shouldReduceMotion]\n  )\n\n  const CaptionLabelComponent = components?.CaptionLabel ?? CaptionLabel\n  const DayContentComponent = components?.DayContent ?? DayContent\n\n  const AnimatedCaptionLabel = React.useCallback(\n    (captionProps: CaptionLabelProps) => (\n      <div className=\"relative inline-grid min-w-24 place-items-center overflow-hidden\">\n        <AnimatePresence mode=\"popLayout\" initial={false}>\n          <motion.span\n            key={`${captionProps.displayMonth.getFullYear()}-${captionProps.displayMonth.getMonth()}`}\n            initial={\n              shouldReduceMotion\n                ? false\n                : { opacity: 0, y: 5, filter: \"blur(5px)\" }\n            }\n            animate={{ opacity: 1, y: 0, filter: \"blur(0px)\" }}\n            exit={\n              shouldReduceMotion\n                ? { opacity: 0 }\n                : { opacity: 0, y: -5, filter: \"blur(5px)\" }\n            }\n            transition={contentTransition}\n            className=\"col-start-1 row-start-1 transform-gpu\"\n          >\n            <CaptionLabelComponent {...captionProps} />\n          </motion.span>\n        </AnimatePresence>\n      </div>\n    ),\n    [CaptionLabelComponent, contentTransition, shouldReduceMotion]\n  )\n\n  const AnimatedDayContent = React.useCallback(\n    (dayContentProps: DayContentProps) => (\n      <span className=\"relative inline-grid size-full place-items-center overflow-hidden\">\n        <AnimatePresence mode=\"popLayout\" initial={false}>\n          <motion.span\n            key={dayContentProps.date.getTime()}\n            initial={\n              shouldReduceMotion\n                ? false\n                : { opacity: 0, y: 6, scale: 0.96, filter: \"blur(5px)\" }\n            }\n            animate={{ opacity: 1, y: 0, scale: 1, filter: \"blur(0px)\" }}\n            exit={\n              shouldReduceMotion\n                ? { opacity: 0 }\n                : { opacity: 0, y: -6, scale: 0.96, filter: \"blur(5px)\" }\n            }\n            transition={contentTransition}\n            className=\"col-start-1 row-start-1 transform-gpu\"\n          >\n            <DayContentComponent {...dayContentProps} />\n          </motion.span>\n        </AnimatePresence>\n      </span>\n    ),\n    [DayContentComponent, contentTransition, shouldReduceMotion]\n  )\n\n  return (\n    <motion.div\n      layout\n      transition={transition}\n      className=\"origin-top overflow-hidden\"\n    >\n      <DayPicker\n        month={visibleMonth}\n        defaultMonth={defaultMonth}\n        onMonthChange={handleMonthChange}\n        showOutsideDays={showOutsideDays}\n        className={cn(\"p-3\", className)}\n        classNames={{\n          months: \"flex flex-col sm:flex-row gap-2\",\n          month: \"flex flex-col gap-4\",\n          caption: \"flex justify-center pt-1 relative items-center w-full\",\n          caption_label: \"text-sm font-medium\",\n          nav: \"flex items-center gap-1\",\n          nav_button: cn(\n            buttonVariants({ variant: \"outline\" }),\n            \"size-7 bg-transparent p-0 opacity-50 hover:opacity-100\"\n          ),\n          nav_button_previous: \"absolute left-1\",\n          nav_button_next: \"absolute right-1\",\n          table: \"w-full border-collapse space-x-1\",\n          head_row: \"flex\",\n          head_cell:\n            \"text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]\",\n          row: \"flex w-full mt-2\",\n          cell: cn(\n            \"relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-range-end)]:rounded-r-md\",\n            props.mode === \"range\"\n              ? \"[&:has(>.day-range-end)]:rounded-r-md [&:has(>.day-range-start)]:rounded-l-md first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md\"\n              : \"[&:has([aria-selected])]:rounded-md\"\n          ),\n          day: cn(\n            buttonVariants({ variant: \"ghost\" }),\n            \"size-8 p-0 font-normal aria-selected:opacity-100\"\n          ),\n          day_range_start:\n            \"day-range-start aria-selected:bg-primary aria-selected:text-primary-foreground\",\n          day_range_end:\n            \"day-range-end aria-selected:bg-primary aria-selected:text-primary-foreground\",\n          day_selected:\n            \"bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground\",\n          day_today: \"bg-accent text-accent-foreground\",\n          day_outside:\n            \"day-outside text-muted-foreground opacity-35 aria-selected:text-muted-foreground\",\n          day_disabled: \"text-muted-foreground opacity-50\",\n          day_range_middle:\n            \"aria-selected:bg-accent aria-selected:text-accent-foreground\",\n          day_hidden: \"invisible\",\n          ...classNames,\n        }}\n        components={{\n          ...components,\n          CaptionLabel: AnimatedCaptionLabel,\n          DayContent: AnimatedDayContent,\n          IconLeft: ({ className, ...props }) => (\n            <ChevronLeft className={cn(\"size-4\", className)} {...props} />\n          ),\n          IconRight: ({ className, ...props }) => (\n            <ChevronRight className={cn(\"size-4\", className)} {...props} />\n          ),\n        }}\n        {...props}\n      />\n    </motion.div>\n  )\n}\n\nexport { Calendar }\n",
+      "type": "registry:ui",
+      "target": "@ui/calendar.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/ui/button.tsx",
+      "content": "import * as React from \"react\"\nimport { Slot } from \"@radix-ui/react-slot\"\nimport { cva, type VariantProps } from \"class-variance-authority\"\n\nimport { cn } from \"@/lib/utils\"\n\nconst buttonVariants = cva(\n  \"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive\",\n  {\n    variants: {\n      variant: {\n        default:\n          \"bg-primary text-primary-foreground shadow-xs hover:bg-primary/90\",\n        destructive:\n          \"bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60\",\n        outline:\n          \"border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50\",\n        secondary:\n          \"bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80\",\n        ghost:\n          \"hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-9 px-4 py-2 has-[>svg]:px-3\",\n        sm: \"h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5\",\n        lg: \"h-10 rounded-md px-6 has-[>svg]:px-4\",\n        icon: \"size-9\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  }\n)\n\nfunction Button({\n  className,\n  variant,\n  size,\n  asChild = false,\n  ...props\n}: React.ComponentProps<\"button\"> &\n  VariantProps<typeof buttonVariants> & {\n    asChild?: boolean\n  }) {\n  const Comp = asChild ? Slot : \"button\"\n\n  return (\n    <Comp\n      data-slot=\"button\"\n      className={cn(buttonVariants({ variant, size, className }))}\n      {...props}\n    />\n  )\n}\n\nexport { Button, buttonVariants }\n",
+      "type": "registry:ui",
+      "target": "@ui/button.tsx"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "UI",
+    "registryUrl": "https://ui.isaiahbjork.com/primitive-calendar.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/primitive-calendar.json"
+  },
+  "type": "registry:component"
+}
