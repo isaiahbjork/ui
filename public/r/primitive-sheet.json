@@ -11,10 +11,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/sheet.tsx",
+      "path": "components/bjork-ui/primitives/sheet.tsx",
       "content": "\"use client\";\n\nimport * as React from \"react\";\nimport {\n  Sheet,\n  SheetContent,\n  SheetDescription,\n  SheetFooter,\n  SheetHeader,\n  SheetTitle,\n  SheetTrigger,\n} from \"@/components/ui/sheet\";\nimport { cn } from \"@/lib/utils\";\n\nexport {\n  Sheet as BjorkSheet,\n  SheetDescription as BjorkSheetDescription,\n  SheetFooter as BjorkSheetFooter,\n  SheetHeader as BjorkSheetHeader,\n  SheetTitle as BjorkSheetTitle,\n  SheetTrigger as BjorkSheetTrigger,\n};\n\nexport function BjorkSheetContent({\n  className,\n  ...props\n}: React.ComponentProps<typeof SheetContent>) {\n  return (\n    <SheetContent\n      className={cn(\n        \"inset-y-2 right-2 h-[calc(100dvh-16px)] w-[min(380px,calc(100vw-16px))] rounded-[24px] border border-[color:var(--bjork-border-muted)] bg-[var(--bjork-field)] text-[color:var(--bjork-text)] !shadow-[var(--bjork-shadow-surface)] sm:max-w-[380px]\",\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/sheet.tsx"
+      "target": "@components/bjork-ui/primitives/sheet.tsx"
     },
     {
       "path": "components/ui/sheet.tsx",

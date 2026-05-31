@@ -11,10 +11,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/select.tsx",
+      "path": "components/bjork-ui/primitives/select.tsx",
       "content": "\"use client\";\n\nimport {\n  Select,\n  SelectContent,\n  SelectItem,\n  SelectTrigger,\n  SelectValue,\n} from \"@/components/ui/select\";\nimport { cn } from \"@/lib/utils\";\nimport { bjorkMenu, bjorkMenuItem } from \"./_shared\";\n\nexport function BjorkSelect() {\n  return (\n    <Select defaultValue=\"weekly\">\n      <SelectTrigger\n        className={cn(\n          \"h-[45px] w-[210px] rounded-[13px] border-transparent bg-[var(--bjork-field)] px-3 text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-surface)] hover:bg-[var(--bjork-surface-hover)] focus-visible:ring-[#ec5c13]/35\",\n        )}\n      >\n        <SelectValue placeholder=\"Cadence\" />\n      </SelectTrigger>\n      <SelectContent className={bjorkMenu}>\n        <SelectItem className={bjorkMenuItem} value=\"daily\">\n          Daily\n        </SelectItem>\n        <SelectItem className={bjorkMenuItem} value=\"weekly\">\n          Weekly\n        </SelectItem>\n        <SelectItem className={bjorkMenuItem} value=\"monthly\">\n          Monthly\n        </SelectItem>\n      </SelectContent>\n    </Select>\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/select.tsx"
+      "target": "@components/bjork-ui/primitives/select.tsx"
     },
     {
       "path": "components/ui/select.tsx",
@@ -29,10 +29,10 @@
       "target": "@lib/utils.ts"
     },
     {
-      "path": "components/isaiahbjork/primitives/_shared.ts",
+      "path": "components/bjork-ui/primitives/_shared.ts",
       "content": "export const bjorkSurface =\n  \"border border-[color:var(--bjork-border)] bg-[var(--bjork-field)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-surface)]\";\n\nexport const bjorkSoftSurface =\n  \"border border-[color:var(--bjork-border)] bg-[var(--bjork-surface-muted)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)]\";\n\nexport const bjorkPanel =\n  \"rounded-[18px] border border-[color:var(--bjork-border)] bg-[var(--bjork-panel)] shadow-[var(--bjork-shadow-panel)]\";\n\nexport const bjorkMenu =\n  \"z-50 rounded-[16px] border border-[color:var(--bjork-border)] bg-[var(--bjork-menu)] p-1 text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-menu)] backdrop-blur-xl\";\n\nexport const bjorkMenuItem =\n  \"rounded-[11px] px-3 py-2 text-sm text-[color:var(--bjork-text-medium)] outline-none transition hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)] focus:bg-[var(--bjork-surface-hover)] focus:text-[color:var(--bjork-text)] data-[highlighted]:bg-[var(--bjork-surface-hover)] data-[highlighted]:text-[color:var(--bjork-text)] data-[selected=true]:!bg-[var(--bjork-surface-hover)] data-[selected=true]:!text-[color:var(--bjork-text)] aria-selected:!bg-[var(--bjork-surface-hover)] aria-selected:!text-[color:var(--bjork-text)]\";\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/_shared.ts"
+      "target": "@components/bjork-ui/primitives/_shared.ts"
     }
   ],
   "cssVars": {

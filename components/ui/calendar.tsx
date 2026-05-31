@@ -124,7 +124,7 @@ function Calendar({
     <motion.div
       layout
       transition={transition}
-      className="origin-top overflow-hidden"
+      className="origin-top overflow-visible"
     >
       <DayPicker
         month={visibleMonth}

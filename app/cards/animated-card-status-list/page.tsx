@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatedCardStatusList, type Card } from "@/components/isaiahbjork/cards/animated-card-status-list";
+import { AnimatedCardStatusList, type Card } from "@/components/bjork-ui/cards/animated-card-status-list";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -32,7 +32,7 @@ export default function Page() {
       item={item}
       description="A compact status-list card for setup flows, imports, and background sync jobs. Each row can report completed, updated, or syncing states while exposing callbacks for retry, add, and back actions."
       dependencies={["framer-motion", "lucide-react", "clsx"]}
-      usageCode={`import { AnimatedCardStatusList } from "@/components/isaiahbjork/cards/animated-card-status-list";
+      usageCode={`import { AnimatedCardStatusList } from "@/components/bjork-ui/cards/animated-card-status-list";
 
 const cards = [
   { id: "1", title: "Import products from your store", status: "completed" },

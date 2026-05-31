@@ -27,6 +27,8 @@ NaN.png
 .codex/
 .cursor/
 !.cursor/README.md
+.agents/
+skills-lock.json
 
 # debug
 npm-debug.log*

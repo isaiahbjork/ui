@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BjorkCommandPalette } from "@/components/isaiahbjork/primitives";
+import { BjorkCommandPalette } from "@/components/bjork-ui/primitives";
 
 export const BJORK_COMMAND_PALETTE_EVENT = "bjork-command-palette:open";
 

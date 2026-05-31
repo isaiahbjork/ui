@@ -70,6 +70,9 @@ try {
 
   await cdp.send("Page.enable");
   await cdp.send("Runtime.enable");
+  await cdp.send("Page.addScriptToEvaluateOnNewDocument", {
+    source: `try { localStorage.setItem("theme", ${JSON.stringify(previewTheme)}); } catch (_) {}`,
+  });
   await cdp.send("Emulation.setDeviceMetricsOverride", {
     width: viewport.width,
     height: viewport.height,

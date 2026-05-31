@@ -1,7 +1,7 @@
 "use client";
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { AIVoiceInput } from "@/components/isaiahbjork/ai/ai-voice-input";
+import { AIVoiceInput } from "@/components/bjork-ui/ai/ai-voice-input";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("ai-voice-input");

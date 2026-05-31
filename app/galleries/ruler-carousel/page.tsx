@@ -1,9 +1,9 @@
 "use client";
 
-import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { ArrowLeftRight, MousePointer2, Ruler } from "lucide-react";
 import { ComponentDemoShell } from "@/components/bjork-ui/component-demo-shell";
-import { RulerCarousel, type CarouselItem } from "@/components/isaiahbjork/galleries/ruler-carousel";
+import { RulerCarousel, type CarouselItem } from "@/components/bjork-ui/galleries/ruler-carousel";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("ruler-carousel");
@@ -21,15 +21,16 @@ const originalItems: CarouselItem[] = [
 
 export default function Page() {
   const isPreview = usePreviewMode();
+    const previewTone = usePreviewSearchParam("theme") === "light" ? "light" : "dark";
   const demo = (
     <div className="flex h-[520px] w-full items-center justify-center overflow-hidden">
-      <RulerCarousel originalItems={originalItems} />
+      <RulerCarousel originalItems={originalItems} tone={isPreview ? previewTone : undefined} />
     </div>
   );
 
   if (isPreview) {
     return (
-      <div className="flex min-h-screen items-center justify-center overflow-hidden bg-[#0b0b0b]">
+      <div className={previewTone === "light" ? "flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f5ef]" : "flex min-h-screen items-center justify-center overflow-hidden bg-[#111]"}>
         <div className="w-[920px] scale-[0.55]">{demo}</div>
       </div>
     );
@@ -60,7 +61,7 @@ export default function Page() {
         },
       ]}
       cliCommand="npx shadcn add @bjork-ui/ruler-carousel"
-      usageCode={`import { RulerCarousel } from "@/components/isaiahbjork/galleries/ruler-carousel";
+      usageCode={`import { RulerCarousel } from "@/components/bjork-ui/galleries/ruler-carousel";
 
 export function Demo() {
   return <RulerCarousel originalItems={items} />;

@@ -1,7 +1,7 @@
 "use client";
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { WarningGraphic } from "@/components/isaiahbjork/hud/warning";
+import { WarningGraphic } from "@/components/bjork-ui/hud/warning";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("warning-graphic");

@@ -11,7 +11,7 @@ import {
   BjorkCardFooter,
   BjorkCardHeader,
   BjorkCardTitle,
-} from "@/components/isaiahbjork/primitives";
+} from "@/components/bjork-ui/primitives";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 import {
   PrimitiveDocsSection,
@@ -21,7 +21,7 @@ import {
 } from "../_components/primitive-docs";
 import { getPrimitiveMeta } from "../_components/primitive-meta";
 
-const usageCode = `import { BjorkCard, BjorkCardHeader, BjorkCardTitle } from "@/components/isaiahbjork/primitives";
+const usageCode = `import { BjorkCard, BjorkCardHeader, BjorkCardTitle } from "@/components/bjork-ui/primitives";
 
 export function Demo() {
   return (

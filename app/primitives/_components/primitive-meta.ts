@@ -2,7 +2,7 @@ export const primitiveMeta = [
   {
     slug: "accordion",
     title: "Accordion",
-    sourcePath: "components/isaiahbjork/primitives/accordion.tsx",
+    sourcePath: "components/bjork-ui/primitives/accordion.tsx",
     description:
       "A stacked disclosure control for expanding one section of supporting content without leaving the page.",
     interactionType: "Disclosure",
@@ -13,7 +13,7 @@ export const primitiveMeta = [
   {
     slug: "alerts",
     title: "Alerts",
-    sourcePath: "components/isaiahbjork/primitives/alerts.tsx",
+    sourcePath: "components/bjork-ui/primitives/alerts.tsx",
     description:
       "A compact status callout for surfacing important feedback with a title and supporting message.",
     interactionType: "Status message",
@@ -24,7 +24,7 @@ export const primitiveMeta = [
   {
     slug: "avatar",
     title: "Avatar",
-    sourcePath: "components/isaiahbjork/primitives/avatar.tsx",
+    sourcePath: "components/bjork-ui/primitives/avatar.tsx",
     description:
       "A live shader avatar for identity anchors that need motion without relying on user photos.",
     interactionType: "Identity display",
@@ -35,7 +35,7 @@ export const primitiveMeta = [
   {
     slug: "badge",
     title: "Badge",
-    sourcePath: "components/isaiahbjork/primitives/badge.tsx",
+    sourcePath: "components/bjork-ui/primitives/badge.tsx",
     description:
       "A compact status label for state, category, and metadata markers in dense interfaces.",
     interactionType: "Status label",
@@ -46,7 +46,7 @@ export const primitiveMeta = [
   {
     slug: "breadcrumb",
     title: "Breadcrumb",
-    sourcePath: "components/isaiahbjork/primitives/breadcrumb.tsx",
+    sourcePath: "components/bjork-ui/primitives/breadcrumb.tsx",
     description:
       "A low-emphasis navigation trail for showing where the current page sits in a hierarchy.",
     interactionType: "Navigation trail",
@@ -57,7 +57,7 @@ export const primitiveMeta = [
   {
     slug: "button",
     title: "Button",
-    sourcePath: "components/isaiahbjork/primitives/button.tsx",
+    sourcePath: "components/bjork-ui/primitives/button.tsx",
     description:
       "A tactile action button with variants for primary, secondary, utility, and icon-only controls.",
     interactionType: "Action trigger",
@@ -68,7 +68,7 @@ export const primitiveMeta = [
   {
     slug: "button-group",
     title: "Button Group",
-    sourcePath: "components/isaiahbjork/primitives/button-group.tsx",
+    sourcePath: "components/bjork-ui/primitives/button-group.tsx",
     description:
       "A joined control group for related actions that should read as one toolbar.",
     interactionType: "Grouped actions",
@@ -79,7 +79,7 @@ export const primitiveMeta = [
   {
     slug: "calendar",
     title: "Calendar",
-    sourcePath: "components/isaiahbjork/primitives/calendar.tsx",
+    sourcePath: "components/bjork-ui/primitives/calendar.tsx",
     description:
       "A single-month date selector for scheduling flows, filters, and date-picking popovers.",
     interactionType: "Date selection",
@@ -90,7 +90,7 @@ export const primitiveMeta = [
   {
     slug: "card",
     title: "Card",
-    sourcePath: "components/isaiahbjork/primitives/card.tsx",
+    sourcePath: "components/bjork-ui/primitives/card.tsx",
     description:
       "A composable content surface for grouping headers, metrics, media, and actions.",
     interactionType: "Content container",
@@ -101,7 +101,7 @@ export const primitiveMeta = [
   {
     slug: "checkbox",
     title: "Checkbox",
-    sourcePath: "components/isaiahbjork/primitives/checkbox.tsx",
+    sourcePath: "components/bjork-ui/primitives/checkbox.tsx",
     description:
       "A binary selection control for preferences, filters, and table rows.",
     interactionType: "Binary selection",
@@ -112,7 +112,7 @@ export const primitiveMeta = [
   {
     slug: "collapsible",
     title: "Collapsible",
-    sourcePath: "components/isaiahbjork/primitives/collapsible.tsx",
+    sourcePath: "components/bjork-ui/primitives/collapsible.tsx",
     description:
       "A disclosure wrapper for revealing optional details inside the current surface.",
     interactionType: "Disclosure",
@@ -123,7 +123,7 @@ export const primitiveMeta = [
   {
     slug: "combobox",
     title: "Combobox",
-    sourcePath: "components/isaiahbjork/primitives/combobox.tsx",
+    sourcePath: "components/bjork-ui/primitives/combobox.tsx",
     description:
       "A searchable picker for choosing one option from a longer list.",
     interactionType: "Searchable selection",
@@ -134,7 +134,7 @@ export const primitiveMeta = [
   {
     slug: "command-palette",
     title: "Command Palette",
-    sourcePath: "components/isaiahbjork/primitives/command-palette.tsx",
+    sourcePath: "components/bjork-ui/primitives/command-palette.tsx",
     description:
       "A global Command-K search surface for routing across pages, primitives, components, and app actions.",
     interactionType: "Command search",
@@ -145,7 +145,7 @@ export const primitiveMeta = [
   {
     slug: "data-table",
     title: "Data Table",
-    sourcePath: "components/isaiahbjork/primitives/data-table.tsx",
+    sourcePath: "components/bjork-ui/primitives/data-table.tsx",
     description:
       "A filterable table pattern for scanning records and narrowing operational data.",
     interactionType: "Filterable data grid",
@@ -156,7 +156,7 @@ export const primitiveMeta = [
   {
     slug: "date-picker",
     title: "Date Picker",
-    sourcePath: "components/isaiahbjork/primitives/date-picker.tsx",
+    sourcePath: "components/bjork-ui/primitives/date-picker.tsx",
     description:
       "An anchored calendar trigger for selecting a single date without opening a full modal.",
     interactionType: "Popover date selection",
@@ -167,7 +167,7 @@ export const primitiveMeta = [
   {
     slug: "dialog",
     title: "Dialog",
-    sourcePath: "components/isaiahbjork/primitives/dialog.tsx",
+    sourcePath: "components/bjork-ui/primitives/dialog.tsx",
     description:
       "A centered modal surface for decisions that require the user's focused attention.",
     interactionType: "Modal dialog",
@@ -178,7 +178,7 @@ export const primitiveMeta = [
   {
     slug: "dropdown-menu",
     title: "Dropdown Menu",
-    sourcePath: "components/isaiahbjork/primitives/dropdown-menu.tsx",
+    sourcePath: "components/bjork-ui/primitives/dropdown-menu.tsx",
     description:
       "A compact action menu for secondary commands tied to a button or row.",
     interactionType: "Context menu",
@@ -189,7 +189,7 @@ export const primitiveMeta = [
   {
     slug: "form",
     title: "Form",
-    sourcePath: "components/isaiahbjork/primitives/form.tsx",
+    sourcePath: "components/bjork-ui/primitives/form.tsx",
     description:
       "A compact form pattern for editing a small set of account or profile fields.",
     interactionType: "Form submission",
@@ -200,7 +200,7 @@ export const primitiveMeta = [
   {
     slug: "input",
     title: "Input",
-    sourcePath: "components/isaiahbjork/primitives/input.tsx",
+    sourcePath: "components/bjork-ui/primitives/input.tsx",
     description:
       "A text-entry field for forms, search shells, filters, and validation states.",
     interactionType: "Text entry",
@@ -211,7 +211,7 @@ export const primitiveMeta = [
   {
     slug: "input-mask",
     title: "Input Mask",
-    sourcePath: "components/isaiahbjork/primitives/input-mask.tsx",
+    sourcePath: "components/bjork-ui/primitives/input-mask.tsx",
     description:
       "A formatted text field for structured numeric values that need grouped spacing.",
     interactionType: "Formatted text entry",
@@ -222,7 +222,7 @@ export const primitiveMeta = [
   {
     slug: "input-otp",
     title: "Input OTP",
-    sourcePath: "components/isaiahbjork/primitives/input-otp.tsx",
+    sourcePath: "components/bjork-ui/primitives/input-otp.tsx",
     description:
       "A segmented one-time-code input for short verification flows.",
     interactionType: "Verification code entry",
@@ -233,7 +233,7 @@ export const primitiveMeta = [
   {
     slug: "pagination",
     title: "Pagination",
-    sourcePath: "components/isaiahbjork/primitives/pagination.tsx",
+    sourcePath: "components/bjork-ui/primitives/pagination.tsx",
     description:
       "A page navigation control for moving through long result sets without losing context.",
     interactionType: "Paged navigation",
@@ -244,7 +244,7 @@ export const primitiveMeta = [
   {
     slug: "popover",
     title: "Popover",
-    sourcePath: "components/isaiahbjork/primitives/popover.tsx",
+    sourcePath: "components/bjork-ui/primitives/popover.tsx",
     description:
       "An anchored overlay for short supporting content, filters, or inline controls.",
     interactionType: "Anchored overlay",
@@ -255,7 +255,7 @@ export const primitiveMeta = [
   {
     slug: "radio-group",
     title: "Radio Group",
-    sourcePath: "components/isaiahbjork/primitives/radio-group.tsx",
+    sourcePath: "components/bjork-ui/primitives/radio-group.tsx",
     description:
       "A single-choice selector for mutually exclusive options with clear row targets.",
     interactionType: "Single selection",
@@ -266,7 +266,7 @@ export const primitiveMeta = [
   {
     slug: "select",
     title: "Select",
-    sourcePath: "components/isaiahbjork/primitives/select.tsx",
+    sourcePath: "components/bjork-ui/primitives/select.tsx",
     description:
       "A compact option picker for short lists where search is unnecessary.",
     interactionType: "Select menu",
@@ -277,7 +277,7 @@ export const primitiveMeta = [
   {
     slug: "sheet",
     title: "Sheet",
-    sourcePath: "components/isaiahbjork/primitives/sheet.tsx",
+    sourcePath: "components/bjork-ui/primitives/sheet.tsx",
     description:
       "A side panel for secondary workflows that should keep the current page visible.",
     interactionType: "Side panel",
@@ -288,7 +288,7 @@ export const primitiveMeta = [
   {
     slug: "slider",
     title: "Slider",
-    sourcePath: "components/isaiahbjork/primitives/slider.tsx",
+    sourcePath: "components/bjork-ui/primitives/slider.tsx",
     description:
       "A range control for tuning numeric values with immediate visual feedback.",
     interactionType: "Range input",
@@ -299,7 +299,7 @@ export const primitiveMeta = [
   {
     slug: "sonner",
     title: "Sonner",
-    sourcePath: "components/isaiahbjork/primitives/sonner.tsx",
+    sourcePath: "components/bjork-ui/primitives/sonner.tsx",
     description:
       "A toast notification trigger for confirming non-blocking actions.",
     interactionType: "Toast feedback",
@@ -310,7 +310,7 @@ export const primitiveMeta = [
   {
     slug: "switch",
     title: "Switch",
-    sourcePath: "components/isaiahbjork/primitives/switch.tsx",
+    sourcePath: "components/bjork-ui/primitives/switch.tsx",
     description:
       "A binary toggle for persistent on-or-off settings.",
     interactionType: "Toggle switch",
@@ -321,7 +321,7 @@ export const primitiveMeta = [
   {
     slug: "table",
     title: "Table",
-    sourcePath: "components/isaiahbjork/primitives/table.tsx",
+    sourcePath: "components/bjork-ui/primitives/table.tsx",
     description:
       "A structured data surface for comparing rows of account, status, or metric information.",
     interactionType: "Data display",
@@ -332,7 +332,7 @@ export const primitiveMeta = [
   {
     slug: "tabs",
     title: "Tabs",
-    sourcePath: "components/isaiahbjork/primitives/tabs.tsx",
+    sourcePath: "components/bjork-ui/primitives/tabs.tsx",
     description:
       "A segmented content switcher for parallel views that share one footprint.",
     interactionType: "Tabbed navigation",
@@ -343,7 +343,7 @@ export const primitiveMeta = [
   {
     slug: "textarea",
     title: "Textarea",
-    sourcePath: "components/isaiahbjork/primitives/textarea.tsx",
+    sourcePath: "components/bjork-ui/primitives/textarea.tsx",
     description:
       "A multi-line text field for notes, descriptions, and longer user input.",
     interactionType: "Long-form text entry",
@@ -354,7 +354,7 @@ export const primitiveMeta = [
   {
     slug: "tooltip",
     title: "Tooltip",
-    sourcePath: "components/isaiahbjork/primitives/tooltip.tsx",
+    sourcePath: "components/bjork-ui/primitives/tooltip.tsx",
     description:
       "A hover and focus hint for icon-only controls or compact labels.",
     interactionType: "Hover and focus hint",

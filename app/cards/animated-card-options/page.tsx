@@ -1,7 +1,7 @@
 "use client";
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { AnimatedCardOptions, CardOption } from "@/components/isaiahbjork/cards/animated-card-options";
+import { AnimatedCardOptions, CardOption } from "@/components/bjork-ui/cards/animated-card-options";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 import {
   AudioWaveform,

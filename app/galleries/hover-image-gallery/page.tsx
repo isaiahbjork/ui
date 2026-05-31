@@ -1,7 +1,7 @@
 "use client";
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { HoverImageGallery } from "@/components/isaiahbjork/galleries/hover-image-gallery";
+import { HoverImageGallery } from "@/components/bjork-ui/galleries/hover-image-gallery";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("hover-image-gallery");

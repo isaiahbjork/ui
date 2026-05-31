@@ -167,9 +167,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/charts/animated-radial-chart.tsx",
+          "path": "components/bjork-ui/charts/animated-radial-chart.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/charts/animated-radial-chart.tsx"
+          "target": "@components/bjork-ui/charts/animated-radial-chart.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -348,9 +348,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/hud/message-dock.tsx",
+          "path": "components/bjork-ui/hud/message-dock.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/hud/message-dock.tsx"
+          "target": "@components/bjork-ui/hud/message-dock.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -529,9 +529,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/interactive/voice-powered-orb.tsx",
+          "path": "components/bjork-ui/interactive/voice-powered-orb.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/interactive/voice-powered-orb.tsx"
+          "target": "@components/bjork-ui/interactive/voice-powered-orb.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -711,9 +711,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/galleries/ruler-carousel.tsx",
+          "path": "components/bjork-ui/galleries/ruler-carousel.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/galleries/ruler-carousel.tsx"
+          "target": "@components/bjork-ui/galleries/ruler-carousel.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -889,9 +889,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/heroes/video-scroll-hero.tsx",
+          "path": "components/bjork-ui/heroes/video-scroll-hero.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/heroes/video-scroll-hero.tsx"
+          "target": "@components/bjork-ui/heroes/video-scroll-hero.tsx"
         }
       ],
       "meta": {
@@ -1065,9 +1065,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/tables/financial-table.tsx",
+          "path": "components/bjork-ui/tables/financial-table.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/tables/financial-table.tsx"
+          "target": "@components/bjork-ui/tables/financial-table.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -1246,9 +1246,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/interactive/draggable-rope.tsx",
+          "path": "components/bjork-ui/interactive/draggable-rope.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/interactive/draggable-rope.tsx"
+          "target": "@components/bjork-ui/interactive/draggable-rope.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -1425,9 +1425,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/hud/hud-frame.tsx",
+          "path": "components/bjork-ui/hud/hud-frame.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/hud/hud-frame.tsx"
+          "target": "@components/bjork-ui/hud/hud-frame.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -1607,9 +1607,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/galleries/portfolio-gallery.tsx",
+          "path": "components/bjork-ui/galleries/portfolio-gallery.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/galleries/portfolio-gallery.tsx"
+          "target": "@components/bjork-ui/galleries/portfolio-gallery.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -1790,9 +1790,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/video-upload-card.tsx",
+          "path": "components/bjork-ui/cards/video-upload-card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/video-upload-card.tsx"
+          "target": "@components/bjork-ui/cards/video-upload-card.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -1800,9 +1800,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         }
       ],
       "meta": {
@@ -1821,7 +1821,6 @@
         "clsx",
         "framer-motion",
         "lucide-react",
-        "next-themes",
         "tailwind-merge"
       ],
       "cssVars": {
@@ -1977,9 +1976,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/ai/ai-voice-input.tsx",
+          "path": "components/bjork-ui/ai/ai-voice-input.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/ai/ai-voice-input.tsx"
+          "target": "@components/bjork-ui/ai/ai-voice-input.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -2159,14 +2158,14 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/badges/animated-status-badge.tsx",
+          "path": "components/bjork-ui/badges/animated-status-badge.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/badges/animated-status-badge.tsx"
+          "target": "@components/bjork-ui/badges/animated-status-badge.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/badge.tsx",
+          "path": "components/bjork-ui/primitives/badge.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/badge.tsx"
+          "target": "@components/bjork-ui/primitives/badge.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -2345,9 +2344,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/buttons/animated-download.tsx",
+          "path": "components/bjork-ui/buttons/animated-download.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/buttons/animated-download.tsx"
+          "target": "@components/bjork-ui/buttons/animated-download.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -2526,14 +2525,14 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/animated-card-options.tsx",
+          "path": "components/bjork-ui/cards/animated-card-options.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/animated-card-options.tsx"
+          "target": "@components/bjork-ui/cards/animated-card-options.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -2714,9 +2713,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/animated-card-status-list.tsx",
+          "path": "components/bjork-ui/cards/animated-card-status-list.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/animated-card-status-list.tsx"
+          "target": "@components/bjork-ui/cards/animated-card-status-list.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -2724,9 +2723,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         }
       ],
       "meta": {
@@ -2902,9 +2901,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/audio-upload-card.tsx",
+          "path": "components/bjork-ui/cards/audio-upload-card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/audio-upload-card.tsx"
+          "target": "@components/bjork-ui/cards/audio-upload-card.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -2912,9 +2911,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         }
       ],
       "meta": {
@@ -3089,9 +3088,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/bonuses-incentives-card.tsx",
+          "path": "components/bjork-ui/cards/bonuses-incentives-card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/bonuses-incentives-card.tsx"
+          "target": "@components/bjork-ui/cards/bonuses-incentives-card.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -3099,9 +3098,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         }
       ],
       "meta": {
@@ -3277,9 +3276,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/coach-scheduling-card.tsx",
+          "path": "components/bjork-ui/cards/coach-scheduling-card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/coach-scheduling-card.tsx"
+          "target": "@components/bjork-ui/cards/coach-scheduling-card.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -3287,9 +3286,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         }
       ],
       "meta": {
@@ -3467,9 +3466,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/dashboard-card-modal.tsx",
+          "path": "components/bjork-ui/cards/dashboard-card-modal.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/dashboard-card-modal.tsx"
+          "target": "@components/bjork-ui/cards/dashboard-card-modal.tsx"
         },
         {
           "path": "components/ui/avatar.tsx",
@@ -3487,19 +3486,19 @@
           "target": "@ui/separator.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/badge.tsx",
+          "path": "components/bjork-ui/primitives/badge.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/badge.tsx"
+          "target": "@components/bjork-ui/primitives/badge.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         }
       ],
       "meta": {
@@ -3675,9 +3674,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/event-countdown-card.tsx",
+          "path": "components/bjork-ui/cards/event-countdown-card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/event-countdown-card.tsx"
+          "target": "@components/bjork-ui/cards/event-countdown-card.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -3685,19 +3684,19 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/badge.tsx",
+          "path": "components/bjork-ui/primitives/badge.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/badge.tsx"
+          "target": "@components/bjork-ui/primitives/badge.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         }
       ],
       "meta": {
@@ -3873,9 +3872,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/hover-detail-card.tsx",
+          "path": "components/bjork-ui/cards/hover-detail-card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/hover-detail-card.tsx"
+          "target": "@components/bjork-ui/cards/hover-detail-card.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -3883,9 +3882,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         }
       ],
       "meta": {
@@ -4059,9 +4058,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/news-cards.tsx",
+          "path": "components/bjork-ui/cards/news-cards.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/news-cards.tsx"
+          "target": "@components/bjork-ui/cards/news-cards.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -4242,9 +4241,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/onboarding-stages.tsx",
+          "path": "components/bjork-ui/cards/onboarding-stages.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/onboarding-stages.tsx"
+          "target": "@components/bjork-ui/cards/onboarding-stages.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -4252,9 +4251,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         }
       ],
       "meta": {
@@ -4432,9 +4431,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/prediction-market-card.tsx",
+          "path": "components/bjork-ui/cards/prediction-market-card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/prediction-market-card.tsx"
+          "target": "@components/bjork-ui/cards/prediction-market-card.tsx"
         },
         {
           "path": "components/ui/avatar.tsx",
@@ -4452,19 +4451,19 @@
           "target": "@ui/separator.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/badge.tsx",
+          "path": "components/bjork-ui/primitives/badge.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/badge.tsx"
+          "target": "@components/bjork-ui/primitives/badge.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         }
       ],
       "meta": {
@@ -4640,9 +4639,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/product-reveal-card.tsx",
+          "path": "components/bjork-ui/cards/product-reveal-card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/product-reveal-card.tsx"
+          "target": "@components/bjork-ui/cards/product-reveal-card.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -4650,9 +4649,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         }
       ],
       "meta": {
@@ -4828,9 +4827,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/profile-hover-card.tsx",
+          "path": "components/bjork-ui/cards/profile-hover-card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/profile-hover-card.tsx"
+          "target": "@components/bjork-ui/cards/profile-hover-card.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -4838,9 +4837,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         }
       ],
       "meta": {
@@ -5014,9 +5013,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/cards/project-cards.tsx",
+          "path": "components/bjork-ui/cards/project-cards.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/cards/project-cards.tsx"
+          "target": "@components/bjork-ui/cards/project-cards.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -5194,9 +5193,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/dropdowns/gradient-selector.tsx",
+          "path": "components/bjork-ui/dropdowns/gradient-selector.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/dropdowns/gradient-selector.tsx"
+          "target": "@components/bjork-ui/dropdowns/gradient-selector.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -5369,9 +5368,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/galleries/hover-image-gallery.tsx",
+          "path": "components/bjork-ui/galleries/hover-image-gallery.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/galleries/hover-image-gallery.tsx"
+          "target": "@components/bjork-ui/galleries/hover-image-gallery.tsx"
         }
       ],
       "meta": {
@@ -5542,9 +5541,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/heroes/reveal-text.tsx",
+          "path": "components/bjork-ui/heroes/reveal-text.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/heroes/reveal-text.tsx"
+          "target": "@components/bjork-ui/heroes/reveal-text.tsx"
         }
       ],
       "meta": {
@@ -5715,9 +5714,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/hud/glitchy-404.tsx",
+          "path": "components/bjork-ui/hud/glitchy-404.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/hud/glitchy-404.tsx"
+          "target": "@components/bjork-ui/hud/glitchy-404.tsx"
         }
       ],
       "meta": {
@@ -5891,14 +5890,14 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/hud/overlay-2.tsx",
+          "path": "components/bjork-ui/hud/overlay-2.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/hud/overlay-2.tsx"
+          "target": "@components/bjork-ui/hud/overlay-2.tsx"
         },
         {
-          "path": "components/isaiahbjork/hud/hud-button.tsx",
+          "path": "components/bjork-ui/hud/hud-button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/hud/hud-button.tsx"
+          "target": "@components/bjork-ui/hud/hud-button.tsx"
         },
         {
           "path": "components/ui/hyper-text.tsx",
@@ -6092,9 +6091,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/hud/hud-button.tsx",
+          "path": "components/bjork-ui/hud/hud-button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/hud/hud-button.tsx"
+          "target": "@components/bjork-ui/hud/hud-button.tsx"
         },
         {
           "path": "components/ui/hyper-text.tsx",
@@ -6277,9 +6276,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/hud/graph.tsx",
+          "path": "components/bjork-ui/hud/graph.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/hud/graph.tsx"
+          "target": "@components/bjork-ui/hud/graph.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -6458,9 +6457,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/hud/status.tsx",
+          "path": "components/bjork-ui/hud/status.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/hud/status.tsx"
+          "target": "@components/bjork-ui/hud/status.tsx"
         },
         {
           "path": "components/ui/hyper-text.tsx",
@@ -6643,9 +6642,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/hud/warning.tsx",
+          "path": "components/bjork-ui/hud/warning.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/hud/warning.tsx"
+          "target": "@components/bjork-ui/hud/warning.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -6823,14 +6822,14 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/tables/contacts-table.tsx",
+          "path": "components/bjork-ui/tables/contacts-table.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/tables/contacts-table.tsx"
+          "target": "@components/bjork-ui/tables/contacts-table.tsx"
         },
         {
-          "path": "components/isaiahbjork/tables/table-theme.ts",
+          "path": "components/bjork-ui/tables/table-theme.ts",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/tables/table-theme.ts"
+          "target": "@components/bjork-ui/tables/table-theme.ts"
         }
       ],
       "meta": {
@@ -7003,14 +7002,14 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/tables/leads-table.tsx",
+          "path": "components/bjork-ui/tables/leads-table.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/tables/leads-table.tsx"
+          "target": "@components/bjork-ui/tables/leads-table.tsx"
         },
         {
-          "path": "components/isaiahbjork/tables/table-theme.ts",
+          "path": "components/bjork-ui/tables/table-theme.ts",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/tables/table-theme.ts"
+          "target": "@components/bjork-ui/tables/table-theme.ts"
         }
       ],
       "meta": {
@@ -7184,14 +7183,14 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/tables/resizable-table.tsx",
+          "path": "components/bjork-ui/tables/resizable-table.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/tables/resizable-table.tsx"
+          "target": "@components/bjork-ui/tables/resizable-table.tsx"
         },
         {
-          "path": "components/isaiahbjork/tables/table-theme.ts",
+          "path": "components/bjork-ui/tables/table-theme.ts",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/tables/table-theme.ts"
+          "target": "@components/bjork-ui/tables/table-theme.ts"
         }
       ],
       "meta": {
@@ -7364,14 +7363,14 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/tables/server-management-table.tsx",
+          "path": "components/bjork-ui/tables/server-management-table.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/tables/server-management-table.tsx"
+          "target": "@components/bjork-ui/tables/server-management-table.tsx"
         },
         {
-          "path": "components/isaiahbjork/tables/table-theme.ts",
+          "path": "components/bjork-ui/tables/table-theme.ts",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/tables/table-theme.ts"
+          "target": "@components/bjork-ui/tables/table-theme.ts"
         }
       ],
       "meta": {
@@ -7547,9 +7546,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/accordion.tsx",
+          "path": "components/bjork-ui/primitives/accordion.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/accordion.tsx"
+          "target": "@components/bjork-ui/primitives/accordion.tsx"
         },
         {
           "path": "components/ui/accordion.tsx",
@@ -7562,9 +7561,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         }
       ],
       "meta": {
@@ -7737,9 +7736,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/alerts.tsx",
+          "path": "components/bjork-ui/primitives/alerts.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/alerts.tsx"
+          "target": "@components/bjork-ui/primitives/alerts.tsx"
         },
         {
           "path": "components/ui/alert.tsx",
@@ -7752,9 +7751,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/_shared.ts",
+          "path": "components/bjork-ui/primitives/_shared.ts",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/_shared.ts"
+          "target": "@components/bjork-ui/primitives/_shared.ts"
         }
       ],
       "meta": {
@@ -7927,9 +7926,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/avatar.tsx",
+          "path": "components/bjork-ui/primitives/avatar.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/avatar.tsx"
+          "target": "@components/bjork-ui/primitives/avatar.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -8108,9 +8107,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/badge.tsx",
+          "path": "components/bjork-ui/primitives/badge.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/badge.tsx"
+          "target": "@components/bjork-ui/primitives/badge.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -8289,9 +8288,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/breadcrumb.tsx",
+          "path": "components/bjork-ui/primitives/breadcrumb.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/breadcrumb.tsx"
+          "target": "@components/bjork-ui/primitives/breadcrumb.tsx"
         },
         {
           "path": "components/ui/breadcrumb.tsx",
@@ -8476,9 +8475,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -8655,9 +8654,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/button-group.tsx",
+          "path": "components/bjork-ui/primitives/button-group.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button-group.tsx"
+          "target": "@components/bjork-ui/primitives/button-group.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -8839,9 +8838,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/calendar.tsx",
+          "path": "components/bjork-ui/primitives/calendar.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/calendar.tsx"
+          "target": "@components/bjork-ui/primitives/calendar.tsx"
         },
         {
           "path": "components/ui/calendar.tsx",
@@ -9030,9 +9029,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -9211,9 +9210,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/checkbox.tsx",
+          "path": "components/bjork-ui/primitives/checkbox.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/checkbox.tsx"
+          "target": "@components/bjork-ui/primitives/checkbox.tsx"
         },
         {
           "path": "components/ui/checkbox.tsx",
@@ -9394,9 +9393,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/collapsible.tsx",
+          "path": "components/bjork-ui/primitives/collapsible.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/collapsible.tsx"
+          "target": "@components/bjork-ui/primitives/collapsible.tsx"
         },
         {
           "path": "components/ui/collapsible.tsx",
@@ -9580,9 +9579,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/combobox.tsx",
+          "path": "components/bjork-ui/primitives/combobox.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/combobox.tsx"
+          "target": "@components/bjork-ui/primitives/combobox.tsx"
         },
         {
           "path": "components/ui/command.tsx",
@@ -9605,14 +9604,14 @@
           "target": "@ui/popover.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/_shared.ts",
+          "path": "components/bjork-ui/primitives/_shared.ts",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/_shared.ts"
+          "target": "@components/bjork-ui/primitives/_shared.ts"
         }
       ],
       "meta": {
@@ -9788,14 +9787,14 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/data-table.tsx",
+          "path": "components/bjork-ui/primitives/data-table.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/data-table.tsx"
+          "target": "@components/bjork-ui/primitives/data-table.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -9803,14 +9802,14 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/input.tsx",
+          "path": "components/bjork-ui/primitives/input.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/input.tsx"
+          "target": "@components/bjork-ui/primitives/input.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/table.tsx",
+          "path": "components/bjork-ui/primitives/table.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/table.tsx"
+          "target": "@components/bjork-ui/primitives/table.tsx"
         },
         {
           "path": "components/ui/table.tsx",
@@ -9818,14 +9817,14 @@
           "target": "@ui/table.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/badge.tsx",
+          "path": "components/bjork-ui/primitives/badge.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/badge.tsx"
+          "target": "@components/bjork-ui/primitives/badge.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         }
       ],
       "meta": {
@@ -10005,9 +10004,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/date-picker.tsx",
+          "path": "components/bjork-ui/primitives/date-picker.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/date-picker.tsx"
+          "target": "@components/bjork-ui/primitives/date-picker.tsx"
         },
         {
           "path": "components/ui/popover.tsx",
@@ -10020,14 +10019,14 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/calendar.tsx",
+          "path": "components/bjork-ui/primitives/calendar.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/calendar.tsx"
+          "target": "@components/bjork-ui/primitives/calendar.tsx"
         },
         {
           "path": "components/ui/calendar.tsx",
@@ -10040,9 +10039,9 @@
           "target": "@ui/button.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/_shared.ts",
+          "path": "components/bjork-ui/primitives/_shared.ts",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/_shared.ts"
+          "target": "@components/bjork-ui/primitives/_shared.ts"
         }
       ],
       "meta": {
@@ -10216,9 +10215,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/dialog.tsx",
+          "path": "components/bjork-ui/primitives/dialog.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/dialog.tsx"
+          "target": "@components/bjork-ui/primitives/dialog.tsx"
         },
         {
           "path": "components/ui/dialog.tsx",
@@ -10402,9 +10401,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/dropdown-menu.tsx",
+          "path": "components/bjork-ui/primitives/dropdown-menu.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/dropdown-menu.tsx"
+          "target": "@components/bjork-ui/primitives/dropdown-menu.tsx"
         },
         {
           "path": "components/ui/dropdown-menu.tsx",
@@ -10417,9 +10416,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/_shared.ts",
+          "path": "components/bjork-ui/primitives/_shared.ts",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/_shared.ts"
+          "target": "@components/bjork-ui/primitives/_shared.ts"
         }
       ],
       "meta": {
@@ -10595,14 +10594,14 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/form.tsx",
+          "path": "components/bjork-ui/primitives/form.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/form.tsx"
+          "target": "@components/bjork-ui/primitives/form.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -10610,14 +10609,14 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/input.tsx",
+          "path": "components/bjork-ui/primitives/input.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/input.tsx"
+          "target": "@components/bjork-ui/primitives/input.tsx"
         }
       ],
       "meta": {
@@ -10791,9 +10790,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/input.tsx",
+          "path": "components/bjork-ui/primitives/input.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/input.tsx"
+          "target": "@components/bjork-ui/primitives/input.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -10973,14 +10972,14 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/input-mask.tsx",
+          "path": "components/bjork-ui/primitives/input-mask.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/input-mask.tsx"
+          "target": "@components/bjork-ui/primitives/input-mask.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/input.tsx",
+          "path": "components/bjork-ui/primitives/input.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/input.tsx"
+          "target": "@components/bjork-ui/primitives/input.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -11159,9 +11158,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/input-otp.tsx",
+          "path": "components/bjork-ui/primitives/input-otp.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/input-otp.tsx"
+          "target": "@components/bjork-ui/primitives/input-otp.tsx"
         },
         {
           "path": "components/ui/input-otp.tsx",
@@ -11346,9 +11345,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/pagination.tsx",
+          "path": "components/bjork-ui/primitives/pagination.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/pagination.tsx"
+          "target": "@components/bjork-ui/primitives/pagination.tsx"
         },
         {
           "path": "components/ui/pagination.tsx",
@@ -11536,9 +11535,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/popover.tsx",
+          "path": "components/bjork-ui/primitives/popover.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/popover.tsx"
+          "target": "@components/bjork-ui/primitives/popover.tsx"
         },
         {
           "path": "components/ui/popover.tsx",
@@ -11551,9 +11550,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/_shared.ts",
+          "path": "components/bjork-ui/primitives/_shared.ts",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/_shared.ts"
+          "target": "@components/bjork-ui/primitives/_shared.ts"
         }
       ],
       "meta": {
@@ -11727,9 +11726,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/radio-group.tsx",
+          "path": "components/bjork-ui/primitives/radio-group.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/radio-group.tsx"
+          "target": "@components/bjork-ui/primitives/radio-group.tsx"
         },
         {
           "path": "components/ui/radio-group.tsx",
@@ -11913,9 +11912,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/select.tsx",
+          "path": "components/bjork-ui/primitives/select.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/select.tsx"
+          "target": "@components/bjork-ui/primitives/select.tsx"
         },
         {
           "path": "components/ui/select.tsx",
@@ -11928,9 +11927,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/_shared.ts",
+          "path": "components/bjork-ui/primitives/_shared.ts",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/_shared.ts"
+          "target": "@components/bjork-ui/primitives/_shared.ts"
         }
       ],
       "meta": {
@@ -12104,9 +12103,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/sheet.tsx",
+          "path": "components/bjork-ui/primitives/sheet.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/sheet.tsx"
+          "target": "@components/bjork-ui/primitives/sheet.tsx"
         },
         {
           "path": "components/ui/sheet.tsx",
@@ -12288,9 +12287,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/slider.tsx",
+          "path": "components/bjork-ui/primitives/slider.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/slider.tsx"
+          "target": "@components/bjork-ui/primitives/slider.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -12473,9 +12472,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/sonner.tsx",
+          "path": "components/bjork-ui/primitives/sonner.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/sonner.tsx"
+          "target": "@components/bjork-ui/primitives/sonner.tsx"
         },
         {
           "path": "components/ui/sonner.tsx",
@@ -12483,9 +12482,9 @@
           "target": "@ui/sonner.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/button.tsx",
+          "path": "components/bjork-ui/primitives/button.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/button.tsx"
+          "target": "@components/bjork-ui/primitives/button.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -12663,9 +12662,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/switch.tsx",
+          "path": "components/bjork-ui/primitives/switch.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/switch.tsx"
+          "target": "@components/bjork-ui/primitives/switch.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -12844,9 +12843,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/table.tsx",
+          "path": "components/bjork-ui/primitives/table.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/table.tsx"
+          "target": "@components/bjork-ui/primitives/table.tsx"
         },
         {
           "path": "components/ui/table.tsx",
@@ -12859,14 +12858,14 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/badge.tsx",
+          "path": "components/bjork-ui/primitives/badge.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/badge.tsx"
+          "target": "@components/bjork-ui/primitives/badge.tsx"
         },
         {
-          "path": "components/isaiahbjork/primitives/card.tsx",
+          "path": "components/bjork-ui/primitives/card.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/card.tsx"
+          "target": "@components/bjork-ui/primitives/card.tsx"
         }
       ],
       "meta": {
@@ -13039,9 +13038,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/tabs.tsx",
+          "path": "components/bjork-ui/primitives/tabs.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/tabs.tsx"
+          "target": "@components/bjork-ui/primitives/tabs.tsx"
         },
         {
           "path": "components/ui/tabs.tsx",
@@ -13054,9 +13053,9 @@
           "target": "@lib/utils.ts"
         },
         {
-          "path": "components/isaiahbjork/primitives/_shared.ts",
+          "path": "components/bjork-ui/primitives/_shared.ts",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/_shared.ts"
+          "target": "@components/bjork-ui/primitives/_shared.ts"
         }
       ],
       "meta": {
@@ -13228,9 +13227,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/textarea.tsx",
+          "path": "components/bjork-ui/primitives/textarea.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/textarea.tsx"
+          "target": "@components/bjork-ui/primitives/textarea.tsx"
         },
         {
           "path": "components/ui/textarea.tsx",
@@ -13413,9 +13412,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/primitives/tooltip.tsx",
+          "path": "components/bjork-ui/primitives/tooltip.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/primitives/tooltip.tsx"
+          "target": "@components/bjork-ui/primitives/tooltip.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -13594,9 +13593,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/shaders/website-shader.tsx",
+          "path": "components/bjork-ui/shaders/website-shader.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/shaders/website-shader.tsx"
+          "target": "@components/bjork-ui/shaders/website-shader.tsx"
         },
         {
           "path": "lib/utils.ts",
@@ -13775,9 +13774,9 @@
       },
       "files": [
         {
-          "path": "components/isaiahbjork/shaders/website-shader.tsx",
+          "path": "components/bjork-ui/shaders/website-shader.tsx",
           "type": "registry:component",
-          "target": "@components/isaiahbjork/shaders/website-shader.tsx"
+          "target": "@components/bjork-ui/shaders/website-shader.tsx"
         },
         {
           "path": "lib/utils.ts",

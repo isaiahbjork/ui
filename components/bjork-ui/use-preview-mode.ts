@@ -1,13 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
+
+function subscribe() {
+  return () => {};
+}
+
+function getSearchSnapshot() {
+  return typeof window === "undefined" ? "" : window.location.search;
+}
+
+export function usePreviewSearchParam(name: string) {
+  const search = useSyncExternalStore(subscribe, getSearchSnapshot, () => "");
+
+  return useMemo(() => new URLSearchParams(search).get(name), [name, search]);
+}
 
 export function usePreviewMode() {
-  const [isPreview, setIsPreview] = useState(false);
-
-  useEffect(() => {
-    setIsPreview(new URLSearchParams(window.location.search).get("preview") === "1");
-  }, []);
-
-  return isPreview;
+  return usePreviewSearchParam("preview") === "1";
 }

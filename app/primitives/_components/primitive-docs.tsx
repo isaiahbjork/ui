@@ -1,5 +1,6 @@
 "use client";
 
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import * as React from "react";
 import {
   Check,
@@ -19,6 +20,7 @@ export interface PrimitivePreviewExample {
   code: string;
   preview: React.ReactNode;
   previewClassName?: string;
+  staticScaleClassName?: string;
 }
 
 interface PropRow {
@@ -93,16 +95,11 @@ export function PrimitivePreviewExamples({
   examples: readonly PrimitivePreviewExample[];
   className?: string;
 }) {
-  const isLight = useIsLightTheme();
+  const isLightTheme = useIsLightTheme();
   const shouldReduceMotion = useReducedMotion();
+    const isLight = usePreviewSearchParam("theme") === "light" || isLightTheme;
   const [flipped, setFlipped] = React.useState<Record<string, boolean>>({});
-  const [isStaticPreview, setIsStaticPreview] = React.useState(false);
-
-  React.useEffect(() => {
-    setIsStaticPreview(
-      new URLSearchParams(window.location.search).get("preview") === "1",
-    );
-  }, []);
+  const isStaticPreview = usePreviewMode();
 
   const toggleCode = React.useCallback((label: string) => {
     setFlipped((current) => ({
@@ -146,7 +143,9 @@ function PrimitiveStaticPreview({
     <div
       className={cn(
         "flex h-[520px] w-[900px] items-center justify-center overflow-hidden",
-        isLight ? "bg-[#f7f5ef] text-[#171717]" : "bg-[#111] text-[#ededed]",
+        isLight
+          ? "light bg-[var(--bjork-bg)] text-[#171717]"
+          : "dark bg-[var(--bjork-bg)] text-[#ededed]",
       )}
     >
       <div
@@ -162,7 +161,12 @@ function PrimitiveStaticPreview({
               featuredExample.previewClassName,
             )}
           >
-            <div className="flex origin-center scale-[1.9] items-center justify-center">
+            <div
+              className={cn(
+                "flex origin-center items-center justify-center",
+                featuredExample.staticScaleClassName ?? "scale-[1.9]",
+              )}
+            >
               {featuredExample.preview}
             </div>
           </div>
@@ -286,7 +290,7 @@ function PrimitiveExamplePanel({
                 className={cn(
                   "relative min-h-0 flex-1 overflow-hidden rounded-[16px]",
                   isLight
-                    ? "bg-[#e8e3d8] shadow-[inset_0_1px_0_rgba(255,255,255,0.74),inset_0_14px_32px_rgba(92,78,54,0.07)]"
+                    ? "border border-[#eee6db] bg-[#f4f1e9] shadow-[inset_0_1px_0_rgba(255,255,255,0.78),inset_0_14px_28px_rgba(92,78,54,0.035)]"
                     : "bg-[#070707] shadow-[inset_0_1px_0_rgba(255,255,255,0.04),inset_0_16px_34px_rgba(0,0,0,0.42)]",
                 )}
               >
@@ -446,7 +450,7 @@ function PrimitiveControlGroup({
       className={cn(
         "absolute right-4 top-4 z-20 flex gap-1 rounded-[14px] border p-1 backdrop-blur-sm",
         isLight
-          ? "border-[#d8d3c7] bg-[#f4f1e9]/92 shadow-[inset_0_7px_14px_rgba(255,255,255,0.58),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_12px_20px_-12px_rgba(55,47,36,0.22)]"
+          ? "border-[#eee6db] bg-[#fffcf6]/92 shadow-[inset_0_7px_14px_rgba(88,72,49,0.045),inset_0_0.5px_0.5px_rgba(255,255,255,0.92),inset_1px_0_0_rgba(88,72,49,0.026),inset_-1px_0_0_rgba(255,255,255,0.68),0_14px_22px_-9px_rgba(66,52,33,0.11)]"
           : "border-[#232323] bg-[#181818]/88 shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_12px_18px_-10px_rgba(0,0,0,0.55)]",
       )}
     >
@@ -477,7 +481,7 @@ function PrimitiveToolbarButton({
       className={cn(
         "flex size-7 items-center justify-center rounded-[10px] transition active:scale-95",
         isLight
-          ? "text-[#171717]/48 hover:bg-[#e8e2d8] hover:text-[#171717]/78 focus-visible:bg-[#e8e2d8] focus-visible:text-[#171717]/78"
+          ? "text-[#171717]/44 hover:bg-[#f1ece3] hover:text-[#171717]/68 focus-visible:bg-[#f1ece3] focus-visible:text-[#171717]/68"
           : "text-[#ededed]/42 hover:bg-[#232323] hover:text-[#ededed]/72 focus-visible:bg-[#232323] focus-visible:text-[#ededed]/72",
       )}
     >

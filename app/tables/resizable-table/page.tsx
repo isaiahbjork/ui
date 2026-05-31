@@ -1,14 +1,19 @@
 "use client";
 
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import {
   ResizableTable,
-} from "@/components/isaiahbjork/tables/resizable-table";
+} from "@/components/bjork-ui/tables/resizable-table";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("resizable-table");
 
 export default function ResizableTableDemo() {
+  const isPreview = usePreviewMode();
+  const previewTheme = usePreviewSearchParam("theme");
+  const tableTheme = previewTheme === "light" || previewTheme === "dark" ? previewTheme : "auto";
+
   const handleEmployeeSelect = (employeeId: string) => {
     console.log(`Selected employee:`, employeeId);
   };
@@ -24,7 +29,13 @@ export default function ResizableTableDemo() {
       previewScaleClassName="w-[980px] scale-[0.68]"
       previewInnerClassName="bg-[#f7f5ef] dark:bg-[#111]"
     >
-      <ResizableTable title="Employee" onEmployeeSelect={handleEmployeeSelect} onColumnResize={handleColumnResize} />
+      <ResizableTable
+        title="Employee"
+        onEmployeeSelect={handleEmployeeSelect}
+        onColumnResize={handleColumnResize}
+        theme={tableTheme}
+        enableAnimations={!isPreview}
+      />
     </SimpleComponentDemoPage>
   );
 }

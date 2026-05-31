@@ -1,6 +1,6 @@
 "use client";
 
-import { NewsCards } from "@/components/isaiahbjork/cards/news-cards";
+import { NewsCards } from "@/components/bjork-ui/cards/news-cards";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 

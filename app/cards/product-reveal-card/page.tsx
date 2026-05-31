@@ -1,7 +1,7 @@
 "use client"
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell"
-import { ProductRevealCard } from "@/components/isaiahbjork/cards/product-reveal-card"
+import { ProductRevealCard } from "@/components/bjork-ui/cards/product-reveal-card"
 import { getGalleryItem } from "@/lib/bjork-gallery"
 
 const item = getGalleryItem("product-reveal-card")

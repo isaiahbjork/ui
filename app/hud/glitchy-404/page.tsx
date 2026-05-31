@@ -1,7 +1,7 @@
 "use client";
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { Glitchy404 } from "@/components/isaiahbjork/hud/glitchy-404";
+import { Glitchy404 } from "@/components/bjork-ui/hud/glitchy-404";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("glitchy-404");

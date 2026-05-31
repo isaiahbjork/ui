@@ -11,10 +11,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/checkbox.tsx",
+      "path": "components/bjork-ui/primitives/checkbox.tsx",
       "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { Checkbox } from \"@/components/ui/checkbox\";\nimport { cn } from \"@/lib/utils\";\n\nexport function BjorkCheckbox({\n  className,\n  ...props\n}: React.ComponentProps<typeof Checkbox>) {\n  return (\n    <Checkbox\n      className={cn(\n        \"size-5 rounded-[7px] border-[color:var(--bjork-border-strong)] bg-[var(--bjork-bg)] text-white shadow-[var(--bjork-shadow-soft)] data-[state=checked]:border-[#ec5c13] data-[state=checked]:bg-[#ec5c13] focus-visible:ring-[#ec5c13]/35\",\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/checkbox.tsx"
+      "target": "@components/bjork-ui/primitives/checkbox.tsx"
     },
     {
       "path": "components/ui/checkbox.tsx",

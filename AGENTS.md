@@ -17,6 +17,8 @@ Our components follow Emil Kowalski's principle that **great animations feel rig
 - Avoid animating `margin`, `padding`, `width`, `height` - these trigger expensive layout/paint steps
 - Use CSS or WAAPI for main thread independence when needed
 - For Framer Motion, prefer spring animations over `requestAnimationFrame` dependent animations
+- For predetermined motion that must stay smooth while the page is busy, prefer CSS animations/transitions or WAAPI over JavaScript-driven animation.
+- When using Framer Motion under heavy load, prefer animating a full `transform` string or CSS variables that affect only the animated element; shorthand values like `x`, `y`, and `scale` are convenient, but can still depend on the main thread.
 
 ```typescript
 // ✅ Good - Hardware accelerated
@@ -25,6 +27,57 @@ animate={{ opacity: 1, scale: 1, y: 0 }}
 // ❌ Bad - Triggers layout
 animate={{ height: "auto", margin: "10px" }}
 ```
+
+### Animation Decision Framework
+Before adding motion, answer these questions in order:
+
+1. **Should this animate at all?**
+
+| Frequency | Decision |
+| --- | --- |
+| 100+ times/day, such as keyboard shortcuts or command palette toggles | No animation |
+| Tens of times/day, such as repeated hover effects or list navigation | Remove it or make it extremely subtle |
+| Occasional, such as modals, drawers, popovers, and toasts | Standard fast UI animation |
+| Rare or first-time, such as onboarding or celebratory feedback | Can include more delight |
+
+- Never animate keyboard-initiated actions that users repeat constantly. The interface should feel instant and directly connected to input.
+- If the only reason for an animation is "it looks cool" and users will see it often, remove it.
+
+2. **What purpose does the animation serve?**
+
+- Spatial consistency: an element enters and exits from a direction that matches the user's mental model.
+- State indication: the animation clarifies that something changed.
+- Explanation: motion teaches how a feature works.
+- Feedback: press, hover, drag, and completion states confirm the UI heard the user.
+- Softening a jarring change: appearance/disappearance should not feel broken.
+
+3. **What easing should it use?**
+
+- Entering or exiting UI: use `ease-out` so feedback starts immediately.
+- Moving or morphing on screen: use `ease-in-out`.
+- Hover and color changes: use `ease`.
+- Constant motion: use `linear`.
+- Avoid `ease-in` for UI interactions; the slow start makes the interface feel late.
+
+Use stronger custom curves instead of relying only on weak built-in CSS easings:
+
+```css
+--ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+--ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+--ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+```
+
+4. **How fast should it be?**
+
+| Element | Duration |
+| --- | --- |
+| Button press feedback | 100-160ms |
+| Tooltips and small popovers | 125-200ms |
+| Dropdowns and selects | 150-250ms |
+| Modals and drawers | 200-500ms |
+| Marketing or explanatory motion | Can be longer |
+
+As a rule, functional UI animation should usually stay under 300ms. Perceived performance matters: a 180ms select often feels meaningfully better than a 400ms one even when the state change is identical.
 
 ### 2. **Accessibility & Reduced Motion**
 **ALWAYS respect user preferences** with `useReducedMotion()`:
@@ -41,6 +94,8 @@ const duration = shouldReduceMotion ? 0.3 : 2.5
 - Use Framer Motion's natural interruptibility
 - Prefer CSS transitions over keyframes for interruptible animations
 - Allow state changes at any time during animation
+- Prefer transitions for dynamic UI that may be retargeted rapidly; keyframes restart from zero and can feel brittle during repeated state changes.
+- Use springs for gesture-driven motion because they preserve velocity when interrupted.
 
 ```typescript
 // ✅ Interruptible spring animation
@@ -93,6 +148,10 @@ transition={{
 }}
 ```
 
+- Use springs for drag interactions, gesture interruption, decorative mouse-tracking, and elements that should feel physically responsive.
+- Keep bounce subtle, usually `0.1-0.3`, and avoid bounce in serious UI unless it is tied to a gesture or intentionally playful moment.
+- For decorative mouse tracking, smooth direct pointer values through `useSpring()` so the motion has momentum instead of snapping to the cursor.
+
 ### 6. **Micro-Interactions & Overshooting**
 Add subtle overshooting and scaling for satisfying interactions:
 
@@ -114,6 +173,9 @@ whileHover={{
   transition: { type: "spring", stiffness: 400, damping: 25 }
 }}
 ```
+
+- Any pressable element should have an immediate active state, usually `scale(0.95)` to `scale(0.98)`.
+- Never animate elements from `scale(0)`. Use `scale(0.9)` or higher plus opacity so the element feels like it already has a physical presence.
 
 ### 7. **Staggered Animations**
 Create sophisticated entrance effects:
@@ -178,6 +240,9 @@ ease: "easeOut"
 ease: "easeInOut"
 ```
 
+- Use custom curves such as `[0.23, 1, 0.32, 1]` for strong ease-out UI responses and `[0.77, 0, 0.175, 1]` for deliberate in-place movement.
+- Do not use `ease-in` for dropdowns, popovers, or other interactive UI reveals because the delayed start feels unresponsive.
+
 ### 10. **Progressive Disclosure**
 Animate height and opacity together for smooth reveals:
 
@@ -200,6 +265,9 @@ variants={{
   }
 }}
 ```
+
+- For enter animations in CSS, prefer `@starting-style` when browser support is acceptable. It avoids extra React mount state for simple entry transitions.
+- When `height: auto` is necessary, keep it scoped and consider whether a transform, clip, or opacity treatment can avoid layout work.
 
 ## Advanced Patterns
 
@@ -228,6 +296,11 @@ onDragEnd={(_, info) => {
 }}
 ```
 
+- For dismissible gestures, consider both distance and velocity. A fast flick should dismiss even if it does not cross the full distance threshold.
+- Apply damping or friction when users drag beyond natural boundaries instead of using hard stops.
+- Use pointer capture once dragging starts so the gesture continues even if the pointer leaves the element.
+- Ignore additional touch points after the initial drag begins to prevent jumps during multi-touch interactions.
+
 ### 13. **Coordinated Multi-Element Animations**
 Orchestrate multiple elements:
 
@@ -244,27 +317,52 @@ const parentVariants = {
 }
 ```
 
+### 14. **Popover, Tooltip, and Anchored UI Details**
+- Popovers should scale from their trigger using the library-provided transform origin, such as `var(--radix-popover-content-transform-origin)` or `var(--transform-origin)`.
+- Modals are the exception: keep modal transform origin centered because they are anchored to the viewport, not a trigger.
+- Tooltips should have an initial delay to avoid accidental activation. Once one tooltip in a toolbar is open, adjacent tooltips should appear instantly with little or no animation.
+- Use `translateY(100%)` or `translateX(100%)` when hiding an element by its own size; percentage transforms are relative to the element itself and adapt to content.
+
+### 15. **Clip-Path Techniques**
+- Use `clip-path: inset(...)` for high-quality reveals, hold-to-confirm overlays, comparison sliders, image reveals, and perfect active-tab color transitions.
+- For active tab color transitions, duplicate the tab layer, style the copy as active, then clip the active layer to the selected tab instead of trying to synchronize independent color transitions.
+- For hold-to-delete or hold-to-confirm, animate a clipped overlay from `inset(0 100% 0 0)` to `inset(0 0 0 0)` while the button is active, then snap it back quickly on release.
+
 ## Implementation Guidelines
 
-### 14. **Component Structure**
+### 16. **Component Structure**
 - Always wrap animated components with motion elements
 - Use AnimatePresence for mount/unmount animations
 - Separate animation logic from business logic
 - Create reusable animation variants
 
-### 15. **Testing Animations**
+### 17. **Testing Animations**
 - Test with reduced motion enabled
 - Review animations the next day with fresh eyes
 - Test interruption scenarios
 - Verify performance on lower-end devices
+- When performance matters, inspect whether the animation triggers layout or paint, not just whether it looks smooth on a fast machine.
 
-### 16. **Animation Timing**
+### 18. **Animation Timing**
 - **Micro-interactions**: 150-300ms
 - **State transitions**: 300-500ms  
 - **Page transitions**: 500-800ms
 - **Reveal animations**: 400-600ms with stagger delays
 
 Remember: Animations should feel effortless and enhance the user's mental model of the interface. When in doubt, err on the side of subtlety and performance.
+
+## UI Review Format
+
+When reviewing UI, animation, or interaction code, lead with a markdown table that compares the current implementation with the recommended change:
+
+| Before | After | Why |
+| --- | --- | --- |
+| `transition: all 300ms` | `transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out)` | Specify exact properties and avoid animating unrelated work |
+| `transform: scale(0)` | `transform: scale(0.95); opacity: 0` | Elements should not appear from nothing |
+| `ease-in` on a dropdown | `var(--ease-out)` | UI should respond immediately to input |
+| No `:active` state | `transform: scale(0.97)` on press | Pressable controls need instant feedback |
+
+Keep review findings concrete and tied to user-visible behavior, performance, accessibility, or maintainability.
 
 ---
 
@@ -350,7 +448,7 @@ interface ComponentProps {
 
 ## Advanced Micro-Animation Patterns
 
-### 17. **Sequential State Transitions**
+### 19. **Sequential State Transitions**
 When multiple elements need coordinated timing:
 
 ```typescript
@@ -373,7 +471,7 @@ const dockVariants = {
 }
 ```
 
-### 18. **Contextual Animation Behavior**
+### 20. **Contextual Animation Behavior**
 Adapt animations based on interaction context:
 
 ```typescript
@@ -385,7 +483,7 @@ const hoverAnimation = !isExpanded
 whileHover={hoverAnimation}
 ```
 
-### 19. **Intelligent Exit Animations**
+### 21. **Intelligent Exit Animations**
 Remove problematic animations during state changes:
 
 ```typescript
@@ -397,7 +495,7 @@ exit={{
 }}
 ```
 
-### 20. **Absolute Positioning for Complex Layouts**
+### 22. **Absolute Positioning for Complex Layouts**
 When elements need to stay in place during transformations:
 
 ```typescript
@@ -413,7 +511,7 @@ style={{
 }}
 ```
 
-### 21. **Dynamic Width Animations**
+### 23. **Dynamic Width Animations**
 Smooth container resizing with spring physics:
 
 ```typescript
@@ -428,7 +526,7 @@ transition={{
 }}
 ```
 
-### 22. **Conditional Animation Variants**
+### 24. **Conditional Animation Variants**
 Enable/disable animations while maintaining functionality:
 
 ```typescript
@@ -442,7 +540,7 @@ const shouldAnimate = enableAnimations && !shouldReduceMotion;
 >
 ```
 
-### 23. **Input Focus Management**
+### 25. **Input Focus Management**
 Smooth focus transitions for form elements:
 
 ```typescript
@@ -458,7 +556,7 @@ Smooth focus transitions for form elements:
 />
 ```
 
-### 24. **Progressive Enhancement Strategy**
+### 26. **Progressive Enhancement Strategy**
 Build components in layers for maximum compatibility:
 
 1. **Static HTML structure** - Works without JavaScript
@@ -467,7 +565,7 @@ Build components in layers for maximum compatibility:
 4. **Gesture integration** - Touch/drag interactions
 5. **Accessibility refinements** - Screen reader optimizations
 
-### 25. **Component Composition Patterns**
+### 27. **Component Composition Patterns**
 Structure components for maximum reusability:
 
 ```typescript
@@ -486,13 +584,13 @@ const AnimatedContainer = ({ children, ...props }) => (
 
 ## Performance Optimization Techniques
 
-### 26. **Animation Performance Monitoring**
+### 28. **Animation Performance Monitoring**
 - Use browser DevTools Performance tab during development
 - Monitor Composite layers in Rendering tab
 - Avoid animations that trigger Layout or Paint
 - Prefer `transform` and `opacity` for 60fps animations
 
-### 27. **Conditional Rendering for Performance**
+### 29. **Conditional Rendering for Performance**
 ```typescript
 // Only render heavy animations when needed
 {isVisible && enableAnimations && (
@@ -504,7 +602,7 @@ const AnimatedContainer = ({ children, ...props }) => (
 )}
 ```
 
-### 28. **Memory Management**
+### 30. **Memory Management**
 - Clean up event listeners in useEffect cleanup
 - Use AnimatePresence properly to avoid memory leaks
 - Avoid creating new animation objects on every render
@@ -515,7 +613,7 @@ Remember: These components go into production applications. Every animation shou
 
 ## Theme-Aware Design & Component Lessons
 
-### 29. **Always Use Theme-Aware Colors**
+### 31. **Always Use Theme-Aware Colors**
 Our [globals.css](mdc:app/globals.css) defines comprehensive theme variables. **NEVER hardcode colors** - always use theme tokens:
 
 ```typescript
@@ -528,7 +626,7 @@ className="bg-black/20 border-gray-200"
 className="bg-gray-100 text-gray-600"
 ```
 
-### 30. **Blur Overlay Best Practices**
+### 32. **Blur Overlay Best Practices**
 For backdrop blur overlays, use background theme colors instead of hardcoded black:
 
 ```typescript
@@ -539,7 +637,7 @@ className="absolute inset-0 bg-background/60 backdrop-blur-sm"
 className="absolute inset-0 bg-black/20 backdrop-blur-sm"
 ```
 
-### 31. **Fast, Sophisticated Intro Animations**
+### 33. **Fast, Sophisticated Intro Animations**
 Users prefer snappy animations. Target **1 second total** for complete entrance effects:
 
 ```typescript
@@ -558,7 +656,7 @@ staggerChildren: 0.15,
 delayChildren: 0.8,
 ```
 
-### 32. **Sophisticated Blur-In Effects**
+### 34. **Sophisticated Blur-In Effects**
 Use blur + transform combinations for premium feel:
 
 ```typescript
@@ -585,7 +683,7 @@ const itemVariants = {
 }
 ```
 
-### 33. **Proper Border Styling**
+### 35. **Proper Border Styling**
 Use theme-aware borders with proper opacity:
 
 ```typescript
@@ -598,7 +696,7 @@ className="border-gray-200"
 className="border-background/40"
 ```
 
-### 34. **Component Interface Best Practices**
+### 36. **Component Interface Best Practices**
 Always create comprehensive TypeScript interfaces for production components:
 
 ```typescript
@@ -621,7 +719,7 @@ interface ComponentProps {
 }
 ```
 
-### 35. **Export Convention**
+### 37. **Export Convention**
 Use named exports for reusable components:
 
 ```typescript
@@ -632,7 +730,7 @@ export function HoverDetailCard({ ... }) { ... }
 export default function HoverDetailCard({ ... }) { ... }
 ```
 
-### 36. **Essential UX Details**
+### 38. **Essential UX Details**
 Don't forget the small details that matter:
 
 ```typescript
@@ -646,7 +744,7 @@ alt={`${title} ${index + 1}`}
 <motion.button> instead of <motion.div>
 ```
 
-### 37. **Animation Performance Optimization**
+### 39. **Animation Performance Optimization**
 Always consider performance implications:
 
 ```typescript
@@ -660,7 +758,7 @@ const shouldAnimate = enableAnimations && !shouldReduceMotion;
 className="transform-gpu"
 ```
 
-### 38. **Theme Variables Reference**
+### 40. **Theme Variables Reference**
 Key theme tokens from our [globals.css](mdc:app/globals.css):
 
 - **Backgrounds**: `bg-background`, `bg-card`, `bg-muted`
@@ -674,4 +772,3 @@ These tokens automatically adapt between light and dark modes, ensuring consiste
 When working directly with SVGs use next-themes and the const isDark = theme === "dark" to determine the color of the svg.
 - useTheme() to get the current theme.
 This will ensure that the svg is always the correct color in both light and dark mode in our demos.
-

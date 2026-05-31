@@ -11,10 +11,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/breadcrumb.tsx",
+      "path": "components/bjork-ui/primitives/breadcrumb.tsx",
       "content": "\"use client\";\n\nimport * as React from \"react\";\nimport {\n  Breadcrumb,\n  BreadcrumbEllipsis,\n  BreadcrumbItem,\n  BreadcrumbLink,\n  BreadcrumbList,\n  BreadcrumbPage,\n  BreadcrumbSeparator,\n} from \"@/components/ui/breadcrumb\";\nimport { cn } from \"@/lib/utils\";\n\nexport function BjorkBreadcrumb({\n  className,\n  ...props\n}: React.ComponentProps<typeof Breadcrumb>) {\n  return <Breadcrumb className={cn(\"text-[color:var(--bjork-text-soft)]\", className)} {...props} />;\n}\n\nexport {\n  BreadcrumbEllipsis as BjorkBreadcrumbEllipsis,\n  BreadcrumbItem as BjorkBreadcrumbItem,\n  BreadcrumbLink as BjorkBreadcrumbLink,\n  BreadcrumbList as BjorkBreadcrumbList,\n  BreadcrumbPage as BjorkBreadcrumbPage,\n  BreadcrumbSeparator as BjorkBreadcrumbSeparator,\n};\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/breadcrumb.tsx"
+      "target": "@components/bjork-ui/primitives/breadcrumb.tsx"
     },
     {
       "path": "components/ui/breadcrumb.tsx",

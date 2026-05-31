@@ -1,7 +1,7 @@
 "use client";
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { GradientSelector, type GradientOption } from "@/components/isaiahbjork/dropdowns/gradient-selector";
+import { GradientSelector, type GradientOption } from "@/components/bjork-ui/dropdowns/gradient-selector";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("gradient-selector");

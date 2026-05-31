@@ -1,15 +1,16 @@
 "use client";
 
-import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { Images, Layers, MousePointer2 } from "lucide-react";
 import { ComponentDemoShell } from "@/components/bjork-ui/component-demo-shell";
-import { PortfolioGallery } from "@/components/isaiahbjork/galleries/portfolio-gallery";
+import { PortfolioGallery } from "@/components/bjork-ui/galleries/portfolio-gallery";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("portfolio-gallery");
 
 export default function PortfolioGalleryDemo() {
   const isPreview = usePreviewMode();
+    const previewTone = usePreviewSearchParam("theme") === "light" ? "light" : "dark";
   const demo = (
     <div className="h-[620px] w-full overflow-hidden rounded-[18px]">
       <PortfolioGallery 
@@ -23,14 +24,16 @@ export default function PortfolioGalleryDemo() {
         }}
         pauseOnHover={true}
         marqueeRepeat={3}
+        tone={isPreview ? previewTone : undefined}
+        thumbnailMode={isPreview}
       />
     </div>
   );
 
   if (isPreview) {
     return (
-      <div className="flex min-h-screen items-center justify-center overflow-hidden bg-[#111111]">
-        <div className="w-[900px] scale-[0.5]">{demo}</div>
+      <div className={previewTone === "light" ? "flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f5ef]" : "flex min-h-screen items-center justify-center overflow-hidden bg-[#111]"}>
+        <div className="w-[900px] scale-[0.62]">{demo}</div>
       </div>
     );
   }
@@ -60,7 +63,7 @@ export default function PortfolioGalleryDemo() {
         },
       ]}
       cliCommand="npx shadcn add @bjork-ui/portfolio-gallery"
-      usageCode={`import { PortfolioGallery } from "@/components/isaiahbjork/galleries/portfolio-gallery";
+      usageCode={`import { PortfolioGallery } from "@/components/bjork-ui/galleries/portfolio-gallery";
 
 export function Demo() {
   return <PortfolioGallery title="Creative library" />;

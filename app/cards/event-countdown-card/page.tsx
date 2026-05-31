@@ -1,7 +1,7 @@
 "use client"
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell"
-import { EventCountdownCard } from "@/components/isaiahbjork/cards/event-countdown-card"
+import { EventCountdownCard } from "@/components/bjork-ui/cards/event-countdown-card"
 import { getGalleryItem } from "@/lib/bjork-gallery"
 
 const item = getGalleryItem("event-countdown-card")

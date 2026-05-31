@@ -1,7 +1,7 @@
 "use client"
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell"
-import { ProfileHoverCard } from "@/components/isaiahbjork/cards/profile-hover-card"
+import { ProfileHoverCard } from "@/components/bjork-ui/cards/profile-hover-card"
 import { getGalleryItem } from "@/lib/bjork-gallery"
 
 const item = getGalleryItem("profile-hover-card")

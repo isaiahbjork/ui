@@ -1,8 +1,9 @@
 "use client";
 
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import {
   ChevronLeft,
@@ -29,8 +30,8 @@ import {
 } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { galleryItems, type GalleryItem } from "@/lib/bjork-gallery";
-import { BjorkSlider } from "@/components/isaiahbjork/primitives/slider";
-import { WebsiteShaderCanvas } from "@/components/isaiahbjork/shaders/website-shader";
+import { BjorkSlider } from "@/components/bjork-ui/primitives/slider";
+import { WebsiteShaderCanvas } from "@/components/bjork-ui/shaders/website-shader";
 import {
   Drawer,
   DrawerClose,
@@ -56,6 +57,7 @@ interface ComponentDemoShellProps {
   details?: ReactNode;
   note?: ReactNode;
   onReset?: () => void;
+  showOptionsReset?: boolean;
   previewTone?: "dark" | "light";
   previewClassName?: string;
   previewInnerClassName?: string;
@@ -73,6 +75,7 @@ interface SimpleComponentDemoPageProps {
   details?: ReactNode;
   note?: ReactNode;
   previewScaleClassName?: string;
+  previewCaptureScaleClassName?: string;
   previewClassName?: string;
   previewInnerClassName?: string;
   previewLayout?: "single" | "list";
@@ -102,12 +105,12 @@ const shellPalettes = {
     preview: "border-0 bg-[#f7f5ef] text-[#151515] shadow-none",
     previewInner: "bg-[#f7f5ef]",
     toolbar:
-      "border-[#d8d3c7] bg-[#f4f1e9]/92 shadow-[inset_0_7px_14px_rgba(255,255,255,0.58),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_14px_24px_-10px_rgba(55,47,36,0.18)]",
+      "border-[#eee6db] bg-[#fffcf6]/92 shadow-[inset_0_7px_14px_rgba(88,72,49,0.045),inset_0_0.5px_0.5px_rgba(255,255,255,0.92),inset_1px_0_0_rgba(88,72,49,0.026),inset_-1px_0_0_rgba(255,255,255,0.68),0_14px_22px_-9px_rgba(66,52,33,0.11)]",
     options:
-      "border-[#d8d3c7] bg-[linear-gradient(180deg,rgba(250,248,242,0.96),rgba(232,228,218,0.94))]",
-    optionsMuted: "text-[#171717]/38 hover:bg-[#e9e5dc] hover:text-[#171717]/70",
-    optionsText: "text-[#171717]/52",
-    optionsButton: "text-[#171717]/38 hover:text-[#171717]",
+      "border-[#eee6db] bg-[#fffcf6]/92 shadow-[inset_0_7px_14px_rgba(88,72,49,0.045),inset_0_0.5px_0.5px_rgba(255,255,255,0.92),inset_1px_0_0_rgba(88,72,49,0.026),inset_-1px_0_0_rgba(255,255,255,0.68),0_14px_22px_-9px_rgba(66,52,33,0.11)]",
+    optionsMuted: "text-[#171717]/34 hover:bg-[#f1ece3] hover:text-[#171717]/62",
+    optionsText: "text-[#171717]/46",
+    optionsButton: "text-[#171717]/34 hover:text-[#171717]/70",
   },
 } as const;
 
@@ -162,6 +165,7 @@ export function ComponentDemoShell({
   details,
   note,
   onReset,
+  showOptionsReset = true,
   previewTone = "dark",
   previewClassName,
   previewInnerClassName,
@@ -440,14 +444,16 @@ export function ComponentDemoShell({
                   </button>
                   <div className={cn("flex items-center gap-2", palette.optionsText)}>
                     <span>Options</span>
-                    <button
-                      type="button"
-                      aria-label="Reset options"
-                    onClick={resetPreview}
-                    className={cn("rounded-md transition active:scale-95", palette.optionsButton)}
-                  >
-                      <RefreshCcw className="size-3.5" />
-                    </button>
+                    {showOptionsReset && (
+                      <button
+                        type="button"
+                        aria-label="Reset options"
+                        onClick={resetPreview}
+                        className={cn("rounded-md transition active:scale-95", palette.optionsButton)}
+                      >
+                        <RefreshCcw className="size-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-4">{controls}</div>
@@ -514,13 +520,13 @@ function SimpleComponentDemoPageContent({
   details,
   note,
   previewScaleClassName = "w-[760px] scale-[0.72]",
+  previewCaptureScaleClassName,
   previewClassName,
   previewInnerClassName,
   previewLayout = "single",
 }: SimpleComponentDemoPageProps) {
-  const searchParams = useSearchParams();
-  const isPreview = searchParams.get("preview") === "1";
-  const previewTheme = searchParams.get("theme");
+  const isPreview = usePreviewMode();
+  const previewTheme = usePreviewSearchParam("theme");
   const isPreviewLight = previewTheme === "light";
   const { setTheme } = useTheme();
 
@@ -535,6 +541,10 @@ function SimpleComponentDemoPageContent({
   if (!item) return null;
 
   const isListPreview = previewLayout === "list";
+  const previewFrameClassName =
+    isPreview && previewCaptureScaleClassName
+      ? previewCaptureScaleClassName
+      : previewScaleClassName;
 
   const demo = isListPreview ? (
     <div className="w-full min-w-0">{children}</div>
@@ -544,7 +554,7 @@ function SimpleComponentDemoPageContent({
         className="bjork-shell-demo-fit flex origin-center items-center justify-center lg:contents"
         style={
           {
-            "--bjork-demo-base-width": previewScaleClassName.match(/w-\[(\d+)px\]/)?.[1] ?? "760",
+            "--bjork-demo-base-width": previewFrameClassName.match(/w-\[(\d+)px\]/)?.[1] ?? "760",
           } as CSSProperties
         }
       >
@@ -561,11 +571,11 @@ function SimpleComponentDemoPageContent({
         className={cn(
           "flex min-h-screen items-center justify-center overflow-hidden",
           isPreviewLight
-            ? "bg-[#f7f5ef] text-[#171717]"
+            ? "light bg-[#f7f5ef] text-[#171717]"
             : "dark bg-[#111] text-[#ededed]"
         )}
       >
-        <div className={isListPreview ? "w-[900px]" : previewScaleClassName}>
+        <div className={isListPreview ? "w-[900px]" : previewFrameClassName}>
           {demo}
         </div>
       </div>
@@ -584,7 +594,7 @@ function SimpleComponentDemoPageContent({
       cliCommand={cliCommand ?? `npx shadcn add @bjork-ui/${item.slug}`}
       usageCode={
         usageCode ??
-        `import { ${toPascalCase(item.slug)} } from "@/components/isaiahbjork/${item.collection.toLowerCase()}/${item.slug}";\n\nexport function Demo() {\n  return <${toPascalCase(item.slug)} />;\n}`
+        `import { ${toPascalCase(item.slug)} } from "@/components/bjork-ui/${item.collection.toLowerCase()}/${item.slug}";\n\nexport function Demo() {\n  return <${toPascalCase(item.slug)} />;\n}`
       }
       details={details}
       note={note}
@@ -1592,9 +1602,9 @@ function ToolbarButton({
       onClick={onClick}
       className={cn(
         "flex size-9 items-center justify-center rounded-[13px] transition active:scale-95",
-        isLight ? "text-[#171717]/78 hover:bg-[#e7e1d5]" : "text-[#ededed] hover:bg-[#232323]",
+        isLight ? "text-[#171717]/68 hover:bg-[#f1ece3] hover:text-[#171717]/78" : "text-[#ededed] hover:bg-[#232323]",
         active && (isLight
-          ? "bg-[#e7e1d5] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] hover:bg-[#ded6c8]"
+          ? "bg-[#f1ece3] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] hover:bg-[#ece5d9]"
           : "bg-[#2b2b2b] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] hover:bg-[#303030]")
       )}
     >
@@ -1663,10 +1673,10 @@ export function ShellSegmented({
               "rounded-[10px] border px-2.5 py-1 text-sm transition active:scale-95",
               option.value === value
                 ? (isLight
-                  ? "border-[#c8c1b4] bg-[linear-gradient(180deg,#f5f1e8,#e4dccf)] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),inset_0_-1px_0_rgba(80,70,55,0.08)]"
+                  ? "border-[#eee6db] bg-[#f4f1e9] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),inset_0_8px_16px_rgba(88,72,49,0.035),0_8px_14px_-10px_rgba(66,52,33,0.16)]"
                   : "border-[#393939]/70 bg-[linear-gradient(180deg,#303030,#202020)] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.025)]")
                 : (isLight
-                  ? "border-transparent text-[#171717]/48 hover:bg-[#e9e3d8] hover:text-[#171717]"
+                  ? "border-transparent text-[#171717]/44 hover:bg-[#f1ece3] hover:text-[#171717]/72"
                   : "border-transparent text-[#ededed]/45 hover:bg-[#232323] hover:text-[#ededed]")
             )}
           >

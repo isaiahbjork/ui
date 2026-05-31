@@ -1,8 +1,9 @@
 "use client";
 
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { useState, useEffect } from "react";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { LeadsTable, type Lead } from "@/components/isaiahbjork/tables/leads-table";
+import { LeadsTable, type Lead } from "@/components/bjork-ui/tables/leads-table";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("leads-table");
@@ -119,6 +120,9 @@ const initialLeads: Lead[] = [
 ];
 
 export default function LeadsTableDemo() {
+  const isPreview = usePreviewMode();
+  const previewTheme = usePreviewSearchParam("theme");
+  const tableTheme = previewTheme === "light" || previewTheme === "dark" ? previewTheme : "auto";
   const [leads, setLeads] = useState<Lead[]>(initialLeads);
 
   const handleLeadAction = (leadId: string, action: string) => {
@@ -167,7 +171,12 @@ export default function LeadsTableDemo() {
       previewScaleClassName="w-[1200px] scale-[0.62]"
       previewInnerClassName="bg-[#f7f5ef] dark:bg-[#111]"
     >
-      <LeadsTable leads={leads} onLeadAction={handleLeadAction} />
+      <LeadsTable
+        leads={leads}
+        onLeadAction={handleLeadAction}
+        theme={tableTheme}
+        enableAnimations={!isPreview}
+      />
     </SimpleComponentDemoPage>
   );
 }

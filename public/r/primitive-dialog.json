@@ -11,10 +11,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/dialog.tsx",
+      "path": "components/bjork-ui/primitives/dialog.tsx",
       "content": "\"use client\";\n\nimport * as React from \"react\";\nimport {\n  Dialog,\n  DialogContent,\n  DialogDescription,\n  DialogFooter as DialogFooterPrimitive,\n  DialogHeader,\n  DialogTitle,\n  DialogTrigger,\n} from \"@/components/ui/dialog\";\nimport { cn } from \"@/lib/utils\";\n\nexport {\n  Dialog as BjorkDialog,\n  DialogDescription as BjorkDialogDescription,\n  DialogHeader as BjorkDialogHeader,\n  DialogTitle as BjorkDialogTitle,\n  DialogTrigger as BjorkDialogTrigger,\n};\n\nexport function BjorkDialogContent({\n  className,\n  ...props\n}: React.ComponentProps<typeof DialogContent>) {\n  return (\n    <DialogContent\n      className={cn(\n        \"rounded-[22px] border-[color:var(--bjork-border-muted)] bg-[var(--bjork-field)] text-[color:var(--bjork-text)] !shadow-[var(--bjork-shadow-surface)]\",\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n\nexport function BjorkDialogFooter({\n  className,\n  ...props\n}: React.ComponentProps<typeof DialogFooterPrimitive>) {\n  return (\n    <DialogFooterPrimitive\n      className={cn(\n        \"[&_[data-slot=bjork-button]]:h-9 [&_[data-slot=bjork-button]]:rounded-[12px] [&_[data-slot=bjork-button]]:px-3.5\",\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/dialog.tsx"
+      "target": "@components/bjork-ui/primitives/dialog.tsx"
     },
     {
       "path": "components/ui/dialog.tsx",

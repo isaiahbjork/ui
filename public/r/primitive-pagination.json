@@ -12,10 +12,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/pagination.tsx",
+      "path": "components/bjork-ui/primitives/pagination.tsx",
       "content": "\"use client\";\n\nimport {\n  Pagination,\n  PaginationContent,\n  PaginationEllipsis,\n  PaginationItem,\n  PaginationLink,\n  PaginationNext,\n  PaginationPrevious,\n} from \"@/components/ui/pagination\";\nimport { cn } from \"@/lib/utils\";\n\nexport function BjorkPagination() {\n  return (\n    <Pagination>\n      <PaginationContent className=\"rounded-[16px] border border-[color:var(--bjork-border)] bg-[var(--bjork-surface-muted)] p-1\">\n        <PaginationItem>\n          <PaginationPrevious className=\"h-9 rounded-[12px] px-3 text-[color:var(--bjork-text-muted)] hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)]\" />\n        </PaginationItem>\n        {[1, 2, 3].map((page) => (\n          <PaginationItem key={page}>\n            <PaginationLink\n              href=\"#\"\n              isActive={page === 2}\n              className={cn(\n                \"size-9 rounded-[12px] text-[color:var(--bjork-text-muted)] hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)]\",\n                page === 2 && \"border-[#ec5c13]/45 bg-[#ec5c13]/16 text-[#ec5c13]\",\n              )}\n            >\n              {page}\n            </PaginationLink>\n          </PaginationItem>\n        ))}\n        <PaginationItem>\n          <PaginationEllipsis className=\"text-[color:var(--bjork-text-faint)]\" />\n        </PaginationItem>\n        <PaginationItem>\n          <PaginationNext className=\"h-9 rounded-[12px] px-3 text-[color:var(--bjork-text-muted)] hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)]\" />\n        </PaginationItem>\n      </PaginationContent>\n    </Pagination>\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/pagination.tsx"
+      "target": "@components/bjork-ui/primitives/pagination.tsx"
     },
     {
       "path": "components/ui/pagination.tsx",

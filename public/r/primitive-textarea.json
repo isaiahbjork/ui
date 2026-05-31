@@ -9,10 +9,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/textarea.tsx",
+      "path": "components/bjork-ui/primitives/textarea.tsx",
       "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { Textarea } from \"@/components/ui/textarea\";\nimport { cn } from \"@/lib/utils\";\n\nexport function BjorkTextarea({\n  className,\n  ...props\n}: React.ComponentProps<typeof Textarea>) {\n  return (\n    <Textarea\n      className={cn(\n        \"bjork-textarea-hidden-resizer min-h-[120px] w-[min(380px,100%)] rounded-[18px] border-[color:var(--bjork-border)] bg-[var(--bjork-field)] px-4 py-3 text-sm text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-surface)] placeholder:text-[color:var(--bjork-text-faint)] focus-visible:border-[color:var(--bjork-border-strong)] focus-visible:ring-[color:var(--bjork-border-strong)]\",\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/textarea.tsx"
+      "target": "@components/bjork-ui/primitives/textarea.tsx"
     },
     {
       "path": "components/ui/textarea.tsx",

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { WebsiteShaderDemo } from "@/components/isaiahbjork/shaders/website-shader";
+import { WebsiteShaderDemo } from "@/components/bjork-ui/shaders/website-shader";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -37,7 +37,7 @@ export default async function Page({
       item={item}
       description="A compact, single-draw WebGL shader for website backdrops, hero accents, cards, and product moments. It caps pixel density, avoids textures, respects reduced motion, and pauses when offscreen."
       dependencies={["React", "WebGL", "framer-motion", "next-themes", "lucide-react", "clsx"]}
-      usageCode={`import { WebsiteShaderCanvas } from "@/components/isaiahbjork/shaders/website-shader";
+      usageCode={`import { WebsiteShaderCanvas } from "@/components/bjork-ui/shaders/website-shader";
 
 export function HeroBackdrop() {
   return (

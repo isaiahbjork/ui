@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react"
-import { AnimatedStatusBadge } from "@/components/isaiahbjork/badges/animated-status-badge"
+import { AnimatedStatusBadge } from "@/components/bjork-ui/badges/animated-status-badge"
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell"
 import { getGalleryItem } from "@/lib/bjork-gallery"
-import { BjorkButton, BjorkCard, BjorkCardContent, BjorkCardHeader, BjorkCardTitle } from "@/components/isaiahbjork/primitives"
+import { BjorkButton, BjorkCard, BjorkCardContent, BjorkCardDescription, BjorkCardHeader, BjorkCardTitle } from "@/components/bjork-ui/primitives"
 
 export default function Page() {
   const item = getGalleryItem("animated-status-badge")
@@ -34,7 +34,7 @@ export default function Page() {
       item={item}
       description="A reusable completion badge that animates behind a foreground card. Use it for queued jobs, generation states, publish flows, or any process that needs a visible running-to-complete confirmation."
       dependencies={["framer-motion", "lucide-react", "clsx"]}
-      usageCode={`import { AnimatedStatusBadge } from "@/components/isaiahbjork/badges/animated-status-badge";
+      usageCode={`import { AnimatedStatusBadge } from "@/components/bjork-ui/badges/animated-status-badge";
 
 export function Demo() {
   return (
@@ -54,12 +54,12 @@ export function Demo() {
               trigger={triggerAnimation1} 
               onAnimationComplete={handleAnimationComplete1}
             />
-            <BjorkCard variant="elevated" className="relative z-10 h-64 w-full rounded-[20px]">
+            <BjorkCard variant="elevated" className="relative z-10 min-h-[190px] w-full rounded-[20px]">
               <BjorkCardHeader>
                 <BjorkCardTitle>Project Alpha</BjorkCardTitle>
               </BjorkCardHeader>
-              <BjorkCardContent className="space-y-4">
-                <p className="text-[#ededed]/60">This is a sample card to demonstrate the animated status badge appearing behind the card.</p>
+              <BjorkCardContent className="mt-4 space-y-4">
+                <BjorkCardDescription>This is a sample card to demonstrate the animated status badge appearing behind the card.</BjorkCardDescription>
                 <BjorkButton variant="accent" onClick={handleStartAnimation1} disabled={triggerAnimation1}>
                   Start Process 1
                 </BjorkButton>
@@ -73,12 +73,12 @@ export function Demo() {
               trigger={triggerAnimation2} 
               onAnimationComplete={handleAnimationComplete2}
             />
-            <BjorkCard variant="elevated" className="relative z-10 h-64 w-full rounded-[20px]">
+            <BjorkCard variant="elevated" className="relative z-10 min-h-[190px] w-full rounded-[20px]">
               <BjorkCardHeader>
                 <BjorkCardTitle>Project Beta</BjorkCardTitle>
               </BjorkCardHeader>
-              <BjorkCardContent className="space-y-4">
-                <p className="text-[#ededed]/60">Another card showing how the badge can be reused across different components while staying behind the card.</p>
+              <BjorkCardContent className="mt-4 space-y-4">
+                <BjorkCardDescription>Another card showing how the badge can be reused across different components while staying behind the card.</BjorkCardDescription>
                 <BjorkButton onClick={handleStartAnimation2} disabled={triggerAnimation2} variant="outline">
                   Start Process 2
                 </BjorkButton>

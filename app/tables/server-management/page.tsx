@@ -1,8 +1,9 @@
 "use client";
 
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { useState, useEffect } from "react";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { ServerManagementTable, type Server } from "@/components/isaiahbjork/tables/server-management-table";
+import { ServerManagementTable, type Server } from "@/components/bjork-ui/tables/server-management-table";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("server-management");
@@ -71,6 +72,9 @@ const initialServers: Server[] = [
 ];
 
 export default function ServerManagementTableDemo() {
+  const isPreview = usePreviewMode();
+  const previewTheme = usePreviewSearchParam("theme");
+  const tableTheme = previewTheme === "light" || previewTheme === "dark" ? previewTheme : "auto";
   const [servers, setServers] = useState<Server[]>(initialServers);
 
   const handleStatusChange = (serverId: string, newStatus: "active" | "paused" | "inactive") => {
@@ -111,7 +115,12 @@ export default function ServerManagementTableDemo() {
       previewScaleClassName="w-[1320px] scale-[0.62]"
       previewInnerClassName="bg-[#f7f5ef] dark:bg-[#111]"
     >
-      <ServerManagementTable servers={servers} onStatusChange={handleStatusChange} />
+      <ServerManagementTable
+        servers={servers}
+        onStatusChange={handleStatusChange}
+        theme={tableTheme}
+        enableAnimations={!isPreview}
+      />
     </SimpleComponentDemoPage>
   );
 }

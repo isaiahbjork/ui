@@ -1,20 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { Activity, Gauge, Sparkles } from "lucide-react";
 import {
   ComponentDemoShell,
   ShellRange,
   ShellSegmented,
 } from "@/components/bjork-ui/component-demo-shell";
-import { AnimatedRadialChart } from "@/components/isaiahbjork/charts/animated-radial-chart";
+import { AnimatedRadialChart } from "@/components/bjork-ui/charts/animated-radial-chart";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("animated-radial-chart");
 
 export default function Page() {
   const isPreview = usePreviewMode();
+    const previewTheme = usePreviewSearchParam("theme");
   const [value, setValue] = useState(74);
   const [size, setSize] = useState(330);
   const [strokeWidth, setStrokeWidth] = useState(20);
@@ -46,8 +47,18 @@ export default function Page() {
 
   if (isPreview) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0b0b0b]">
-        <AnimatedRadialChart value={74} size={320} strokeWidth={20} duration={1.2} />
+      <div
+        className={`flex min-h-screen items-center justify-center bg-[var(--bjork-bg)] ${
+          previewTheme === "light" ? "light" : "dark"
+        }`}
+      >
+        <AnimatedRadialChart
+          value={74}
+          size={320}
+          strokeWidth={20}
+          duration={0}
+          tone={previewTheme === "light" ? "light" : "dark"}
+        />
       </div>
     );
   }
@@ -78,7 +89,7 @@ export default function Page() {
         },
       ]}
       cliCommand="npx shadcn add @bjork-ui/animated-radial-chart"
-      usageCode={`import { AnimatedRadialChart } from "@/components/isaiahbjork/charts/animated-radial-chart";
+      usageCode={`import { AnimatedRadialChart } from "@/components/bjork-ui/charts/animated-radial-chart";
 
 export function Demo() {
   return (

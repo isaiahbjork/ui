@@ -10,10 +10,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/alerts.tsx",
+      "path": "components/bjork-ui/primitives/alerts.tsx",
       "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { Alert, AlertDescription, AlertTitle } from \"@/components/ui/alert\";\nimport { cn } from \"@/lib/utils\";\nimport { bjorkSurface } from \"./_shared\";\n\nexport function BjorkAlert({\n  className,\n  ...props\n}: React.ComponentProps<typeof Alert>) {\n  return (\n    <Alert\n      className={cn(\n        \"block w-[min(440px,100%)] rounded-[18px] px-4 py-4 [&>svg]:translate-y-0\",\n        bjorkSurface,\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n\nexport function BjorkAlertTitle({\n  className,\n  ...props\n}: React.ComponentProps<typeof AlertTitle>) {\n  return (\n    <AlertTitle\n      className={cn(\"col-auto min-h-0 text-sm font-medium text-[color:var(--bjork-text-strong)]\", className)}\n      {...props}\n    />\n  );\n}\n\nexport function BjorkAlertDescription({\n  className,\n  ...props\n}: React.ComponentProps<typeof AlertDescription>) {\n  return (\n    <AlertDescription\n      className={cn(\"col-auto mt-2 block text-sm leading-6 text-[color:var(--bjork-text-muted)]\", className)}\n      {...props}\n    />\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/alerts.tsx"
+      "target": "@components/bjork-ui/primitives/alerts.tsx"
     },
     {
       "path": "components/ui/alert.tsx",
@@ -28,10 +28,10 @@
       "target": "@lib/utils.ts"
     },
     {
-      "path": "components/isaiahbjork/primitives/_shared.ts",
+      "path": "components/bjork-ui/primitives/_shared.ts",
       "content": "export const bjorkSurface =\n  \"border border-[color:var(--bjork-border)] bg-[var(--bjork-field)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-surface)]\";\n\nexport const bjorkSoftSurface =\n  \"border border-[color:var(--bjork-border)] bg-[var(--bjork-surface-muted)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)]\";\n\nexport const bjorkPanel =\n  \"rounded-[18px] border border-[color:var(--bjork-border)] bg-[var(--bjork-panel)] shadow-[var(--bjork-shadow-panel)]\";\n\nexport const bjorkMenu =\n  \"z-50 rounded-[16px] border border-[color:var(--bjork-border)] bg-[var(--bjork-menu)] p-1 text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-menu)] backdrop-blur-xl\";\n\nexport const bjorkMenuItem =\n  \"rounded-[11px] px-3 py-2 text-sm text-[color:var(--bjork-text-medium)] outline-none transition hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)] focus:bg-[var(--bjork-surface-hover)] focus:text-[color:var(--bjork-text)] data-[highlighted]:bg-[var(--bjork-surface-hover)] data-[highlighted]:text-[color:var(--bjork-text)] data-[selected=true]:!bg-[var(--bjork-surface-hover)] data-[selected=true]:!text-[color:var(--bjork-text)] aria-selected:!bg-[var(--bjork-surface-hover)] aria-selected:!text-[color:var(--bjork-text)]\";\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/_shared.ts"
+      "target": "@components/bjork-ui/primitives/_shared.ts"
     }
   ],
   "cssVars": {

@@ -1,7 +1,7 @@
 "use client";
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { RevealText } from "@/components/isaiahbjork/heroes/reveal-text";
+import { RevealText } from "@/components/bjork-ui/heroes/reveal-text";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("reveal-text");
@@ -17,7 +17,7 @@ export default function Page() {
       <div className="flex h-full min-h-[520px] w-full items-center justify-center overflow-hidden">
         <RevealText
           text="STUNNING"
-          textColor="text-white"
+          textColor="text-[#171717] dark:text-white"
           overlayColor="text-[#ec5c13]"
           fontSize="text-[clamp(68px,8.4vw,128px)]"
           letterDelay={0.08}

@@ -1,6 +1,6 @@
 "use client";
 
-import { OnboardingStages } from "@/components/isaiahbjork/cards/onboarding-stages";
+import { OnboardingStages } from "@/components/bjork-ui/cards/onboarding-stages";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -12,7 +12,7 @@ export default function Page() {
       item={item}
       description="A progress card for onboarding, launch checklists, and account setup flows. The component supports theme presets, size variants, motion timing, and button callbacks without requiring a separate wrapper."
       dependencies={["framer-motion", "lucide-react", "clsx"]}
-      usageCode={`import { OnboardingStages } from "@/components/isaiahbjork/cards/onboarding-stages";
+      usageCode={`import { OnboardingStages } from "@/components/bjork-ui/cards/onboarding-stages";
 
 export function Demo() {
   return (

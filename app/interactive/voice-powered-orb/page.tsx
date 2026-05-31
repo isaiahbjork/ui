@@ -4,7 +4,7 @@ import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { Activity, Mic, Waves } from "lucide-react";
 import { ComponentDemoShell, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
-import { VoicePoweredOrb } from "@/components/isaiahbjork/interactive/voice-powered-orb";
+import { VoicePoweredOrb } from "@/components/bjork-ui/interactive/voice-powered-orb";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("voice-powered-orb");
@@ -58,7 +58,7 @@ export default function VoicePoweredOrbPage() {
         },
       ]}
       cliCommand="npx shadcn add @bjork-ui/voice-powered-orb"
-      usageCode={`import { VoicePoweredOrb } from "@/components/isaiahbjork/interactive/voice-powered-orb";
+      usageCode={`import { VoicePoweredOrb } from "@/components/bjork-ui/interactive/voice-powered-orb";
 
 export function Demo() {
   return (

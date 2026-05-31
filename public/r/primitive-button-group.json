@@ -9,10 +9,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/button-group.tsx",
+      "path": "components/bjork-ui/primitives/button-group.tsx",
       "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { cn } from \"@/lib/utils\";\n\nexport function BjorkButtonGroup({\n  className,\n  ...props\n}: React.ComponentProps<\"div\">) {\n  return (\n    <div\n      role=\"group\"\n      className={cn(\n        \"inline-flex gap-1 rounded-[18px] border border-[color:var(--bjork-border)] bg-[var(--bjork-surface-muted)] p-1.5 shadow-[var(--bjork-shadow-surface)] [&>button]:rounded-[12px]\",\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/button-group.tsx"
+      "target": "@components/bjork-ui/primitives/button-group.tsx"
     },
     {
       "path": "lib/utils.ts",

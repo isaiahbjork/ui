@@ -10,10 +10,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/tabs.tsx",
+      "path": "components/bjork-ui/primitives/tabs.tsx",
       "content": "\"use client\";\n\nimport { Tabs, TabsContent, TabsList, TabsTrigger } from \"@/components/ui/tabs\";\nimport { cn } from \"@/lib/utils\";\nimport { bjorkPanel } from \"./_shared\";\n\nconst triggerClass =\n  \"h-8 rounded-[12px] border-transparent px-3 text-sm text-[color:var(--bjork-text-soft)] transition data-[state=active]:border-[color:var(--bjork-border)] data-[state=active]:bg-[var(--bjork-surface-active)] data-[state=active]:text-[color:var(--bjork-text)] data-[state=active]:shadow-[var(--bjork-shadow-soft)] hover:text-[color:var(--bjork-text)]\";\n\nexport function BjorkTabs() {\n  return (\n    <Tabs defaultValue=\"overview\" className=\"w-[min(420px,100%)]\">\n      <TabsList className=\"h-auto gap-1 rounded-[18px] border border-[color:var(--bjork-border)] bg-[var(--bjork-surface-muted)] p-1.5 shadow-[var(--bjork-shadow-surface)]\">\n        <TabsTrigger value=\"overview\" className={triggerClass}>\n          Overview\n        </TabsTrigger>\n        <TabsTrigger value=\"usage\" className={triggerClass}>\n          Usage\n        </TabsTrigger>\n      </TabsList>\n      <TabsContent value=\"overview\" className={cn(\"mt-3 p-4 text-sm text-[color:var(--bjork-text-muted)]\", bjorkPanel)}>\n        Track the surface, density, and interaction rules in one compact panel.\n      </TabsContent>\n      <TabsContent value=\"usage\" className={cn(\"mt-3 p-4 text-sm text-[color:var(--bjork-text-muted)]\", bjorkPanel)}>\n        Use tabs when parallel panels share the same footprint.\n      </TabsContent>\n    </Tabs>\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/tabs.tsx"
+      "target": "@components/bjork-ui/primitives/tabs.tsx"
     },
     {
       "path": "components/ui/tabs.tsx",
@@ -28,10 +28,10 @@
       "target": "@lib/utils.ts"
     },
     {
-      "path": "components/isaiahbjork/primitives/_shared.ts",
+      "path": "components/bjork-ui/primitives/_shared.ts",
       "content": "export const bjorkSurface =\n  \"border border-[color:var(--bjork-border)] bg-[var(--bjork-field)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-surface)]\";\n\nexport const bjorkSoftSurface =\n  \"border border-[color:var(--bjork-border)] bg-[var(--bjork-surface-muted)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)]\";\n\nexport const bjorkPanel =\n  \"rounded-[18px] border border-[color:var(--bjork-border)] bg-[var(--bjork-panel)] shadow-[var(--bjork-shadow-panel)]\";\n\nexport const bjorkMenu =\n  \"z-50 rounded-[16px] border border-[color:var(--bjork-border)] bg-[var(--bjork-menu)] p-1 text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-menu)] backdrop-blur-xl\";\n\nexport const bjorkMenuItem =\n  \"rounded-[11px] px-3 py-2 text-sm text-[color:var(--bjork-text-medium)] outline-none transition hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)] focus:bg-[var(--bjork-surface-hover)] focus:text-[color:var(--bjork-text)] data-[highlighted]:bg-[var(--bjork-surface-hover)] data-[highlighted]:text-[color:var(--bjork-text)] data-[selected=true]:!bg-[var(--bjork-surface-hover)] data-[selected=true]:!text-[color:var(--bjork-text)] aria-selected:!bg-[var(--bjork-surface-hover)] aria-selected:!text-[color:var(--bjork-text)]\";\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/_shared.ts"
+      "target": "@components/bjork-ui/primitives/_shared.ts"
     }
   ],
   "cssVars": {

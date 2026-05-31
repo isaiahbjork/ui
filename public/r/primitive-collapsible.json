@@ -8,10 +8,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/collapsible.tsx",
+      "path": "components/bjork-ui/primitives/collapsible.tsx",
       "content": "\"use client\";\n\nexport {\n  Collapsible as BjorkCollapsible,\n  CollapsibleContent as BjorkCollapsibleContent,\n  CollapsibleTrigger as BjorkCollapsibleTrigger,\n} from \"@/components/ui/collapsible\";\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/collapsible.tsx"
+      "target": "@components/bjork-ui/primitives/collapsible.tsx"
     },
     {
       "path": "components/ui/collapsible.tsx",

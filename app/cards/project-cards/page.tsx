@@ -1,6 +1,6 @@
 "use client";
 
-import { ProjectCards } from "@/components/isaiahbjork/cards/project-cards";
+import { ProjectCards } from "@/components/bjork-ui/cards/project-cards";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -67,7 +67,7 @@ export default function Page() {
       item={item}
       description="Expandable project cards for marketplaces, work boards, or internal assignment queues. Each card keeps the scan-friendly summary visible and progressively reveals detail on selection."
       dependencies={["framer-motion", "lucide-react", "clsx"]}
-      usageCode={`import { ProjectCards } from "@/components/isaiahbjork/cards/project-cards";
+      usageCode={`import { ProjectCards } from "@/components/bjork-ui/cards/project-cards";
 
 export function Demo() {
   return <ProjectCards projects={projects} />;

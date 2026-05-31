@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { PassportObject } from "@/components/isaiahbjork/travel/passport-object";
+import { PassportObject } from "@/components/bjork-ui/travel/passport-object";
 
 export const metadata: Metadata = {
   title: "Passport Object | Björk UI",

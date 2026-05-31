@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { Activity, BarChart3, Table2 } from "lucide-react";
 import { ComponentDemoShell } from "@/components/bjork-ui/component-demo-shell";
-import { FinancialTable, type MarketIndex } from "@/components/isaiahbjork/tables/financial-table";
+import { FinancialTable, type MarketIndex } from "@/components/bjork-ui/tables/financial-table";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("financial-table");
@@ -104,6 +104,9 @@ const initialIndices: MarketIndex[] = [
 
 export default function FinancialTableDemo() {
   const isPreview = usePreviewMode();
+    const previewTheme = usePreviewSearchParam("theme");
+  const tableTheme = previewTheme === "light" || previewTheme === "dark" ? previewTheme : "auto";
+  const isPreviewLight = previewTheme === "light";
   const [indices, setIndices] = useState<MarketIndex[]>(initialIndices);
 
   const handleIndexSelect = (indexId: string) => {
@@ -146,6 +149,8 @@ export default function FinancialTableDemo() {
           title="Index"
           indices={indices}
           onIndexSelect={handleIndexSelect}
+          theme={tableTheme}
+          enableAnimations={!isPreview}
         />
       </div>
     </div>
@@ -153,7 +158,14 @@ export default function FinancialTableDemo() {
 
   if (isPreview) {
     return (
-      <div className="flex min-h-screen items-center justify-center overflow-hidden bg-[#111] text-[#ededed]">
+      <div
+        style={{ colorScheme: isPreviewLight ? "light" : "dark" }}
+        className={
+          isPreviewLight
+            ? "flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f5ef] text-[#171717]"
+            : "flex min-h-screen items-center justify-center overflow-hidden bg-[#111] text-[#ededed]"
+        }
+      >
         <div className="w-[1040px] scale-[0.58]">{demo}</div>
       </div>
     );
@@ -185,7 +197,7 @@ export default function FinancialTableDemo() {
         },
       ]}
       cliCommand="npx shadcn add @bjork-ui/financial-table"
-      usageCode={`import { FinancialTable } from "@/components/isaiahbjork/tables/financial-table";
+      usageCode={`import { FinancialTable } from "@/components/bjork-ui/tables/financial-table";
 
 export function Demo() {
   return <FinancialTable title="Index" indices={indices} />;

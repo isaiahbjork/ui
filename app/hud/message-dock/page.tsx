@@ -1,9 +1,9 @@
 "use client";
 
-import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { MessageCircle, MousePointer2, Sparkles } from "lucide-react";
 import { ComponentDemoShell } from "@/components/bjork-ui/component-demo-shell";
-import { MessageDock, Character } from "@/components/isaiahbjork/hud/message-dock";
+import { MessageDock, Character } from "@/components/bjork-ui/hud/message-dock";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("message-dock");
@@ -42,6 +42,7 @@ const customCharacters: Character[] = [
 
 export default function Page() {
   const isPreview = usePreviewMode();
+    const previewTheme = usePreviewSearchParam("theme");
 
   const handleMessageSend = (message: string, character: Character, index: number) => {
     console.log("Message sent:", { message, character: character.name, index });
@@ -76,8 +77,28 @@ export default function Page() {
 
   if (isPreview) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0b0b0b]">
-        {demo}
+      <div
+        className={`flex min-h-screen items-center justify-center bg-[var(--bjork-bg)] ${
+          previewTheme === "light" ? "light" : "dark"
+        }`}
+      >
+        <div className="relative h-[520px] w-[900px] overflow-hidden">
+          <MessageDock
+            characters={customCharacters}
+            onMessageSend={handleMessageSend}
+            onCharacterSelect={handleCharacterSelect}
+            onDockToggle={handleDockToggle}
+            expandedWidth={500}
+            positionStrategy="absolute"
+            position="bottom"
+            placeholder={(name) => `Send a message to ${name}...`}
+            theme={previewTheme === "light" ? "light" : "dark"}
+            enableAnimations={false}
+            closeOnSend={true}
+            autoFocus={false}
+            className="!bottom-[220px] origin-center scale-[1.55]"
+          />
+        </div>
       </div>
     );
   }
@@ -107,7 +128,7 @@ export default function Page() {
         },
       ]}
       cliCommand="npx shadcn add @bjork-ui/message-dock"
-      usageCode={`import { MessageDock } from "@/components/isaiahbjork/hud/message-dock";
+      usageCode={`import { MessageDock } from "@/components/bjork-ui/hud/message-dock";
 
 export function Demo() {
   return (

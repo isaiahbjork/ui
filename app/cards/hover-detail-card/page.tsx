@@ -1,7 +1,7 @@
 "use client";
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { HoverDetailCard } from "@/components/isaiahbjork/cards/hover-detail-card";
+import { HoverDetailCard } from "@/components/bjork-ui/cards/hover-detail-card";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("hover-detail-card");
@@ -27,17 +27,17 @@ export default function Page() {
         pills={{
           left: {
             text: "1×1",
-            color: "bg-blue-100",
-            textColor: "text-blue-800",
+            color: "bg-[#ec5c13]/12",
+            textColor: "text-[#bd4514] dark:text-[#d86a2c]",
           },
           sparkle: {
             show: true,
-            color: "bg-purple-100 text-purple-800",
+            color: "bg-[#ec5c13]/12 text-[#bd4514] dark:bg-[#090909] dark:text-[#d86a2c]",
           },
           right: {
             text: "Published",
-            color: "bg-green-100",
-            textColor: "text-green-800",
+            color: "bg-[#2d8f62]/12 dark:bg-[#8a7a60]/14",
+            textColor: "text-[#1f6f4b] dark:text-[#b8aa91]",
           },
         }}
         enableAnimations={true}

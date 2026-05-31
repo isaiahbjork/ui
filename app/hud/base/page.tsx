@@ -5,10 +5,10 @@ import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { motion } from "framer-motion";
 import { Crosshair, Radar, ToggleLeft } from "lucide-react";
 import { ComponentDemoShell, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
-import { HudFrame } from "@/components/isaiahbjork/hud/hud-frame";
-import { TargetingUI } from "@/components/isaiahbjork/hud/targeting-ui";
-import { Status } from "@/components/isaiahbjork/hud/status";
-import { HudButton } from "@/components/isaiahbjork/hud/hud-button";
+import { HudFrame } from "@/components/bjork-ui/hud/hud-frame";
+import { TargetingUI } from "@/components/bjork-ui/hud/targeting-ui";
+import { Status } from "@/components/bjork-ui/hud/status";
+import { HudButton } from "@/components/bjork-ui/hud/hud-button";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("hud-frame");
@@ -55,11 +55,8 @@ export default function Page() {
   };
 
   const demo = (
-    <div className="h-[620px] w-full overflow-hidden rounded-[18px] bg-[#070707]">
-      <HudFrame
-       backgroundVideo="/videos/drone.mp4"
-       fixedFrame={false}
-      >
+    <div className="h-[620px] w-full overflow-hidden rounded-[18px] bg-transparent">
+      <HudFrame backgroundVideo="/videos/drone.mp4" fixedFrame={false}>
       
         <div className="flex h-full w-full flex-col relative overflow-hidden">
           {/* HUD Button at top right corner */}
@@ -101,7 +98,15 @@ export default function Page() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 1, duration: 0.8 }}
               >
-                <Status className="w-64" />
+                <Status
+                  className="w-64"
+                  customColors={{
+                    gradientStart: "#4ade80",
+                    gradientEnd: "#15803d",
+                    stroke: "#4ade80",
+                    text: "text-green-300",
+                  }}
+                />
               </motion.div>
             </>
           )}
@@ -113,7 +118,7 @@ export default function Page() {
 
   if (isPreview) {
     return (
-      <div className="flex min-h-screen items-center justify-center overflow-hidden bg-[#070707]">
+      <div className="flex min-h-screen items-center justify-center overflow-hidden bg-background">
         <div className="w-[920px] scale-[0.5]">{demo}</div>
       </div>
     );
@@ -128,6 +133,7 @@ export default function Page() {
         setTargetingKey((value) => value + 1);
         setShowTargeting(true);
       }}
+      showOptionsReset={false}
       description="A cinematic HUD frame system with clipped edge geometry, optional video background, targeting overlay, status readout, and a control button for toggling the active system layer."
       dependencies={["framer-motion", "clsx"]}
       interactionRows={[
@@ -148,7 +154,7 @@ export default function Page() {
         },
       ]}
       cliCommand="npx shadcn add @bjork-ui/hud-frame"
-      usageCode={`import { HudFrame } from "@/components/isaiahbjork/hud/hud-frame";
+      usageCode={`import { HudFrame } from "@/components/bjork-ui/hud/hud-frame";
 
 export function Demo() {
   return (

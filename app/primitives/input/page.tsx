@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { BjorkInput } from "@/components/isaiahbjork/primitives";
+import { BjorkInput } from "@/components/bjork-ui/primitives";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 import {
   PrimitiveDocsSection,
@@ -12,7 +12,7 @@ import {
 } from "../_components/primitive-docs";
 import { getPrimitiveMeta } from "../_components/primitive-meta";
 
-const usageCode = `import { BjorkInput } from "@/components/isaiahbjork/primitives";
+const usageCode = `import { BjorkInput } from "@/components/bjork-ui/primitives";
 
 export function Demo() {
   return (

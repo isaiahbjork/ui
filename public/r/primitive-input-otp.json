@@ -11,10 +11,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/input-otp.tsx",
+      "path": "components/bjork-ui/primitives/input-otp.tsx",
       "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { InputOTP, InputOTPGroup, InputOTPSlot } from \"@/components/ui/input-otp\";\n\nexport function BjorkInputOTP() {\n  const [value, setValue] = React.useState(\"284915\");\n\n  return (\n    <InputOTP maxLength={6} value={value} onChange={setValue}>\n      <InputOTPGroup className=\"gap-2 px-1 py-1\">\n        {Array.from({ length: 6 }).map((_, index) => (\n          <InputOTPSlot\n            key={index}\n            index={index}\n            className=\"h-11 w-10 rounded-[13px] border border-[color:var(--bjork-border-strong)] bg-[var(--bjork-bg)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)] first:rounded-[13px] first:border last:rounded-[13px] data-[active=true]:border-[#ec5c13] data-[active=true]:ring-[#ec5c13]/25\"\n          />\n        ))}\n      </InputOTPGroup>\n    </InputOTP>\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/input-otp.tsx"
+      "target": "@components/bjork-ui/primitives/input-otp.tsx"
     },
     {
       "path": "components/ui/input-otp.tsx",

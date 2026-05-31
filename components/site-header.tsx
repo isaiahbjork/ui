@@ -33,7 +33,7 @@ export function SiteHeader({ className }: SiteHeaderProps) {
   return (
     <header
       className={cn(
-        "fixed left-1/2 top-2 z-50 flex w-screen -translate-x-1/2 justify-center overflow-hidden px-3 py-0 md:max-w-[744px]",
+        "fixed left-1/2 top-2 z-50 flex w-screen -translate-x-1/2 justify-center overflow-visible px-3 py-0 md:max-w-[744px]",
         className
       )}
     >
@@ -41,7 +41,7 @@ export function SiteHeader({ className }: SiteHeaderProps) {
         className={cn(
           "flex w-full items-center justify-between rounded-[16px] border px-5 py-2.5 pr-2.5 backdrop-blur-xl",
           isLight
-            ? "border-[#d8d3c7] bg-[#f4f1e9]/92 shadow-[inset_0_7px_14px_rgba(255,255,255,0.58),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_14px_24px_-10px_rgba(55,47,36,0.18)]"
+            ? "border-[#f0e8dc] bg-[#fffcf6]/96 shadow-[inset_0_7px_14px_rgba(88,72,49,0.035),inset_0_0.5px_0.5px_rgba(255,255,255,0.92),inset_1px_0_0_rgba(88,72,49,0.018),inset_-1px_0_0_rgba(255,255,255,0.7),0_16px_34px_-28px_rgba(69,58,41,0.26)]"
             : "border-[#161616] bg-[#121212]/92 shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_18px_34px_-16px_rgba(0,0,0,0.9)]"
         )}
       >

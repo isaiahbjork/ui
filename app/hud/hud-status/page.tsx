@@ -1,6 +1,6 @@
 "use client";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { Status } from "@/components/isaiahbjork/hud/status";
+import { Status } from "@/components/bjork-ui/hud/status";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("hud-status");

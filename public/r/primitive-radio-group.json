@@ -11,10 +11,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/radio-group.tsx",
+      "path": "components/bjork-ui/primitives/radio-group.tsx",
       "content": "\"use client\";\n\nimport { Circle, CircleDot, Settings2, type LucideIcon } from \"lucide-react\";\nimport { RadioGroup, RadioGroupItem } from \"@/components/ui/radio-group\";\n\nconst radioOptions: Array<{ value: string; label: string; Icon: LucideIcon }> = [\n  { value: \"starter\", label: \"Starter\", Icon: Circle },\n  { value: \"pro\", label: \"Pro\", Icon: CircleDot },\n  { value: \"studio\", label: \"Studio\", Icon: Settings2 },\n];\n\nexport function BjorkRadioGroup() {\n  return (\n    <RadioGroup defaultValue=\"pro\" className=\"grid gap-2\">\n      {radioOptions.map(({ value, label, Icon }) => (\n        <label\n          key={value}\n          className=\"flex w-[260px] items-center gap-3 rounded-[16px] border border-[color:var(--bjork-border)] bg-[var(--bjork-field)] px-4 py-3 text-sm text-[color:var(--bjork-text-medium)] shadow-[var(--bjork-shadow-soft)]\"\n        >\n          <RadioGroupItem\n            value={value}\n            className=\"border-[color:var(--bjork-border-strong)] text-[#ec5c13] focus-visible:ring-[#ec5c13]/35 data-[state=checked]:border-[#ec5c13]\"\n          />\n          <Icon className=\"size-4 text-[color:var(--bjork-text-soft)]\" aria-hidden=\"true\" />\n          {label}\n        </label>\n      ))}\n    </RadioGroup>\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/radio-group.tsx"
+      "target": "@components/bjork-ui/primitives/radio-group.tsx"
     },
     {
       "path": "components/ui/radio-group.tsx",

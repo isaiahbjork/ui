@@ -1,27 +1,43 @@
 "use client";
 
 import { useRef } from "react";
-import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { Maximize2, ScrollText, Video } from "lucide-react";
 import { ComponentDemoShell } from "@/components/bjork-ui/component-demo-shell";
-import { VideoScrollHero } from "@/components/isaiahbjork/heroes/video-scroll-hero";
+import { VideoScrollHero } from "@/components/bjork-ui/heroes/video-scroll-hero";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("video-scroll-hero");
 
 export default function VideoScrollHeroPage() {
   const isPreview = usePreviewMode();
+    const isPreviewLight = usePreviewSearchParam("theme") === "light";
   const scrollRootRef = useRef<HTMLDivElement>(null);
   const demo = (
-    <div ref={scrollRootRef} className="hide-scrollbar h-[620px] w-full overflow-y-auto rounded-[18px] bg-[#070707]">
+    <div ref={scrollRootRef} className="hide-scrollbar h-[620px] w-full overflow-y-auto rounded-[18px] bg-[var(--bjork-bg)]">
       <VideoScrollHero startScale={0.44} scrollRootRef={scrollRootRef} />
     </div>
   );
 
   if (isPreview) {
     return (
-      <div className="flex min-h-screen items-center justify-center overflow-hidden bg-[#070707]">
-        <div className="h-[720px] w-[960px] scale-[0.45] overflow-hidden">{demo}</div>
+      <div
+        className={
+          isPreviewLight
+            ? "light flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f5ef] text-[#171717]"
+            : "dark flex min-h-screen items-center justify-center overflow-hidden bg-[#111] text-[#ededed]"
+        }
+      >
+        <div className="flex h-[520px] w-[900px] items-center justify-center bg-[var(--bjork-bg)]">
+          <div className="rounded-[28px] border border-[color:var(--bjork-border-muted)] bg-[var(--bjork-surface)] p-3 shadow-[var(--bjork-shadow-surface)]">
+            <VideoScrollHero
+              enableAnimations={false}
+              previewMode
+              startScale={1}
+              className="h-[340px] w-[640px] overflow-hidden rounded-[22px]"
+            />
+          </div>
+        </div>
       </div>
     );
   }
@@ -51,7 +67,7 @@ export default function VideoScrollHeroPage() {
         },
       ]}
       cliCommand="npx shadcn add @bjork-ui/video-scroll-hero"
-      usageCode={`import { VideoScrollHero } from "@/components/isaiahbjork/heroes/video-scroll-hero";
+      usageCode={`import { VideoScrollHero } from "@/components/bjork-ui/heroes/video-scroll-hero";
 
 export function Demo() {
   return <VideoScrollHero startScale={0.25} />;

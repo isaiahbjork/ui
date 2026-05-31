@@ -1,7 +1,7 @@
 "use client";
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { Timer } from "@/components/isaiahbjork/misc/timer";
+import { Timer } from "@/components/bjork-ui/misc/timer";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("timer");

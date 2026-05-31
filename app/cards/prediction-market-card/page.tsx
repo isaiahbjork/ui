@@ -1,7 +1,7 @@
 "use client";
 
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { PredictionMarketCard } from "@/components/isaiahbjork/cards/prediction-market-card";
+import { PredictionMarketCard } from "@/components/bjork-ui/cards/prediction-market-card";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("prediction-market-card");

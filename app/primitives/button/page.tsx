@@ -3,7 +3,7 @@
 import type { SVGProps } from "react";
 import { Download, Plus, Settings2 } from "lucide-react";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { BjorkButton } from "@/components/isaiahbjork/primitives";
+import { BjorkButton } from "@/components/bjork-ui/primitives";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 import {
   PrimitiveDocsSection,
@@ -13,7 +13,7 @@ import {
 } from "../_components/primitive-docs";
 import { getPrimitiveMeta } from "../_components/primitive-meta";
 
-const usageCode = `import { BjorkButton } from "@/components/isaiahbjork/primitives";
+const usageCode = `import { BjorkButton } from "@/components/bjork-ui/primitives";
 
 export function Demo() {
   return (
@@ -66,12 +66,12 @@ const buttonExamples = [
     preview: (
       <BjorkButton variant="accent">
         <CrystalMark aria-hidden="true" />
-        Playground
+        Launch demo
       </BjorkButton>
     ),
     code: `<BjorkButton variant="accent">
   <CrystalMark aria-hidden="true" />
-  Playground
+  Launch demo
 </BjorkButton>`,
   },
   {

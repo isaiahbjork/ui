@@ -14,10 +14,10 @@
   ],
   "files": [
     {
-      "path": "components/isaiahbjork/primitives/calendar.tsx",
+      "path": "components/bjork-ui/primitives/calendar.tsx",
       "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { Calendar } from \"@/components/ui/calendar\";\nimport { cn } from \"@/lib/utils\";\n\nexport function BjorkCalendar({\n  className,\n  classNames,\n  ...props\n}: React.ComponentProps<typeof Calendar>) {\n  return (\n    <Calendar\n      className={cn(\n        \"rounded-[18px] border border-[color:var(--bjork-border)] bg-[var(--bjork-bg)] p-3 text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)]\",\n        className,\n      )}\n      classNames={{\n        caption_label: \"text-sm font-medium text-[color:var(--bjork-text-strong)]\",\n        head_cell: \"w-8 rounded-md text-[0.72rem] font-normal text-[color:var(--bjork-text-soft)]\",\n        cell: \"relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:rounded-[10px]\",\n        day: \"size-8 rounded-[10px] p-0 text-sm font-normal text-[color:var(--bjork-text-medium)] hover:bg-[var(--bjork-accent-soft)] hover:text-[color:var(--bjork-text)] focus:bg-[var(--bjork-accent-soft)]\",\n        day_selected:\n          \"bg-[var(--bjork-accent)] text-[color:var(--bjork-accent-foreground)] hover:bg-[var(--bjork-accent-hover)] hover:text-[color:var(--bjork-accent-foreground)] focus:bg-[var(--bjork-accent-hover)] focus:text-[color:var(--bjork-accent-foreground)]\",\n        day_today: \"bg-[var(--bjork-surface-active)] text-[color:var(--bjork-text)]\",\n        day_outside: \"text-[color:var(--bjork-text-faint)] opacity-40\",\n        day_disabled: \"text-[color:var(--bjork-text-faint)] opacity-70\",\n        nav_button:\n          \"inline-flex size-8 items-center justify-center rounded-full border-0 bg-transparent p-0 text-[color:var(--bjork-text-muted)] opacity-100 shadow-none hover:bg-transparent hover:text-[color:var(--bjork-text)] focus:bg-transparent\",\n        nav_button_previous: \"absolute left-0\",\n        nav_button_next: \"absolute right-0\",\n        ...classNames,\n      }}\n      {...props}\n    />\n  );\n}\n",
       "type": "registry:component",
-      "target": "@components/isaiahbjork/primitives/calendar.tsx"
+      "target": "@components/bjork-ui/primitives/calendar.tsx"
     },
     {
       "path": "components/ui/calendar.tsx",

@@ -3,7 +3,7 @@
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { Hand, MousePointer2, RotateCw } from "lucide-react";
 import { ComponentDemoShell } from "@/components/bjork-ui/component-demo-shell";
-import { DraggableRope } from "@/components/isaiahbjork/interactive/draggable-rope";
+import { DraggableRope } from "@/components/bjork-ui/interactive/draggable-rope";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("draggable-rope");
@@ -18,7 +18,7 @@ export default function DraggableRopePage() {
 
   if (isPreview) {
     return (
-      <div className="flex min-h-screen items-start justify-center overflow-hidden bg-[#111111] pt-4">
+      <div className="flex min-h-screen items-start justify-center overflow-hidden bg-[var(--bjork-bg)] pt-4">
         <div className="scale-[0.68]">{demo}</div>
       </div>
     );
@@ -49,7 +49,7 @@ export default function DraggableRopePage() {
         },
       ]}
       cliCommand="npx shadcn add @bjork-ui/draggable-rope"
-      usageCode={`import { DraggableRope } from "@/components/isaiahbjork/interactive/draggable-rope";
+      usageCode={`import { DraggableRope } from "@/components/bjork-ui/interactive/draggable-rope";
 
 export function Demo() {
   return <DraggableRope gravity={18} initialAngle={8} />;

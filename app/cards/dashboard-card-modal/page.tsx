@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardCardModal } from "@/components/isaiahbjork/cards/dashboard-card-modal";
+import { DashboardCardModal } from "@/components/bjork-ui/cards/dashboard-card-modal";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -24,7 +24,7 @@ export default function DashboardCardModalDemo() {
       item={item}
       description="A dense dashboard card with inline copy actions and a modal update path. It is built for account, policy, or record-management surfaces where the summary card needs one focused edit action."
       dependencies={["framer-motion", "lucide-react", "clsx"]}
-      usageCode={`import { DashboardCardModal } from "@/components/isaiahbjork/cards/dashboard-card-modal";
+      usageCode={`import { DashboardCardModal } from "@/components/bjork-ui/cards/dashboard-card-modal";
 
 export function Demo() {
   return (

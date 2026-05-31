@@ -71,6 +71,7 @@ function SelectContent({
       >
         <SelectScrollUpButton />
         <SelectPrimitive.Viewport
+          data-slot="select-viewport"
           className={cn(
             "p-1",
             position === "popper" &&

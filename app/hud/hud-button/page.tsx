@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion"
-import { HudButton } from "@/components/isaiahbjork/hud/hud-button"
+import { HudButton } from "@/components/bjork-ui/hud/hud-button"
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell"
 import { getGalleryItem } from "@/lib/bjork-gallery"
 
@@ -41,7 +41,7 @@ export default function Page() {
       item={item}
       description="A set of HUD-style action buttons with diagonal and hexagonal treatments. The component exposes style, variant, size, and click handlers for control panels or sci-fi interface work."
       dependencies={["framer-motion", "lucide-react", "clsx"]}
-      usageCode={`import { HudButton } from "@/components/isaiahbjork/hud/hud-button";
+      usageCode={`import { HudButton } from "@/components/bjork-ui/hud/hud-button";
 
 export function Demo() {
   return (

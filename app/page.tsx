@@ -11,6 +11,7 @@ import {
   ArrowUp,
   Check,
   Clipboard,
+  Command as CommandIcon,
   type LucideIcon,
   Search,
   SlidersHorizontal,
@@ -19,7 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { galleryItems, type GalleryItem } from "@/lib/bjork-gallery";
 import { SiteHeader } from "@/components/site-header";
-import { WebsiteShaderCanvas } from "@/components/isaiahbjork/shaders/website-shader";
+import { WebsiteShaderCanvas } from "@/components/bjork-ui/shaders/website-shader";
 
 const collectionCount = galleryItems.length;
 type CollectionFilter = "all" | (typeof galleryItems)[number]["collection"];
@@ -482,7 +483,7 @@ function GalleryCard({
       className={cn(
         "group relative flex h-[258px] cursor-pointer flex-col overflow-hidden rounded-[16px] border p-2.5 transition-colors duration-300",
         isLight
-          ? "border-[#e0d8ca] bg-[#faf7f0] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_16px_34px_-28px_rgba(69,58,41,0.28)] hover:bg-[#fffcf6]"
+          ? "border-[#f5ede2] bg-[#fffcf6] shadow-[inset_0_7px_14px_rgba(88,72,49,0.045),inset_0_0.5px_0.5px_rgba(255,255,255,0.92),inset_1px_0_0_rgba(88,72,49,0.026),inset_-1px_0_0_rgba(255,255,255,0.68),0_14px_22px_-9px_rgba(66,52,33,0.11)] hover:border-[#eee6db] hover:bg-[#fffefa]"
           : "border-white/[0.045] bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_16px_34px_-24px_rgba(0,0,0,0.88)] hover:bg-[#151515]"
       )}
     >
@@ -594,8 +595,19 @@ function FilterDock({
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search"
-          className={cn("w-full border-none bg-transparent text-sm outline-none", isLight ? "text-[#171717] placeholder:text-[#171717]/42" : "text-[#ededed] placeholder:text-[#ededed]/45")}
+          className={cn("min-w-0 flex-1 border-none bg-transparent text-sm outline-none", isLight ? "text-[#171717] placeholder:text-[#171717]/42" : "text-[#ededed] placeholder:text-[#ededed]/45")}
         />
+        <span
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none flex shrink-0 items-center gap-1 rounded-[7px] px-1.5 py-0.5 font-mono text-[11px] leading-none",
+            isLight ? "text-[#171717]/32" : "text-[#ededed]/32"
+          )}
+        >
+          <CommandIcon className="size-3" />
+          <span>+</span>
+          <span>K</span>
+        </span>
       </label>
 
       <div className="relative">
@@ -624,12 +636,30 @@ function FilterDock({
           {menuOpen && (
             <motion.div
               role="menu"
-              initial={{ opacity: 0, y: 8, scale: 0.98, filter: "blur(3px)" }}
-              animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-              exit={{ opacity: 0, y: 8, scale: 0.98, filter: "blur(3px)" }}
+              initial={{
+                opacity: 0,
+                x: "var(--filter-menu-x)",
+                y: 8,
+                scale: 0.98,
+                filter: "blur(3px)",
+              }}
+              animate={{
+                opacity: 1,
+                x: "var(--filter-menu-x)",
+                y: 0,
+                scale: 1,
+                filter: "blur(0px)",
+              }}
+              exit={{
+                opacity: 0,
+                x: "var(--filter-menu-x)",
+                y: 8,
+                scale: 0.98,
+                filter: "blur(3px)",
+              }}
               transition={{ type: "spring", stiffness: 420, damping: 32 }}
               className={cn(
-                "absolute bottom-[56px] right-0 w-[min(calc(100vw-32px),360px)] overflow-hidden rounded-[18px] border p-3 backdrop-blur-md",
+                "fixed bottom-[88px] left-1/2 w-[min(calc(100vw-32px),360px)] [--filter-menu-x:-50%] overflow-hidden rounded-[18px] border p-3 backdrop-blur-md md:absolute md:bottom-[56px] md:left-auto md:right-0 md:[--filter-menu-x:0px]",
                 isLight
                   ? "border-[#ddd7cb] bg-[#f8f6f0]/98 shadow-[inset_0_7px_14px_rgba(255,255,255,0.55),inset_0_0.5px_0.5px_rgba(255,255,255,0.85),0_24px_42px_-24px_rgba(55,47,36,0.28)]"
                   : "border-[#161616] bg-[#121212]/98 shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_24px_42px_-18px_rgba(0,0,0,0.75)]"
