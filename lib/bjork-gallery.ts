@@ -425,6 +425,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
   },
   {
+    id: "bjork89",
+    slug: "periodic-table",
+    title: "Periodic table",
+    route: "/tables/periodic-table",
+    sourcePath: "components/bjork-ui/tables/periodic-table.tsx",
+    tier: "copy",
+    collection: "Tables",
+    preview: "table",
+    accent: "#ec5c13",
+    isNew: true,
+  },
+  {
     id: "bjork43",
     slug: "contacts-table",
     title: "Contacts table",

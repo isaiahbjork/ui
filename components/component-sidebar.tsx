@@ -168,6 +168,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Contacts Table", path: "/tables/contacts-table" },
       { name: "Financial Table", path: "/tables/financial-table" },
       { name: "Leads Table", path: "/tables/leads-table" },
+      { name: "Periodic Table", path: "/tables/periodic-table" },
       { name: "Resizable Table", path: "/tables/resizable-table" },
       { name: "Server Management Table", path: "/tables/server-management" },
     ],
