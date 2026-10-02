@@ -478,8 +478,12 @@ function GalleryCard({
       }}
       initial={animate ? "hidden" : false}
       animate="visible"
-      onPointerEnter={() => prefetchRoute(item.route)}
-      onFocus={() => prefetchRoute(item.route)}
+      onPointerEnter={() => {
+        if (item.route.startsWith("/")) prefetchRoute(item.route);
+      }}
+      onFocus={() => {
+        if (item.route.startsWith("/")) prefetchRoute(item.route);
+      }}
       className={cn(
         "group relative flex h-[258px] cursor-pointer flex-col overflow-hidden rounded-[16px] border p-2.5 transition-colors duration-300",
         isLight
@@ -509,6 +513,10 @@ function GalleryCard({
 }
 
 function ComponentPreview({ item, isLight }: { item: GalleryItem; isLight: boolean }) {
+  if (item.preview === "studio" && item.studio) {
+    return <StudioArchivePreview studio={item.studio} isLight={isLight} />;
+  }
+
   if (item.preview === "shader") {
     return <ShaderArchivePreview item={item} isLight={isLight} />;
   }
@@ -534,6 +542,28 @@ function ComponentPreview({ item, isLight }: { item: GalleryItem; isLight: boole
         onError={(event) => {
           event.currentTarget.style.display = "none";
         }}
+      />
+    </div>
+  );
+}
+
+function studioOrigin() {
+  if (process.env.NEXT_PUBLIC_STUDIO_ORIGIN) return process.env.NEXT_PUBLIC_STUDIO_ORIGIN;
+  return process.env.NODE_ENV === "development" ? "http://localhost:3456" : "https://isaiahbjork.com";
+}
+
+function StudioArchivePreview({ studio, isLight }: { studio: "silt" | "intaglio"; isLight: boolean }) {
+  const tone = isLight ? "light" : "dark";
+  return (
+    <div className={cn("relative h-full w-full overflow-hidden", isLight ? "bg-white" : "bg-[#050505]")}>
+      <iframe
+        key={tone}
+        src={`${studioOrigin()}/${studio}?embed=1&tone=${tone}`}
+        title=""
+        tabIndex={-1}
+        aria-hidden="true"
+        loading="lazy"
+        className={cn("pointer-events-none absolute inset-0 h-full w-full border-0", isLight ? "bg-white" : "bg-[#050505]")}
       />
     </div>
   );

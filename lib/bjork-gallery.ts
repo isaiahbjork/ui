@@ -21,7 +21,10 @@ export interface GalleryItem {
     | "gallery"
     | "upload"
     | "schedule"
-    | "shader";
+    | "shader"
+    | "studio";
+  /** Live studio embed. The card links out; the shader stays on the tool page. */
+  studio?: "silt" | "intaglio";
   accent: string;
   isNew?: boolean;
   hasStaticPreview?: boolean;
@@ -886,6 +889,32 @@ export const galleryItems: GalleryItem[] = [
     collection: "Shaders",
     preview: "shader",
     accent: "#f0d46a",
+    hasStaticPreview: false,
+  },
+  {
+    id: "bjork90",
+    slug: "silt",
+    title: "Silt",
+    route: "https://isaiahbjork.com/silt",
+    sourcePath: "",
+    tier: "lab",
+    collection: "Shaders",
+    preview: "studio",
+    studio: "silt",
+    accent: "#ff5ea8",
+    hasStaticPreview: false,
+  },
+  {
+    id: "bjork91",
+    slug: "intaglio",
+    title: "Intaglio",
+    route: "https://isaiahbjork.com/intaglio",
+    sourcePath: "",
+    tier: "lab",
+    collection: "Shaders",
+    preview: "studio",
+    studio: "intaglio",
+    accent: "#26823a",
     hasStaticPreview: false,
   },
 ];
