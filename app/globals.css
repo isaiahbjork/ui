@@ -12,7 +12,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Alpha";
-  src: url("/fonts/BjorkGroteskAlpha-Regular-v12.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskAlpha-Regular-v13.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -20,7 +20,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Alpha";
-  src: url("/fonts/BjorkGroteskAlpha-Medium-v12.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskAlpha-Medium-v13.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -28,7 +28,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Alpha";
-  src: url("/fonts/BjorkGroteskAlpha-Semibold-v12.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskAlpha-Semibold-v13.woff2") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -36,7 +36,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Alpha";
-  src: url("/fonts/BjorkGroteskAlpha-Bold-v12.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskAlpha-Bold-v13.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -44,7 +44,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Alpha";
-  src: url("/fonts/BjorkGroteskAlpha-Italic-v12.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskAlpha-Italic-v13.woff2") format("woff2");
   font-weight: 400;
   font-style: italic;
   font-display: swap;
@@ -52,7 +52,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Alpha";
-  src: url("/fonts/BjorkGroteskAlpha-BoldItalic-v12.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskAlpha-BoldItalic-v13.woff2") format("woff2");
   font-weight: 700;
   font-style: italic;
   font-display: swap;
@@ -60,7 +60,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Display";
-  src: url("/fonts/BjorkGroteskDisplay-Regular-v2.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskDisplay-Regular-v3.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -68,7 +68,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Display";
-  src: url("/fonts/BjorkGroteskDisplay-Medium-v2.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskDisplay-Medium-v3.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -76,7 +76,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Display";
-  src: url("/fonts/BjorkGroteskDisplay-Semibold-v2.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskDisplay-Semibold-v3.woff2") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
@@ -84,7 +84,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Display";
-  src: url("/fonts/BjorkGroteskDisplay-Bold-v2.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskDisplay-Bold-v3.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
@@ -92,7 +92,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Display";
-  src: url("/fonts/BjorkGroteskDisplay-Italic-v2.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskDisplay-Italic-v3.woff2") format("woff2");
   font-weight: 400;
   font-style: italic;
   font-display: swap;
@@ -100,7 +100,7 @@
 
 @font-face {
   font-family: "Bjork Grotesk Display";
-  src: url("/fonts/BjorkGroteskDisplay-BoldItalic-v2.woff2") format("woff2");
+  src: url("/fonts/BjorkGroteskDisplay-BoldItalic-v3.woff2") format("woff2");
   font-weight: 700;
   font-style: italic;
   font-display: swap;

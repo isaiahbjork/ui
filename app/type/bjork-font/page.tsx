@@ -42,10 +42,20 @@ const interfaceRows = [
 ];
 
 const scoringRows = [
-  ["Alpha score", "86.67"],
-  ["Display score", "87.55"],
-  ["Small density", "0.87777"],
-  ["Rhythm", "0.96887"],
+  ["Alpha quality", "96.99"],
+  ["Display quality", "96.05"],
+  ["Italic angle", "9.0°"],
+  ["Spacing p90", "8.9u"],
+];
+
+const featureSample = "ID 0O 1Il (STATUS) — «NEW» 1,104.50";
+
+const featureRows = [
+  { label: "Default", settings: '"kern" 1, "liga" 1, "tnum" 1' },
+  { label: "zero · slashed zero", settings: '"kern" 1, "liga" 1, "tnum" 1, "zero" 1' },
+  { label: "case · cap punctuation", settings: '"kern" 1, "liga" 1, "tnum" 1, "case" 1' },
+  { label: "ss01 · serifed I", settings: '"kern" 1, "liga" 1, "tnum" 1, "ss01" 1' },
+  { label: "pnum · proportional", settings: '"kern" 1, "liga" 1, "pnum" 1' },
 ];
 
 export default function BjorkFontPage() {
@@ -67,7 +77,7 @@ export default function BjorkFontPage() {
           </Link>
           <div className="flex items-center gap-2">
             <a
-              href="/fonts/BjorkGroteskAlpha-Regular-v12.woff2"
+              href="/fonts/BjorkGroteskAlpha-Regular-v13.woff2"
               className="flex size-8 items-center justify-center rounded-[12px] bg-[#232323] text-[#ededed] transition hover:bg-[#2c2c2c] active:scale-95"
               aria-label="Download Bjork Grotesk Alpha"
             >
@@ -113,7 +123,7 @@ export default function BjorkFontPage() {
                 Character set
               </h2>
               <span className="rounded-md bg-[#202020] px-2 py-1 font-mono text-[11px] text-[#ededed]/44">
-                WOFF2 family
+                Alpha v13 · Display v3
               </span>
             </div>
             <SpecimenLine value={alphabet} size="large" display />
@@ -243,6 +253,30 @@ export default function BjorkFontPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        <section className="mt-3 rounded-[18px] border border-[#1b1b1b] bg-[#101010] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] md:p-7">
+          <h2 className="mb-8 font-mono text-xs uppercase tracking-[0.1em] text-[#ededed]/38">
+            OpenType features
+          </h2>
+          <div className="space-y-4">
+            {featureRows.map((row) => (
+              <div
+                key={row.label}
+                className="grid gap-2 border-b border-[#202020] pb-4 last:border-0 last:pb-0 md:grid-cols-[200px_1fr] md:items-baseline"
+              >
+                <p className="font-mono text-[11px] uppercase tracking-[0.1em] text-[#ededed]/34">
+                  {row.label}
+                </p>
+                <p
+                  className="font-bjork-alpha overflow-hidden text-[clamp(22px,3vw,34px)] leading-[1.1] tracking-[-0.01em] text-[#ededed]"
+                  style={{ fontFeatureSettings: row.settings }}
+                >
+                  {featureSample}
+                </p>
+              </div>
+            ))}
           </div>
         </section>
 
