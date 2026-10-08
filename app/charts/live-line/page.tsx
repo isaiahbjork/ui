@@ -164,7 +164,7 @@ export function Demo({ points }: { points: { t: number; v: number }[] }) {
 }`}
       // The shell scales demos to fit their base width on phones. A 360px base keeps the chart at full size there.
       previewScaleClassName="w-[360px]"
-      previewCaptureScaleClassName="w-[760px] scale-[0.72]"
+      previewCaptureScaleClassName="w-[760px] scale-[1.1]"
     >
       <div className="flex w-full min-w-0 flex-col gap-5">
         <LiveDemo
