@@ -49,9 +49,10 @@ export function ControlRow({ children }: { children: ReactNode }) {
 }
 
 // Demo column: a fixed max width that shrinks with the phone viewport instead of collapsing.
+// Below lg the shell's toolbar floats over the top of the stage, so the column starts under it.
 export function DemoColumn({ width, children, className }: { width: number; children: ReactNode; className?: string }) {
   return (
-    <div className={cn("flex min-w-0 flex-col gap-5", className)} style={{ width: `min(${width}px, calc(100vw - 56px))` }}>
+    <div className={cn("flex min-w-0 flex-col gap-5 max-lg:pt-16", className)} style={{ width: `min(${width}px, calc(100vw - 56px))` }}>
       {children}
     </div>
   );
