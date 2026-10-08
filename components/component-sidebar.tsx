@@ -70,7 +70,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "AI Voice Input", path: "/ai/ai-voice-input" },
       { name: "Agent Trace", path: "/ai/agent-trace" },
 
-      // @slot handoff-beam
+      { name: "Handoff Beam", path: "/ai/handoff-beam" },
 
       // @slot lattice-orb
 
