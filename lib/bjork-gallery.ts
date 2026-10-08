@@ -1171,6 +1171,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork127",
+    slug: "violin-plot",
+    title: "Violin plot",
+    route: "/charts/violin-plot",
+    sourcePath: "components/bjork-ui/charts/violin-plot.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {
