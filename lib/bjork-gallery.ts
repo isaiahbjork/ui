@@ -967,7 +967,18 @@ export const galleryItems: GalleryItem[] = [
 
   // @slot bjork99 live-line
 
-  // @slot bjork100 flap-ledger
+  {
+    id: "bjork100",
+    slug: "flap-ledger",
+    title: "Flap ledger",
+    route: "/tables/flap-ledger",
+    sourcePath: "components/bjork-ui/tables/flap-ledger.tsx",
+    tier: "copy",
+    collection: "Tables",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork101 route-trace
 
