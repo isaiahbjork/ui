@@ -2,12 +2,16 @@
 
 import { motion } from "framer-motion";
 
+import { useIsDarkTheme } from "@/hooks/use-is-dark-theme";
+
 interface TargetingUIProps {
   className?: string;
 }
 
 export function TargetingUI({ className }: TargetingUIProps) {
-  const hudColor = "#ffffff";
+  const isDark = useIsDarkTheme();
+  const hudColor = isDark ? "#ffffff" : "#171717";
+  const hudMuted = isDark ? "#ffffff80" : "#17171780";
 
   return (
     <svg 
@@ -139,7 +143,7 @@ export function TargetingUI({ className }: TargetingUIProps) {
         y1="0.823223" 
         x2="74.1768" 
         y2="74.8232" 
-        stroke="#ffffff80" 
+        stroke={hudMuted} 
         strokeWidth="0.5"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
@@ -156,7 +160,7 @@ export function TargetingUI({ className }: TargetingUIProps) {
         y1="74.75" 
         x2="164" 
         y2="74.75" 
-        stroke="#ffffff80" 
+        stroke={hudMuted} 
         strokeWidth="0.5"
         initial={{ 
           pathLength: 0,
@@ -178,7 +182,7 @@ export function TargetingUI({ className }: TargetingUIProps) {
         y1="0.82443" 
         x2="163.822" 
         y2="74.8244" 
-        stroke="#ffffff80" 
+        stroke={hudMuted} 
         strokeWidth="0.5"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
@@ -251,7 +255,7 @@ export function TargetingUI({ className }: TargetingUIProps) {
       <g transform="translate(29, 22)">
         <motion.path 
           d="M89.455 175.334C69.3083 175.288 49.7881 168.326 34.1599 155.612C18.5318 142.898 7.74354 125.203 3.6 105.486L0 101.886V73.5335L3.578 69.9575C7.65877 50.1962 18.4297 32.4468 34.0743 19.7028C49.7188 6.95881 69.2797 0 89.458 0C109.636 0 129.197 6.95881 144.842 19.7028C160.486 32.4468 171.257 50.1962 175.338 69.9575L178.914 73.5335V101.884L175.314 105.484C171.171 125.202 160.383 142.898 144.753 155.613C129.124 168.328 109.603 175.29 89.455 175.334ZM0.747999 101.574L4.289 105.116L4.312 105.225C8.35779 124.817 19.0363 142.414 34.5465 155.048C50.0567 167.683 69.4496 174.582 89.4545 174.582C109.459 174.582 128.852 167.683 144.363 155.048C159.873 142.414 170.551 124.817 174.597 105.225L174.62 105.116L178.161 101.574V73.8445L174.646 70.3275L174.623 70.2165C170.598 50.6003 159.926 32.9746 144.408 20.3176C128.891 7.66049 109.48 0.747999 89.455 0.747999C69.4302 0.747999 50.0192 7.66049 34.5017 20.3176C18.9842 32.9746 8.31157 50.6003 4.287 70.2165L4.264 70.3275L0.747999 73.8445V101.574Z" 
-          fill="#ffffff80"
+          fill={hudMuted}
           style={{ transformOrigin: "89.5px 87.5px" }}
           initial={{ rotate: 90 }}
           animate={{ rotate: 0 }}
@@ -333,7 +337,7 @@ export function TargetingUI({ className }: TargetingUIProps) {
           cy="87.5"
           r="72"
           fill="none"
-          stroke="#ffffff80"
+          stroke={hudMuted}
           strokeWidth="0.5"
           strokeLinecap="round"
           style={{ transformOrigin: "89.5px 87.5px" }}
@@ -657,7 +661,7 @@ export function TargetingUI({ className }: TargetingUIProps) {
         y1="219.176777" 
         x2="74.1768" 
         y2="145.1768" 
-        stroke="#ffffff80" 
+        stroke={hudMuted} 
         strokeWidth="0.5"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
@@ -674,7 +678,7 @@ export function TargetingUI({ className }: TargetingUIProps) {
         y1="145.25" 
         x2="164" 
         y2="145.25" 
-        stroke="#ffffff80" 
+        stroke={hudMuted} 
         strokeWidth="0.5"
         initial={{ 
           pathLength: 0,
@@ -696,7 +700,7 @@ export function TargetingUI({ className }: TargetingUIProps) {
         y1="219.17557" 
         x2="163.822" 
         y2="145.1756" 
-        stroke="#ffffff80" 
+        stroke={hudMuted} 
         strokeWidth="0.5"
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}

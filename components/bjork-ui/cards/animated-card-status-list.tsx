@@ -54,7 +54,7 @@ const statusListPalettes = {
       "border-[#d8d3c7] bg-[#eee9df] text-[#171717]/68 shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] hover:bg-[#e7e1d5] hover:text-[#171717]",
     row: "border-[#d8d3c7] bg-[#f4f1e9] text-[#171717] shadow-[inset_0_7px_14px_rgba(255,255,255,0.58),inset_0_0.5px_0.5px_rgba(255,255,255,0.82),0_12px_20px_-14px_rgba(55,47,36,0.34)] hover:border-[#cbc3b5] hover:bg-[#eee9df]",
     rowTitle: "text-[#171717]",
-    statusText: "text-[#171717]/44",
+    statusText: "text-[#171717]/60",
     syncButton:
       "border-[#d2c8b9] bg-[#eee9df] text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] hover:bg-[#e7e1d5]",
     updatesGradient: "from-[#ec5c13]/12 to-transparent",

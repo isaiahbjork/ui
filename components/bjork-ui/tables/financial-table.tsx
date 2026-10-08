@@ -145,7 +145,7 @@ export function FinancialTable({
       : "border-[#f1e8dc] bg-[#fffcf6] shadow-[var(--bjork-shadow-surface)]",
     header: isDark
       ? "border-[#232323] bg-[#181818] text-[#ededed]/42"
-      : "border-[#f1e8dc] bg-[#fbf7ef] text-[#171717]/42",
+      : "border-[#f1e8dc] bg-[#fbf7ef] text-[#171717]/60",
     row: isDark
       ? "border-[#232323] hover:bg-[#181818]/70"
       : "border-[#f1e8dc] hover:bg-[#f8f2e7]/72",
@@ -153,7 +153,7 @@ export function FinancialTable({
       ? "border-[#2a2a2a] bg-[#181818]"
       : "border-[#eadfce] bg-[#f8f2e7]",
     primaryText: isDark ? "text-[#ededed]/90" : "text-[#171717]/86",
-    secondaryText: isDark ? "text-[#ededed]/38" : "text-[#171717]/46",
+    secondaryText: isDark ? "text-[#ededed]/38" : "text-[#171717]/60",
     sparkline: isDark ? "#ededed" : "#171717",
     orange: isDark ? "text-[#d86a2c]" : "text-[#bd4514]",
   };

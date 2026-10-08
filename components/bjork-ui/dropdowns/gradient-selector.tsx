@@ -235,7 +235,7 @@ export function GradientSelector({
             <span 
               className={cn(
                 "text-sm font-medium transition-colors duration-200 cursor-pointer",
-                selectedIndex >= index ? "text-[#171717] dark:text-[#ededed]" : "text-[#171717]/42 dark:text-[#ededed]/34"
+                selectedIndex >= index ? "text-[#171717] dark:text-[#ededed]" : "text-[#171717]/60 dark:text-[#ededed]/34"
               )}
               onClick={() => handleCircleClick(option, index)}
               style={{

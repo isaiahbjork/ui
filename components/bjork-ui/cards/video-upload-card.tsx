@@ -87,8 +87,8 @@ const uploadPalettes = {
     overlay: "bg-[#f7f3ea]",
     spinner: "border-[#bd4514]",
     title: "text-[#171717]",
-    description: "text-[#171717]/54",
-    filename: "text-[#171717]/58",
+    description: "text-[#171717]/60",
+    filename: "text-[#171717]/60",
     videoBorder: "border-[#eee6db]",
   },
 };

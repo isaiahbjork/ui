@@ -227,6 +227,8 @@ vec3 shaderColor(vec2 uv, vec2 p, float t, vec2 pointer, float intensity, float 
   vec3 activeColor = mix(idleColor, fillColor, step(0.001, trailAmount));
   activeColor = mix(activeColor, mix(mix(lightGold, lightOrange, seed), lightRose, seed * 0.35), isLight);
   vec3 color = base + lineColor * line * mix(0.034, 0.032, isLight);
+  // On light surfaces the additive grid would vanish into the cream base, so the lines are pulled darker instead.
+  color -= isLight * line * 0.07;
   color += idleColor * idle * box * mix(1.0, 0.82, isLight);
   color = mix(color, activeColor, saturate(fill * box * mix(0.82 + intensity * 0.12, 0.64 + intensity * 0.1, isLight)));
   color += activeColor * fill * smoothstep(0.64, 0.0, length(centered)) * mix(0.14, 0.1, isLight);

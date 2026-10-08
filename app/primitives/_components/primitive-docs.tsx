@@ -78,7 +78,7 @@ export function PrimitiveDocsSection({
       <h2
         className={cn(
           "font-mono text-xs uppercase tracking-[0.08em]",
-          isLight ? "text-[#171717]/38" : "text-[#ededed]/34",
+          isLight ? "text-[#171717]/60" : "text-[#ededed]/34",
         )}
       >
         {title}
@@ -274,7 +274,7 @@ function PrimitiveExamplePanel({
                   <p
                     className={cn(
                       "mt-3 max-w-[62ch] text-left text-[13px] leading-6 sm:text-sm",
-                      isLight ? "text-[#171717]/50" : "text-[#ededed]/46",
+                      isLight ? "text-[#171717]/60" : "text-[#ededed]/46",
                     )}
                   >
                     {example.description}
@@ -302,7 +302,7 @@ function PrimitiveExamplePanel({
                   className={cn(
                     "absolute right-4 top-4 z-10 inline-flex size-5 items-center justify-center transition active:scale-95",
                     isLight
-                      ? "text-[#171717]/36 hover:text-[#171717]/74 focus-visible:text-[#171717]/74"
+                      ? "text-[#171717]/60 hover:text-[#171717]/74 focus-visible:text-[#171717]/74"
                       : "text-[#ededed]/34 hover:text-[#ededed]/74 focus-visible:text-[#ededed]/74",
                   )}
                 >
@@ -481,7 +481,7 @@ function PrimitiveToolbarButton({
       className={cn(
         "flex size-7 items-center justify-center rounded-[10px] transition active:scale-95",
         isLight
-          ? "text-[#171717]/44 hover:bg-[#f1ece3] hover:text-[#171717]/68 focus-visible:bg-[#f1ece3] focus-visible:text-[#171717]/68"
+          ? "text-[#171717]/60 hover:bg-[#f1ece3] hover:text-[#171717]/68 focus-visible:bg-[#f1ece3] focus-visible:text-[#171717]/68"
           : "text-[#ededed]/42 hover:bg-[#232323] hover:text-[#ededed]/72 focus-visible:bg-[#232323] focus-visible:text-[#ededed]/72",
       )}
     >
@@ -519,7 +519,7 @@ export function PrimitivePropTable({ rows }: { rows: PropRow[] }) {
           <span
             className={cn(
               "font-mono text-[12px]",
-              isLight ? "text-[#171717]/46" : "text-[#ededed]/38",
+              isLight ? "text-[#171717]/60" : "text-[#ededed]/38",
             )}
           >
             {row.value}
@@ -527,7 +527,7 @@ export function PrimitivePropTable({ rows }: { rows: PropRow[] }) {
           <p
             className={cn(
               "text-sm leading-6",
-              isLight ? "text-[#171717]/54" : "text-[#ededed]/46",
+              isLight ? "text-[#171717]/60" : "text-[#ededed]/46",
             )}
           >
             {row.description}

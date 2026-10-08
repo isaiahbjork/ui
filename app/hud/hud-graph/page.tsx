@@ -1,13 +1,12 @@
 "use client";
-import { useTheme } from "next-themes";
+import { useIsDarkTheme } from "@/hooks/use-is-dark-theme";
 import { HudAreaChart } from "@/components/bjork-ui/hud/graph";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 export default function Page() {
   const item = getGalleryItem("hud-graph");
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme !== "light";
+  const isDark = useIsDarkTheme();
   // Sample data for the graph
   const data = [
     { time: "00:00", value: 10 },

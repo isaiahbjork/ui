@@ -493,7 +493,7 @@ export function PredictionMarketCard({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleQuickAmount(amount)}
-                    className="rounded-lg border border-[#d8d3c7] bg-[#eee9df] py-2 text-sm font-medium text-[#171717]/55 transition-all duration-200 hover:bg-[#e7e1d5] dark:border-[#232323] dark:bg-[#090909] dark:text-[#ededed]/45 dark:hover:bg-[#141414]"
+                    className="rounded-lg border border-[#d8d3c7] bg-[#eee9df] py-2 text-sm font-medium text-[#171717]/60 transition-all duration-200 hover:bg-[#e7e1d5] dark:border-[#232323] dark:bg-[#090909] dark:text-[#ededed]/45 dark:hover:bg-[#141414]"
                   >
                     +${amount}
                   </motion.button>
@@ -510,7 +510,7 @@ export function PredictionMarketCard({
               className={`w-full relative overflow-hidden py-3 rounded-full font-semibold transition-all duration-300 ${
                 betAmount
                   ? `${betType === 'yes' ? 'border-[#7c8f5d]/35 bg-[#7c8f5d] hover:bg-[#8fa36b] text-[#080808]' : 'border-[#b45f50]/35 bg-[#b45f50] hover:bg-[#c66d5d] text-white'} border cursor-pointer group`
-                  : 'cursor-not-allowed border border-[#d8d3c7] bg-[#eee9df] text-[#171717]/38 dark:border-[#232323] dark:bg-[#090909] dark:text-[#ededed]/30'
+                  : 'cursor-not-allowed border border-[#d8d3c7] bg-[#eee9df] text-[#171717]/60 dark:border-[#232323] dark:bg-[#090909] dark:text-[#ededed]/30'
               }`}
             >
               <span className="relative z-10 flex items-center justify-center gap-2">

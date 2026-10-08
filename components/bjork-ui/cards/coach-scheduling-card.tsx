@@ -379,7 +379,7 @@ export function CoachSchedulingCard({
              whileTap={shouldAnimate ? { scale: 0.95 } : {}}
              onClick={() => handleWeekNavigation("prev")}
              aria-label="Previous week"
-             className="rounded-lg border border-transparent p-2 text-[#171717]/55 transition-colors hover:border-[#d8d3c7] hover:bg-[#eee9df] hover:text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#ec5c13]/45 dark:text-[#ededed]/45 dark:hover:border-[#232323] dark:hover:bg-[#141414] dark:hover:text-[#ededed]"
+             className="rounded-lg border border-transparent p-2 text-[#171717]/60 transition-colors hover:border-[#d8d3c7] hover:bg-[#eee9df] hover:text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#ec5c13]/45 dark:text-[#ededed]/45 dark:hover:border-[#232323] dark:hover:bg-[#141414] dark:hover:text-[#ededed]"
            >
              <ChevronLeft className="w-5 h-5 text-muted-foreground" />
            </motion.button>
@@ -396,7 +396,7 @@ export function CoachSchedulingCard({
              whileTap={shouldAnimate ? { scale: 0.95 } : {}}
              onClick={() => handleWeekNavigation("next")}
              aria-label="Next week"
-             className="rounded-lg border border-transparent p-2 text-[#171717]/55 transition-colors hover:border-[#d8d3c7] hover:bg-[#eee9df] hover:text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#ec5c13]/45 dark:text-[#ededed]/45 dark:hover:border-[#232323] dark:hover:bg-[#141414] dark:hover:text-[#ededed]"
+             className="rounded-lg border border-transparent p-2 text-[#171717]/60 transition-colors hover:border-[#d8d3c7] hover:bg-[#eee9df] hover:text-[#171717] focus:outline-none focus:ring-2 focus:ring-[#ec5c13]/45 dark:text-[#ededed]/45 dark:hover:border-[#232323] dark:hover:bg-[#141414] dark:hover:text-[#ededed]"
            >
              <ChevronRight className="w-5 h-5 text-muted-foreground" />
            </motion.button>
@@ -451,7 +451,7 @@ export function CoachSchedulingCard({
                        "px-3 py-1.5 text-sm rounded-lg border transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50",
                        slot.available
                          ? "cursor-pointer border-[#d8d3c7] bg-[#f4f1e9] text-[#171717] shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] hover:border-[#ec5c13]/35 hover:bg-[#eee9df] dark:border-[#232323] dark:bg-[#090909] dark:text-[#ededed] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:hover:border-[#ec5c13]/35 dark:hover:bg-[#141414]"
-                         : "cursor-not-allowed border-[#d8d3c7]/70 bg-[#eee9df]/60 text-[#171717]/36 opacity-60 dark:border-[#232323]/70 dark:bg-[#090909]/50 dark:text-[#ededed]/28"
+                         : "cursor-not-allowed border-[#d8d3c7]/70 bg-[#eee9df]/60 text-[#171717]/60 opacity-60 dark:border-[#232323]/70 dark:bg-[#090909]/50 dark:text-[#ededed]/28"
                      )}
                    >
                      {slot.time}

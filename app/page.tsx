@@ -184,7 +184,7 @@ export default function Page() {
               )}
             >
               <p className="text-lg font-medium">No components found</p>
-              <p className={cn("mt-2 text-sm", isLight ? "text-[#171717]/45" : "text-[#ededed]/40")}>
+              <p className={cn("mt-2 text-sm", isLight ? "text-[#171717]/60" : "text-[#ededed]/40")}>
                 Clear the search or switch the source filter.
               </p>
             </div>
@@ -284,7 +284,7 @@ function HeroQuickStart({
       <p
         className={cn(
           "font-mono text-[12px] uppercase leading-none tracking-[0.14em]",
-          isLight ? "text-[#171717]/38" : "text-[#ededed]/34"
+          isLight ? "text-[#171717]/60" : "text-[#ededed]/34"
         )}
       >
         Quick start guide
@@ -320,7 +320,7 @@ function CommandBlock({
       <p
         className={cn(
           "mb-5 font-mono text-[12px] uppercase leading-none tracking-[0.14em]",
-          isLight ? "text-[#171717]/36" : "text-[#ededed]/32"
+          isLight ? "text-[#171717]/60" : "text-[#ededed]/32"
         )}
       >
         {label}
@@ -340,7 +340,7 @@ function CommandBlock({
           </span>
           {command.split("@bjork-ui")[1]}
         </code>
-        <Clipboard className={cn("size-4 shrink-0", isLight ? "text-[#171717]/46" : "text-[#ededed]/52")} />
+        <Clipboard className={cn("size-4 shrink-0", isLight ? "text-[#171717]/60" : "text-[#ededed]/52")} />
       </div>
     </div>
   );
@@ -358,7 +358,7 @@ function OutputBlock({ isLight }: { isLight: boolean }) {
       <p
         className={cn(
           "mb-5 font-mono text-[12px] uppercase leading-none tracking-[0.14em]",
-          isLight ? "text-[#171717]/36" : "text-[#ededed]/32"
+          isLight ? "text-[#171717]/60" : "text-[#ededed]/32"
         )}
       >
         After the CLI you&apos;ll see this output
@@ -367,12 +367,12 @@ function OutputBlock({ isLight }: { isLight: boolean }) {
         className={cn(
           "rounded-[16px] px-5 py-5 font-mono text-[12px]",
           isLight
-            ? "bg-[#faf7f0] text-[#171717]/58 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]"
+            ? "bg-[#faf7f0] text-[#171717]/60 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)]"
             : "bg-[#111111] text-[#ededed]/52 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]"
         )}
       >
         <p>
-          <span className={isLight ? "text-[#171717]/34" : "text-[#ededed]/30"}>
+          <span className={isLight ? "text-[#171717]/60" : "text-[#ededed]/30"}>
             &gt;
           </span>{" "}
           npx shadcn add{" "}
@@ -407,16 +407,16 @@ function GalleryHeading({
 }) {
   return (
     <div className="flex w-full flex-col items-start gap-3 pb-7 text-left">
-      <p className={cn("font-mono text-[12px] uppercase tracking-[0.14em]", isLight ? "text-[#171717]/36" : "text-[#ededed]/32")}>
+      <p className={cn("font-mono text-[12px] uppercase tracking-[0.14em]", isLight ? "text-[#171717]/60" : "text-[#ededed]/32")}>
         Browse components
       </p>
       <h2 className="relative text-[28px] font-medium leading-tight tracking-[-0.025em]">
         {title}
-        <span className={cn("absolute top-0 pl-1 text-sm font-normal", isLight ? "text-[#171717]/38" : "text-[#6f7480]")}>
+        <span className={cn("absolute top-0 pl-1 text-sm font-normal", isLight ? "text-[#171717]/60" : "text-[#6f7480]")}>
           [{count || collectionCount}]
         </span>
       </h2>
-      <p className={cn("max-w-[540px] text-[15px] leading-[24px]", isLight ? "text-[#171717]/48" : "text-[#ededed]/42")}>
+      <p className={cn("max-w-[540px] text-[15px] leading-[24px]", isLight ? "text-[#171717]/60" : "text-[#ededed]/42")}>
         {description}
       </p>
     </div>
@@ -437,10 +437,10 @@ function SectionHeading({
       <div>
         <h3 className={cn("text-[22px] font-medium tracking-[-0.025em]", isLight ? "text-[#171717]" : "text-[#ededed]")}>
           {title}
-          <span className={cn("pl-1 text-sm font-normal", isLight ? "text-[#171717]/38" : "text-[#6f7480]")}>[{count}]</span>
+          <span className={cn("pl-1 text-sm font-normal", isLight ? "text-[#171717]/60" : "text-[#6f7480]")}>[{count}]</span>
         </h3>
       </div>
-      <p className={cn("hidden font-mono text-[11px] uppercase tracking-[0.14em] md:block", isLight ? "text-[#171717]/30" : "text-[#ededed]/25")}>
+      <p className={cn("hidden font-mono text-[11px] uppercase tracking-[0.14em] md:block", isLight ? "text-[#171717]/60" : "text-[#ededed]/25")}>
         Collection
       </p>
     </div>
@@ -504,7 +504,7 @@ function GalleryCard({
           {item.title}
         </p>
         <div className="flex items-center justify-center gap-2">
-          <span className={cn("text-sm font-medium", isLight ? "text-[#171717]/42" : "text-[#ededed]/45")}>{item.id}</span>
+          <span className={cn("text-sm font-medium", isLight ? "text-[#171717]/60" : "text-[#ededed]/45")}>{item.id}</span>
         </div>
       </div>
     </motion.article>
@@ -619,18 +619,18 @@ function FilterDock({
             : "bg-[#121212]/95 shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_14px_20px_-6px_rgba(0,0,0,0.45)]"
         )}
       >
-        <Search className={cn("size-4 shrink-0", isLight ? "text-[#171717]/58" : "text-[#ededed]/70")} />
+        <Search className={cn("size-4 shrink-0", isLight ? "text-[#171717]/60" : "text-[#ededed]/70")} />
         <input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search"
-          className={cn("min-w-0 flex-1 border-none bg-transparent text-sm outline-none", isLight ? "text-[#171717] placeholder:text-[#171717]/42" : "text-[#ededed] placeholder:text-[#ededed]/45")}
+          className={cn("min-w-0 flex-1 border-none bg-transparent text-sm outline-none", isLight ? "text-[#171717] placeholder:text-[#171717]/60" : "text-[#ededed] placeholder:text-[#ededed]/45")}
         />
         <span
           aria-hidden="true"
           className={cn(
             "pointer-events-none flex shrink-0 items-center gap-1 rounded-[7px] px-1.5 py-0.5 font-mono text-[11px] leading-none",
-            isLight ? "text-[#171717]/32" : "text-[#ededed]/32"
+            isLight ? "text-[#171717]/60" : "text-[#ededed]/32"
           )}
         >
           <CommandIcon className="size-3" />
@@ -696,7 +696,7 @@ function FilterDock({
             >
               <div className="space-y-3">
                 <div>
-                  <p className={cn("mb-2 px-1 font-mono text-[11px] uppercase tracking-[0.08em]", isLight ? "text-[#171717]/36" : "text-[#ededed]/34")}>
+                  <p className={cn("mb-2 px-1 font-mono text-[11px] uppercase tracking-[0.08em]", isLight ? "text-[#171717]/60" : "text-[#ededed]/34")}>
                     Sort
                   </p>
                   <div className="grid grid-cols-2 gap-2">
@@ -717,7 +717,7 @@ function FilterDock({
                                 ? "bg-[#e4ded2] text-[#171717]"
                                 : "bg-[#232323] text-[#ededed]"
                               : isLight
-                                ? "bg-[#eee9df] text-[#171717]/42 hover:text-[#171717]/78"
+                                ? "bg-[#eee9df] text-[#171717]/60 hover:text-[#171717]/78"
                                 : "bg-[#0d0d0d] text-[#ededed]/35 hover:text-[#ededed]/75"
                           )}
                           aria-pressed={selected}
@@ -731,7 +731,7 @@ function FilterDock({
                 </div>
 
                 <div>
-                  <p className={cn("mb-2 px-1 font-mono text-[11px] uppercase tracking-[0.08em]", isLight ? "text-[#171717]/36" : "text-[#ededed]/34")}>
+                  <p className={cn("mb-2 px-1 font-mono text-[11px] uppercase tracking-[0.08em]", isLight ? "text-[#171717]/60" : "text-[#ededed]/34")}>
                     Collection
                   </p>
                   <div className="grid max-h-[230px] grid-cols-2 gap-2 overflow-y-auto pr-1">
@@ -747,7 +747,7 @@ function FilterDock({
                               ? "bg-[#e4ded2] text-[#171717]"
                               : "bg-[#232323] text-[#ededed]"
                             : isLight
-                              ? "bg-[#eee9df] text-[#171717]/42 hover:text-[#171717]/78"
+                              ? "bg-[#eee9df] text-[#171717]/60 hover:text-[#171717]/78"
                               : "bg-[#0d0d0d] text-[#ededed]/35 hover:text-[#ededed]/75"
                         )}
                         aria-pressed={collection === value}
@@ -770,7 +770,7 @@ function FilterDock({
           className={cn(
             "flex h-[45px] items-center gap-2 rounded-[13px] px-3 text-sm transition",
             isLight
-              ? "bg-[#f4f1e9]/95 text-[#171717]/45 shadow-[inset_0_7px_14px_rgba(255,255,255,0.5),inset_0_0.5px_0.5px_rgba(255,255,255,0.72),0_10px_20px_-18px_rgba(55,47,36,0.16)] hover:text-[#171717]/80"
+              ? "bg-[#f4f1e9]/95 text-[#171717]/60 shadow-[inset_0_7px_14px_rgba(255,255,255,0.5),inset_0_0.5px_0.5px_rgba(255,255,255,0.72),0_10px_20px_-18px_rgba(55,47,36,0.16)] hover:text-[#171717]/80"
               : "bg-[#121212]/95 text-[#ededed]/45 shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_14px_20px_-6px_rgba(0,0,0,0.45)] hover:text-[#ededed]/80"
           )}
           aria-label="Clear collection filter"

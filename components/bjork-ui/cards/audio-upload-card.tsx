@@ -66,9 +66,9 @@ const uploadPalettes = {
       "border border-[#f5ede2] bg-[#fffcf6] text-[#171717] shadow-[inset_0_7px_14px_rgba(88,72,49,0.045),inset_0_0.5px_0.5px_rgba(255,255,255,0.92),0_14px_22px_-9px_rgba(66,52,33,0.11)]",
     remove: "bg-[#2a1711] text-[#ffb087] hover:bg-[#3a1e14]",
     title: "text-[#171717]",
-    description: "text-[#171717]/54",
-    filename: "text-[#171717]/58",
-    waveform: "text-[#171717]/42",
+    description: "text-[#171717]/60",
+    filename: "text-[#171717]/60",
+    waveform: "text-[#171717]/60",
   },
 };
 

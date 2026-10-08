@@ -3,7 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion"
 import type React from "react"
 import { useId, useState } from "react"
-import { useTheme } from "next-themes"
+import { useIsDarkTheme } from "@/hooks/use-is-dark-theme"
 import { HyperText } from "@/components/ui/hyper-text"
 
 interface HudButtonProps {
@@ -28,8 +28,7 @@ export function HudButton({
   const shouldReduceMotion = useReducedMotion()
   const shouldAnimate = enableAnimations && !shouldReduceMotion
   const [isHovered, setIsHovered] = useState(false)
-  const { resolvedTheme } = useTheme()
-  const isDark = resolvedTheme !== "light"
+  const isDark = useIsDarkTheme()
 
   // Theme-aware color system
   const getColors = () => {

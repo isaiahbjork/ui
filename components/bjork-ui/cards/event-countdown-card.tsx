@@ -228,7 +228,7 @@ export function EventCountdownCard({
             {title}
           </motion.h3>
           
-          <div className="flex items-center gap-4 text-sm text-[#171717]/50 dark:text-[#ededed]/42">
+          <div className="flex items-center gap-4 text-sm text-[#171717]/60 dark:text-[#ededed]/42">
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
               <span>{(date || eventDate).toLocaleDateString()}</span>
@@ -246,7 +246,7 @@ export function EventCountdownCard({
             className="space-y-3"
             variants={shouldAnimate ? childVariants : {}}
           >
-            <div className="flex items-center gap-1 text-sm font-medium text-[#171717]/52 dark:text-[#ededed]/46">
+            <div className="flex items-center gap-1 text-sm font-medium text-[#171717]/60 dark:text-[#ededed]/46">
               <Clock className="w-4 h-4" />
               <span>Event starts in:</span>
             </div>
@@ -268,7 +268,7 @@ export function EventCountdownCard({
                   <div className="text-lg font-semibold tabular-nums text-[#bd4514] dark:text-[#d86a2c]">
                     {unit.value.toString().padStart(2, "0")}
                   </div>
-                  <div className="text-xs font-medium text-[#171717]/46 dark:text-[#ededed]/36">
+                  <div className="text-xs font-medium text-[#171717]/60 dark:text-[#ededed]/36">
                     {unit.label}
                   </div>
                 </motion.div>
@@ -281,7 +281,7 @@ export function EventCountdownCard({
             className="text-center py-4"
           >
             <div className="text-lg font-semibold text-[#bd4514] dark:text-[#d86a2c]">Event Started!</div>
-            <div className="text-sm text-[#171717]/52 dark:text-[#ededed]/42">Join now to participate</div>
+            <div className="text-sm text-[#171717]/60 dark:text-[#ededed]/42">Join now to participate</div>
           </motion.div>
         )}
 

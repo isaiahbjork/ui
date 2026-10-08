@@ -332,7 +332,7 @@ export function ServerManagementTable({
           animate="visible"
         >
           {/* Headers */}
-          <div className={`grid grid-cols-12 gap-4 border-b px-4 pb-3 text-[11px] font-medium uppercase tracking-[0.16em] ${isDark ? "border-[#232323] text-[#ededed]/34" : "border-[#f1e8dc] text-[#171717]/34"}`}>
+          <div className={`grid grid-cols-12 gap-4 border-b px-4 pb-3 text-[11px] font-medium uppercase tracking-[0.16em] ${isDark ? "border-[#232323] text-[#ededed]/34" : "border-[#f1e8dc] text-[#171717]/60"}`}>
             <div className="col-span-1">No</div>
             <div className="col-span-2">Service Name</div>
             <div className="col-span-2">Service Location</div>

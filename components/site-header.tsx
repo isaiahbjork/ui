@@ -66,7 +66,7 @@ export function SiteHeader({ className }: SiteHeaderProps) {
                 aria-hidden="true"
                 className={cn(
                   "pointer-events-none absolute left-[calc(100%+9px)] top-1/2 hidden -translate-y-1/2 whitespace-nowrap font-mono text-[10px] font-medium leading-none tracking-[0.08em] sm:inline-flex",
-                  isLight ? "text-[#171717]/42" : "text-[#ededed]/42"
+                  isLight ? "text-[#171717]/60" : "text-[#ededed]/42"
                 )}
                 initial={
                   shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: -6 }
@@ -86,7 +86,7 @@ export function SiteHeader({ className }: SiteHeaderProps) {
         <div
           className={cn(
             "flex items-center gap-3 text-[13px]",
-            isLight ? "text-[#171717]/50" : "text-[#ededed]/50"
+            isLight ? "text-[#171717]/60" : "text-[#ededed]/50"
           )}
         >
           <button

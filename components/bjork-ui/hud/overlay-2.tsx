@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { useTheme } from "next-themes";
+import { useIsDarkTheme } from "@/hooks/use-is-dark-theme";
 
 import { HudButton } from "@/components/bjork-ui/hud/hud-button";
 import { cn } from "@/lib/utils";
@@ -49,8 +49,7 @@ const svgVariants = {
 
 export function Overlay2({ className, compact = false }: Overlay2Props) {
   const shouldReduceMotion = useReducedMotion();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme !== "light";
+  const isDark = useIsDarkTheme();
   const svgFilter = isDark ? "none" : "invert(1)";
   const animationProps = shouldReduceMotion
     ? {

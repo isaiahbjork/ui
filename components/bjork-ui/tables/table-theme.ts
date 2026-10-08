@@ -8,8 +8,12 @@ export function useBjorkTableIsDark(
 ) {
   const [documentTheme, setDocumentTheme] = useState<"light" | "dark" | null>(null);
   const [previewTheme, setPreviewTheme] = useState<"light" | "dark" | null>(null);
+  // Server and first client render must agree, otherwise React keeps the
+  // server-rendered (dark) classes when the real theme resolves to light.
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const syncDocumentTheme = () => {
       const root = document.documentElement;
       const searchParams = new URLSearchParams(window.location.search);
@@ -37,7 +41,8 @@ export function useBjorkTableIsDark(
     return () => observer.disconnect();
   }, []);
 
-  const activeTheme = forcedTheme ?? previewTheme ?? documentTheme ?? resolvedTheme;
+  const activeTheme =
+    forcedTheme ?? previewTheme ?? documentTheme ?? (mounted ? resolvedTheme : undefined);
 
   return activeTheme !== "light";
 }
@@ -49,7 +54,7 @@ export function getBjorkTablePalette(isDark: boolean) {
       : "border-[#f1e8dc] bg-[#fffcf6] shadow-[var(--bjork-shadow-surface)]",
     header: isDark
       ? "border-[#232323] bg-[#181818] text-[#ededed]/42"
-      : "border-[#f1e8dc] bg-[#fbf7ef] text-[#171717]/42",
+      : "border-[#f1e8dc] bg-[#fbf7ef] text-[#171717]/60",
     row: isDark
       ? "border-[#232323] hover:bg-[#181818]/70"
       : "border-[#f1e8dc] hover:bg-[#f8f2e7]/72",
@@ -66,7 +71,7 @@ export function getBjorkTablePalette(isDark: boolean) {
     menuActive: isDark ? "bg-[#232323]" : "bg-[#f8f2e7]",
     divider: isDark ? "border-[#232323]" : "border-[#f1e8dc]",
     primaryText: isDark ? "text-[#ededed]/90" : "text-[#171717]/86",
-    secondaryText: isDark ? "text-[#ededed]/38" : "text-[#171717]/42",
+    secondaryText: isDark ? "text-[#ededed]/38" : "text-[#171717]/60",
     mutedSurface: isDark ? "bg-[#181818]" : "bg-[#f8f2e7]",
     popover: isDark ? "bg-[#111] text-[#ededed]" : "bg-[#fffcf6] text-[#171717]",
     accent: isDark ? "text-[#d86a2c]" : "text-[#bd4514]",
@@ -105,7 +110,7 @@ export function getBjorkSignalPalette(
     neutral: {
       bgColor: isDark ? "bg-[#ededed]/8" : "bg-[#ded7ca]",
       borderColor: isDark ? "border-[#ededed]/14" : "border-[#cfc6b7]",
-      textColor: isDark ? "text-[#ededed]/58" : "text-[#171717]/58",
+      textColor: isDark ? "text-[#ededed]/58" : "text-[#171717]/60",
       dotColor: isDark ? "bg-[#ededed]/45" : "bg-[#171717]/42",
       color: isDark ? "#a3a3a3" : "#706b62",
     },

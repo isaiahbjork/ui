@@ -108,9 +108,9 @@ const shellPalettes = {
       "border-[#eee6db] bg-[#fffcf6]/92 shadow-[inset_0_7px_14px_rgba(88,72,49,0.045),inset_0_0.5px_0.5px_rgba(255,255,255,0.92),inset_1px_0_0_rgba(88,72,49,0.026),inset_-1px_0_0_rgba(255,255,255,0.68),0_14px_22px_-9px_rgba(66,52,33,0.11)]",
     options:
       "border-[#eee6db] bg-[#fffcf6]/92 shadow-[inset_0_7px_14px_rgba(88,72,49,0.045),inset_0_0.5px_0.5px_rgba(255,255,255,0.92),inset_1px_0_0_rgba(88,72,49,0.026),inset_-1px_0_0_rgba(255,255,255,0.68),0_14px_22px_-9px_rgba(66,52,33,0.11)]",
-    optionsMuted: "text-[#171717]/34 hover:bg-[#f1ece3] hover:text-[#171717]/62",
-    optionsText: "text-[#171717]/46",
-    optionsButton: "text-[#171717]/34 hover:text-[#171717]/70",
+    optionsMuted: "text-[#171717]/60 hover:bg-[#f1ece3] hover:text-[#171717]/62",
+    optionsText: "text-[#171717]/60",
+    optionsButton: "text-[#171717]/60 hover:text-[#171717]/70",
   },
 } as const;
 
@@ -645,10 +645,10 @@ function MobileComponentBreadcrumb({
           />
         )}
       </AnimatePresence>
-      <span className={cn("shrink-0", isLight ? "text-[#171717]/45" : "text-[#ededed]/42")}>
+      <span className={cn("shrink-0", isLight ? "text-[#171717]/60" : "text-[#ededed]/42")}>
         Components
       </span>
-      <span className={cn("shrink-0", isLight ? "text-[#171717]/28" : "text-[#ededed]/24")}>
+      <span className={cn("shrink-0", isLight ? "text-[#171717]/60" : "text-[#ededed]/24")}>
         •
       </span>
       <span className={cn("min-w-0 truncate", isLight ? "text-[#171717]/64" : "text-[#ededed]/58")}>
@@ -727,7 +727,7 @@ function DocsPanel({
         className="hide-scrollbar h-auto overflow-visible px-2 pb-20 pt-7 sm:px-3 lg:h-full lg:overflow-y-auto lg:px-4 xl:px-5"
       >
         <div className="w-full min-w-0 max-w-[760px]">
-          <div className={cn("mb-24 hidden items-center gap-2 text-sm lg:flex", isLight ? "text-[#171717]/45" : "text-[#ededed]/42")}>
+          <div className={cn("mb-24 hidden items-center gap-2 text-sm lg:flex", isLight ? "text-[#171717]/60" : "text-[#ededed]/42")}>
             <AnimatePresence initial={false}>
               {!sidebarOpen && (
                 <IndexMotionButton
@@ -748,7 +748,7 @@ function DocsPanel({
 
           <div className="space-y-9">
             <div>
-              <p className={cn("mb-5 font-mono text-xs uppercase tracking-[0.08em]", isLight ? "text-[#171717]/38" : "text-[#ededed]/34")}>
+              <p className={cn("mb-5 font-mono text-xs uppercase tracking-[0.08em]", isLight ? "text-[#171717]/60" : "text-[#ededed]/34")}>
                 {item.title}
               </p>
               <p className={cn("max-w-[760px] text-[19px] leading-8 tracking-[-0.03em] md:text-[21px] md:leading-9", isLight ? "text-[#171717]/76" : "text-[#ededed]/78")}>
@@ -809,7 +809,7 @@ function ComponentPager({
 }) {
   const isLight = palette.mode === "light";
   const borderClass = isLight ? "border-[#ded9cc]" : "border-[#1c1c1c]";
-  const labelClass = isLight ? "text-[#171717]/38" : "text-[#ededed]/36";
+  const labelClass = isLight ? "text-[#171717]/60" : "text-[#ededed]/36";
   const titleClass = isLight ? "text-[#171717]/82" : "text-[#ededed]/88";
   const hoverClass = isLight ? "hover:text-[#171717]" : "hover:text-[#ededed]";
 
@@ -886,7 +886,7 @@ function IndexMotionButton({
       }
       className={cn(
         "flex shrink-0 items-center justify-center transition active:scale-95",
-        isLight ? "text-[#171717]/56 hover:text-[#171717]" : "text-[#ededed]/58 hover:text-[#ededed]",
+        isLight ? "text-[#171717]/60 hover:text-[#171717]" : "text-[#ededed]/58 hover:text-[#ededed]",
         variant === "inline" &&
           "size-4 rounded-none border-0 bg-transparent p-0 shadow-none",
         variant === "floating" &&
@@ -1145,10 +1145,10 @@ function ComponentIndexOverlay({
 
           {groupedItems.map((group) => (
             <div key={group.collection} className="space-y-[8px]">
-              <div className={cn("flex items-center gap-6 pt-1 font-mono text-[11px] uppercase tracking-[0.12em]", isLight ? "text-[#171717]/32" : "text-[#ededed]/30")}>
+              <div className={cn("flex items-center gap-6 pt-1 font-mono text-[11px] uppercase tracking-[0.12em]", isLight ? "text-[#171717]/60" : "text-[#ededed]/30")}>
                 <span className={cn("h-px w-[62px] shrink-0", isLight ? "bg-[#171717]/12" : "bg-[#ededed]/12")} />
                 <span>{group.collection}</span>
-                <span className={cn("text-[10px]", isLight ? "text-[#171717]/24" : "text-[#ededed]/22")}>
+                <span className={cn("text-[10px]", isLight ? "text-[#171717]/60" : "text-[#ededed]/22")}>
                   {group.entries.length}
                 </span>
               </div>
@@ -1171,8 +1171,8 @@ function ComponentIndexOverlay({
                     onMouseMove={updatePreviewPoint}
                     onMouseLeave={() => setHoveredItem(null)}
                     className={cn(
-                      "group flex h-[30px] items-center gap-4 rounded-md text-[22px] leading-none tracking-[-0.055em] outline-none transition sm:h-[28px] sm:gap-6 sm:text-[26px]",
-                      active ? "text-[#ec5c13]" : isLight ? "text-[#171717]/30 hover:text-[#171717]/78" : "text-[#ededed]/27 hover:text-[#ededed]/78"
+                      "group flex h-[30px] items-center gap-4 rounded-md text-[22px] leading-none tracking-[-0.055em] outline-none transition sm:h-[28px] sm:gap-6 sm:text-[26px] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-[#ec5c13]",
+                      active ? "text-[#ec5c13]" : isLight ? "text-[#171717]/60 hover:text-[#171717]/78" : "text-[#ededed]/27 hover:text-[#ededed]/78"
                     )}
                   >
                     <span
@@ -1340,7 +1340,7 @@ function SidebarHomeButton({
         aria-label="Go home"
         className={cn(
           "flex size-9 shrink-0 items-center justify-center rounded-[12px] transition active:scale-95",
-          isLight ? "text-[#171717]/56 hover:bg-[#171717]/8 hover:text-[#171717]" : "text-[#ededed]/58 hover:bg-[#ededed]/6 hover:text-[#ededed]"
+          isLight ? "text-[#171717]/60 hover:bg-[#171717]/8 hover:text-[#171717]" : "text-[#ededed]/58 hover:bg-[#ededed]/6 hover:text-[#ededed]"
         )}
       >
         <Home className="size-[18px]" aria-hidden="true" />
@@ -1368,8 +1368,8 @@ function IndexLink({
 }) {
   const isLight = palette.mode === "light";
   const className = cn(
-    "group flex h-[32px] w-full items-center gap-6 rounded-md text-left text-[26px] leading-[1.14] tracking-[-0.055em] outline-none transition",
-    active ? (isLight ? "text-[#171717]/86" : "text-[#ededed]/86") : (isLight ? "text-[#171717]/28 hover:text-[#171717]/78" : "text-[#ededed]/28 hover:text-[#ededed]/78")
+    "group flex h-[32px] w-full items-center gap-6 rounded-md text-left text-[26px] leading-[1.14] tracking-[-0.055em] outline-none transition focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-[#ec5c13]",
+    active ? (isLight ? "text-[#171717]/86" : "text-[#ededed]/86") : (isLight ? "text-[#171717]/60 hover:text-[#171717]/78" : "text-[#ededed]/28 hover:text-[#ededed]/78")
   );
   const content = (
     <>
@@ -1445,7 +1445,7 @@ function InfoSection({ title, children }: { title: string; children: ReactNode }
 
   return (
     <section className="space-y-4 pt-16">
-      <h2 className={cn("font-mono text-xs uppercase tracking-[0.08em]", isLight ? "text-[#171717]/38" : "text-[#ededed]/34")}>
+      <h2 className={cn("font-mono text-xs uppercase tracking-[0.08em]", isLight ? "text-[#171717]/60" : "text-[#ededed]/34")}>
         {title}
       </h2>
       {children}
@@ -1634,7 +1634,7 @@ export function ShellRange({
 
   return (
     <label className="grid grid-cols-[62px_minmax(0,1fr)] items-center gap-3 text-sm">
-      <span className={cn(isLight ? "text-[#171717]/50" : "text-[#ededed]/48")}>{label}</span>
+      <span className={cn(isLight ? "text-[#171717]/60" : "text-[#ededed]/48")}>{label}</span>
       <BjorkSlider
         min={min}
         max={max}
@@ -1662,7 +1662,7 @@ export function ShellSegmented({
 
   return (
     <div className="grid grid-cols-[62px_1fr] items-center gap-3 text-sm">
-      <span className={cn(isLight ? "text-[#171717]/50" : "text-[#ededed]/48")}>{label}</span>
+      <span className={cn(isLight ? "text-[#171717]/60" : "text-[#ededed]/48")}>{label}</span>
       <div className="flex justify-end gap-1">
         {options.map((option) => (
           <button
@@ -1676,7 +1676,7 @@ export function ShellSegmented({
                   ? "border-[#eee6db] bg-[#f4f1e9] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),inset_0_8px_16px_rgba(88,72,49,0.035),0_8px_14px_-10px_rgba(66,52,33,0.16)]"
                   : "border-[#393939]/70 bg-[linear-gradient(180deg,#303030,#202020)] text-[#ededed] shadow-[inset_0_1px_0_rgba(255,255,255,0.08),inset_0_-1px_0_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.025)]")
                 : (isLight
-                  ? "border-transparent text-[#171717]/44 hover:bg-[#f1ece3] hover:text-[#171717]/72"
+                  ? "border-transparent text-[#171717]/60 hover:bg-[#f1ece3] hover:text-[#171717]/72"
                   : "border-transparent text-[#ededed]/45 hover:bg-[#232323] hover:text-[#ededed]")
             )}
           >
@@ -1699,7 +1699,7 @@ function CopyBlock({ code, palette }: { code: string; palette: ShellPalette }) {
       <button
         type="button"
         onClick={() => navigator.clipboard.writeText(code)}
-        className={cn("flex size-9 shrink-0 items-center justify-center rounded-[11px] transition active:scale-95", isLight ? "text-[#171717]/44 hover:bg-[#e2dbcf] hover:text-[#171717]" : "text-[#ededed]/45 hover:bg-[#232323] hover:text-[#ededed]")}
+        className={cn("flex size-9 shrink-0 items-center justify-center rounded-[11px] transition active:scale-95", isLight ? "text-[#171717]/60 hover:bg-[#e2dbcf] hover:text-[#171717]" : "text-[#ededed]/45 hover:bg-[#232323] hover:text-[#ededed]")}
         aria-label="Copy command"
       >
         <Copy className="size-4" />
@@ -1754,7 +1754,7 @@ function SourceCodeDrawer({
         )}
       >
       <div className={cn("relative flex h-full min-h-0 flex-col overflow-hidden rounded-[18px]", isLight ? "bg-[#f4f1e9]" : "bg-[#121212]")}>
-        <div className={cn("flex items-center justify-between px-5 pb-4 pt-4 text-sm", isLight ? "text-[#171717]/45" : "text-[#ededed]/42")}>
+        <div className={cn("flex items-center justify-between px-5 pb-4 pt-4 text-sm", isLight ? "text-[#171717]/60" : "text-[#ededed]/42")}>
           <DrawerClose asChild>
             <button
               type="button"
@@ -1771,7 +1771,7 @@ function SourceCodeDrawer({
             <button
               type="button"
               aria-label="Download source"
-              className={cn("rounded-md transition", isLight ? "text-[#171717]/38 hover:text-[#171717]" : "text-[#ededed]/34 hover:text-[#ededed]")}
+              className={cn("rounded-md transition", isLight ? "text-[#171717]/60 hover:text-[#171717]" : "text-[#ededed]/34 hover:text-[#ededed]")}
             >
               <Download className="size-4" />
             </button>
@@ -1779,7 +1779,7 @@ function SourceCodeDrawer({
             <button
               type="button"
               onClick={() => navigator.clipboard.writeText(source)}
-              className={cn("rounded-md transition active:scale-95", isLight ? "text-[#171717]/38 hover:text-[#171717]" : "text-[#ededed]/34 hover:text-[#ededed]")}
+              className={cn("rounded-md transition active:scale-95", isLight ? "text-[#171717]/60 hover:text-[#171717]" : "text-[#ededed]/34 hover:text-[#ededed]")}
               aria-label="Copy source"
             >
               <Copy className="size-4" />
@@ -1789,7 +1789,7 @@ function SourceCodeDrawer({
 
         <pre className="hide-scrollbar min-h-0 flex-1 overflow-auto px-5 pb-8 pt-2 font-mono text-[13px] leading-7">
           {loading ? (
-            <span className={cn(isLight ? "text-[#171717]/45" : "text-[#ededed]/45")}>Loading source...</span>
+            <span className={cn(isLight ? "text-[#171717]/60" : "text-[#ededed]/45")}>Loading source...</span>
           ) : (
             <HighlightedCode code={source} />
           )}

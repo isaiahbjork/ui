@@ -61,7 +61,7 @@ export function PortfolioGallery({
     shell: isLight
       ? "border-[#eee6db] bg-[#fffcf6] shadow-[inset_0_7px_14px_rgba(88,72,49,0.045),inset_0_0.5px_0.5px_rgba(255,255,255,0.92),inset_1px_0_0_rgba(88,72,49,0.026),inset_-1px_0_0_rgba(255,255,255,0.68),0_14px_22px_-9px_rgba(66,52,33,0.11)]"
       : "border-[#232323] bg-[#111111]",
-    eyebrow: isLight ? "text-[#171717]/42" : "text-[#ededed]/38",
+    eyebrow: isLight ? "text-[#171717]/60" : "text-[#ededed]/38",
     title: isLight ? "text-[#171717]" : "text-[#ededed]",
     button: isLight
       ? "bg-[#171717] text-[#ededed] hover:bg-[#26221c]"

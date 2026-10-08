@@ -83,7 +83,7 @@ interface OnboardingStagesProps {
 
 const brandTheme: ThemeColors = {
   outerGradient: { from: "from-[#f4f1e9] dark:from-[#121212]", to: "to-[#eee9df] dark:to-[#090909]" },
-  headerText: "text-[#171717]/58 dark:text-[#ededed]/42",
+  headerText: "text-[#171717]/60 dark:text-[#ededed]/42",
   percentageText: "text-[#bd4514] dark:text-[#d86a2c]",
   cardBackground:
     "bg-[#f4f1e9] dark:bg-[#121212] border border-[#d8d3c7] dark:border-[#161616] shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_18px_34px_-16px_rgba(55,47,36,0.28)] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_18px_34px_-16px_rgba(0,0,0,0.9)]",
@@ -94,7 +94,7 @@ const brandTheme: ThemeColors = {
   completedIcon: { background: "bg-[#ec5c13]", text: "text-[#080808]" },
   completedText: "text-[#171717]/76 dark:text-[#ededed]/72",
   pendingIcon: "text-[#bd4514] dark:text-[#d86a2c]",
-  pendingText: "text-[#171717]/52 dark:text-[#ededed]/42",
+  pendingText: "text-[#171717]/60 dark:text-[#ededed]/42",
   button: { background: "bg-[#ec5c13]", hover: "hover:bg-[#f06d27]", text: "text-[#080808]" },
 };
 

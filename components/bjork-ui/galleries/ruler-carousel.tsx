@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Rewind, FastForward } from "lucide-react";
-import { useTheme } from "next-themes";
+import { useIsDarkTheme } from "@/hooks/use-is-dark-theme";
 import { cn } from "@/lib/utils";
 
 export interface CarouselItem {
@@ -92,8 +92,8 @@ export function RulerCarousel({
   originalItems: CarouselItem[];
   tone?: "dark" | "light";
 }) {
-  const { resolvedTheme } = useTheme();
-  const isDark = tone ? tone === "dark" : resolvedTheme !== "light";
+  const themeIsDark = useIsDarkTheme();
+  const isDark = tone ? tone === "dark" : themeIsDark;
   const infiniteItems = createInfiniteItems(originalItems);
   const itemsPerSet = originalItems.length;
 
