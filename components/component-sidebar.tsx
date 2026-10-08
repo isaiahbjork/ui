@@ -68,7 +68,7 @@ const componentRoutes: ComponentGroup[] = [
     title: "AI Components",
     routes: [
       { name: "AI Voice Input", path: "/ai/ai-voice-input" },
-      // @slot agent-trace
+      { name: "Agent Trace", path: "/ai/agent-trace" },
 
       // @slot handoff-beam
 
