@@ -119,6 +119,7 @@ const componentRoutes: ComponentGroup[] = [
 
       // @slot route-trace
 
+      { name: "Slope Chart", path: "/charts/slope-chart" },
       { name: "Spark Table", path: "/charts/spark-table" },
       { name: "State Timeline", path: "/charts/state-timeline" },
       { name: "Violin Plot", path: "/charts/violin-plot" },
