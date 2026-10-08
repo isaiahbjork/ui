@@ -70,7 +70,7 @@ export default function Page() {
         </div>
       ) : (
         <DemoColumn width={860}>
-          <SankeyFlow nodes={NODES} links={LINKS} flow={flow} formatValue={people} height={420} ariaLabel="Signup funnel" />
+          <SankeyFlow nodes={NODES} links={LINKS} flow={flow} defaultHighlightId="pro" formatValue={people} height={420} ariaLabel="Signup funnel" />
           <ControlRow>
             <ToggleButton pressed={flow} onClick={() => setFlow((v) => !v)}>
               Flow
