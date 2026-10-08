@@ -398,7 +398,8 @@ export function Treemap({
       const name = f.node.label;
       const val = c.mode === "change" && f.change !== null ? c.formatChange(f.change) : c.formatValue(f.value);
       const roomW = L.r.w - 12;
-      const nameFits = name.length * 6.6 <= roomW && L.r.h >= (L.group ? 16 : 22);
+      // Names are proportional, so a long one truncates with an ellipsis instead of leaving the tile blank.
+      const nameFits = roomW >= Math.min(name.length * 6.6, L.group ? 64 : 52) && L.r.h >= (L.group ? 16 : 22);
       const valFits = !L.group && val.length * 6.6 <= roomW && L.r.h >= 40;
       const groupVal = L.group && (name.length + val.length + 2) * 6.4 <= roomW;
       const textKey = `${L.id}|${nameFits}|${valFits}|${groupVal}|${val}|${L.strong}|${L.group}`;
