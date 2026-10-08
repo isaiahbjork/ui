@@ -58,16 +58,21 @@ const pageItems: CommandPaletteItem[] = [
   },
 ];
 
-const primitiveItems: CommandPaletteItem[] = primitiveMeta.map((item) => ({
-  id: `primitive-${item.slug}`,
-  title: item.title,
-  group: "Primitives",
-  value: `~ /primitives/${item.slug} ${item.title} ${item.interactionType}`,
-  kind: "primitive",
-  route: `/primitives/${item.slug}`,
-  hint: item.interactionType,
-  keywords: [item.slug, item.description, item.interactionDescription],
-}));
+// Only primitives with a gallery entry get a palette item, so every link resolves.
+const primitiveItems: CommandPaletteItem[] = primitiveMeta
+  .filter((item) =>
+    galleryItems.some((gallery) => gallery.slug === `primitive-${item.slug}`),
+  )
+  .map((item) => ({
+    id: `primitive-${item.slug}`,
+    title: item.title,
+    group: "Primitives",
+    value: `~ /primitives/${item.slug} ${item.title} ${item.interactionType}`,
+    kind: "primitive",
+    route: `/primitives/${item.slug}`,
+    hint: item.interactionType,
+    keywords: [item.slug, item.description, item.interactionDescription],
+  }));
 
 const componentItems: CommandPaletteItem[] = galleryItems.map((item) => ({
   id: `component-${item.slug}`,
