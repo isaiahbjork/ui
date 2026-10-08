@@ -1111,6 +1111,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
+  {
+    id: "bjork122",
+    slug: "candlestick-chart",
+    title: "Candlestick chart",
+    route: "/charts/candlestick-chart",
+    sourcePath: "components/bjork-ui/charts/candlestick-chart.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {
