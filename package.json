@@ -9,15 +9,19 @@
     "url": "https://github.com/isaiahbjork/ui.git"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "font:bjork": "/opt/homebrew/opt/python@3.11/bin/python3.11 scripts/generate-bjork-font.py",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "registry:generate": "node scripts/generate-shadcn-registry.mjs",
     "registry:validate": "npm run registry:generate && npx shadcn@latest registry validate",
-    "registry:build": "npm run registry:generate && npx shadcn@latest build"
+    "registry:build": "npm run registry:generate && npx shadcn@latest build",
+    "lint:strict": "eslint --max-warnings 0"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -84,7 +88,6 @@
     "zod": "^3.25.32"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
