@@ -4,15 +4,13 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
   type KeyboardEvent,
   type PointerEvent,
 } from "react";
 import { cn } from "@/lib/utils";
 import type { BjorkTone } from "@/components/bjork-ui/_core/palette";
-import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
-import { useChartCanvas, easeOut, useThrottledAnnounce } from "@/components/bjork-ui/charts/_kit/canvas";
-import { useChartTheme, chartFocusRing, ChartTable } from "@/components/bjork-ui/charts/_kit/chrome";
+import { useChartCanvas, easeOut } from "@/components/bjork-ui/charts/_kit/canvas";
+import { useChartTheme, chartFocusRing, ChartTable, ChartAnnouncer, type AnnouncerHandle } from "@/components/bjork-ui/charts/_kit/chrome";
 import { clamp, crisp, damp, niceTicks, withAlpha, formatPercent, formatCompact } from "@/components/bjork-ui/charts/_kit/scale";
 
 export interface Candle {
@@ -117,8 +115,8 @@ export function CandlestickChart({
   className,
 }: CandlestickChartProps) {
   const { pal, reduce, vars } = useChartTheme(toneProp);
-  const [announce, setAnnounce] = useState("");
-  const say = useThrottledAnnounce(setAnnounce);
+  const announcer = useRef<AnnouncerHandle>(null);
+  const say = (m: string) => announcer.current?.say(m);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const readoutRef = useRef<HTMLDivElement>(null);
@@ -897,7 +895,7 @@ export function CandlestickChart({
       </div>
 
       <ChartTable caption={ariaLabel} columns={TABLE_COLUMNS} rows={tableRows} />
-      <LiveRegion message={announce} />
+      <ChartAnnouncer ref={announcer} />
     </div>
   );
 }

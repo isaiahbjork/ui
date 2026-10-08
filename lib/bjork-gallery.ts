@@ -1123,6 +1123,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork123",
+    slug: "forecast-fan",
+    title: "Forecast fan",
+    route: "/charts/forecast-fan",
+    sourcePath: "components/bjork-ui/charts/forecast-fan.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {

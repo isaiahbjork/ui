@@ -3,11 +3,12 @@
 // Shared chart chrome for the Charts collection: theme vars, the hover tooltip, legend keys and the
 // screen-reader table twin every chart ships with.
 
-import { forwardRef, memo, type CSSProperties, type ReactNode } from "react";
+import { forwardRef, memo, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { BJORK_PALETTE, type BjorkTone } from "@/components/bjork-ui/_core/palette";
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
+import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 
 export type ChartPalette = (typeof BJORK_PALETTE)[BjorkTone];
 
@@ -30,6 +31,8 @@ export function chartVars(pal: ChartPalette): CSSProperties {
     "--bjork-surface": pal.surface,
     "--bjork-surface-hover": pal.raised,
     "--bjork-ring-offset": pal.bg,
+    // The surface a chart sits on, for label halos and cut-outs. Override it on the root if needed.
+    "--bjork-chart-bg": pal.stage,
     "--bjork-success": pal.success,
     "--bjork-warning": pal.warning,
     "--bjork-error": pal.error,
@@ -64,11 +67,12 @@ export interface TooltipRow {
 // Position it with `style.transform` from the caller; it never takes pointer events.
 export const ChartTooltip = forwardRef<
   HTMLDivElement,
-  { title?: ReactNode; rows: TooltipRow[]; visible: boolean; className?: string; style?: CSSProperties }
->(function ChartTooltip({ title, rows, visible, className, style }, ref) {
+  { title?: ReactNode; rows: TooltipRow[]; visible: boolean; className?: string; style?: CSSProperties; tipKey?: string }
+>(function ChartTooltip({ title, rows, visible, className, style, tipKey }, ref) {
   return (
     <div
       ref={ref}
+      data-key={tipKey}
       role="presentation"
       aria-hidden="true"
       className={cn(
@@ -224,4 +228,124 @@ export const ChartTable = memo(function ChartTable({
       </tbody>
     </table>
   );
+});
+
+// A pool of absolutely positioned spans the draw loop fills through `writeLabels`.
+export function LabelPool({
+  count,
+  pool,
+  className,
+}: {
+  count: number;
+  pool: { current: (HTMLSpanElement | null)[] };
+  className?: string;
+}) {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => (
+        <span
+          key={i}
+          ref={(el) => {
+            pool.current[i] = el;
+          }}
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute left-0 top-0 whitespace-nowrap opacity-0",
+            className ?? "font-mono text-[10px] leading-none tabular-nums text-[color:var(--bjork-text-faint)] [text-box:trim-both_cap_alphabetic]",
+          )}
+        />
+      ))}
+    </>
+  );
+}
+
+export interface TooltipContent {
+  key: string;
+  title?: ReactNode;
+  rows: TooltipRow[];
+}
+
+export interface TooltipHandle {
+  /** Shows `content`, or hides with `null`. Same key is a no-op. */
+  set: (content: TooltipContent | null) => void;
+  readonly el: HTMLDivElement | null;
+  /** Measured size of the current content. */
+  readonly size: { w: number; h: number };
+}
+
+// A tooltip that owns its state, so hovering re-renders only the tooltip, never the chart.
+// The chart positions it from its draw loop through `handle.el.style.transform`.
+export const HoverTooltip = forwardRef<TooltipHandle, { onMeasure?: () => void; className?: string }>(function HoverTooltip(
+  { onMeasure, className },
+  ref,
+) {
+  const [state, setState] = useState<{ content: TooltipContent | null; last: TooltipContent | null }>({ content: null, last: null });
+  const elRef = useRef<HTMLDivElement>(null);
+  const size = useRef({ w: 0, h: 0 });
+  const onMeasureRef = useRef(onMeasure);
+  useEffect(() => {
+    onMeasureRef.current = onMeasure;
+  });
+  useImperativeHandle(
+    ref,
+    () => ({
+      set: (content) =>
+        setState((prev) => {
+          if ((prev.content?.key ?? null) === (content?.key ?? null)) return prev;
+          return { content, last: content ?? prev.last };
+        }),
+      get el() {
+        return elRef.current;
+      },
+      get size() {
+        return size.current;
+      },
+    }),
+    [],
+  );
+  useLayoutEffect(() => {
+    const el = elRef.current;
+    if (!el) return;
+    size.current = { w: el.offsetWidth, h: el.offsetHeight };
+    onMeasureRef.current?.();
+  }, [state.last]);
+  const shown = state.content ?? state.last;
+  return <ChartTooltip ref={elRef} title={shown?.title} rows={shown?.rows ?? []} visible={!!state.content} className={className} />;
+});
+
+export interface AnnouncerHandle {
+  say: (message: string) => void;
+}
+
+// Polite live region with a 250ms trailing throttle, isolated from the chart's renders.
+export const ChartAnnouncer = forwardRef<AnnouncerHandle, { ms?: number }>(function ChartAnnouncer({ ms = 250 }, ref) {
+  const [message, setMessage] = useState("");
+  const at = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+  useImperativeHandle(
+    ref,
+    () => ({
+      say: (text: string) => {
+        const now = performance.now();
+        if (timer.current) clearTimeout(timer.current);
+        if (now - at.current >= ms) {
+          at.current = now;
+          setMessage(text);
+        } else {
+          timer.current = setTimeout(() => {
+            at.current = performance.now();
+            setMessage(text);
+          }, ms);
+        }
+      },
+    }),
+    [ms],
+  );
+  return <LiveRegion message={message} />;
 });

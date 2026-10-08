@@ -110,30 +110,32 @@ export function roundRectPath(
   ctx.closePath();
 }
 
-// Throttled announcer for keyboard and pointer scrubs (250ms, trailing).
-export function useThrottledAnnounce(setMessage: (m: string) => void, ms = 250) {
-  const at = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (timer.current) clearTimeout(timer.current);
-    },
-    [],
-  );
-  return useCallback(
-    (text: string) => {
-      const now = performance.now();
-      if (timer.current) clearTimeout(timer.current);
-      if (now - at.current >= ms) {
-        at.current = now;
-        setMessage(text);
-      } else {
-        timer.current = setTimeout(() => {
-          at.current = performance.now();
-          setMessage(text);
-        }, ms);
-      }
-    },
-    [setMessage, ms],
-  );
+export interface PlacedLabel {
+  text: string;
+  x: number;
+  y: number;
+  /** translate percentages applied after the position, e.g. -50 to centre. */
+  ax?: number;
+  ay?: number;
+  opacity?: number;
+}
+
+// Writes a pool of absolutely positioned label spans from the loop: text only when it changes,
+// position by transform only. Unused spans hide.
+export function writeLabels(els: (HTMLElement | null)[], cache: string[], items: PlacedLabel[]) {
+  for (let i = 0; i < els.length; i++) {
+    const el = els[i];
+    if (!el) continue;
+    const it = items[i];
+    if (!it) {
+      if (el.style.opacity !== "0") el.style.opacity = "0";
+      continue;
+    }
+    if (cache[i] !== it.text) {
+      cache[i] = it.text;
+      el.textContent = it.text;
+    }
+    el.style.opacity = String(it.opacity ?? 1);
+    el.style.transform = `translate3d(${it.x.toFixed(2)}px, ${it.y.toFixed(2)}px, 0) translate(${it.ax ?? 0}%, ${it.ay ?? -50}%)`;
+  }
 }

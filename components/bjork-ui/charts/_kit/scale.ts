@@ -188,3 +188,78 @@ export function gaussian(rnd: () => number): number {
   const v = rnd();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
+
+// --- Time ---------------------------------------------------------------------------------------
+
+const HOUR = 3600000;
+const DAY = 86400000;
+const timeFmt = {
+  hour: new Intl.DateTimeFormat("en-US", { hour: "numeric", timeZone: "UTC" }),
+  day: new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }),
+  month: new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" }),
+  monthYear: new Intl.DateTimeFormat("en-US", { month: "short", year: "2-digit", timeZone: "UTC" }),
+  year: new Intl.DateTimeFormat("en-US", { year: "numeric", timeZone: "UTC" }),
+};
+
+export interface TimeTick {
+  t: number;
+  label: string;
+}
+
+// Calendar-aligned ticks (UTC) for [t0, t1] drawn across `px` pixels, at least `minPx` apart.
+export function timeTicks(t0: number, t1: number, px: number, minPx = 64): TimeTick[] {
+  const span = t1 - t0;
+  if (!(span > 0) || !(px > 0)) return [];
+  const maxTicks = Math.max(1, Math.floor(px / minPx));
+  const perTick = span / maxTicks;
+  const out: TimeTick[] = [];
+  const hourSteps = [1, 2, 3, 6, 12];
+  for (const k of hourSteps) {
+    if (k * HOUR >= perTick) {
+      const step = k * HOUR;
+      for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) {
+        const d = new Date(t);
+        out.push({ t, label: d.getUTCHours() === 0 ? timeFmt.day.format(t) : timeFmt.hour.format(t) });
+      }
+      return out;
+    }
+  }
+  const daySteps = [1, 2, 7, 14];
+  for (const k of daySteps) {
+    if (k * DAY >= perTick) {
+      const step = k * DAY;
+      // Weekly steps land on Mondays.
+      const offset = k >= 7 ? 4 * DAY : 0;
+      for (let t = Math.ceil((t0 - offset) / step) * step + offset; t <= t1; t += step) out.push({ t, label: timeFmt.day.format(t) });
+      return out;
+    }
+  }
+  const monthSteps = [1, 2, 3, 6, 12, 24, 60];
+  for (const k of monthSteps) {
+    if (k * 30.44 * DAY >= perTick) {
+      const d0 = new Date(t0);
+      let y = d0.getUTCFullYear();
+      let m = d0.getUTCMonth();
+      // First boundary at or after t0 that is a multiple of k months.
+      m = Math.ceil(m / k) * k;
+      for (;;) {
+        y += Math.floor(m / 12);
+        m %= 12;
+        const t = Date.UTC(y, m, 1);
+        if (t > t1) break;
+        if (t >= t0) {
+          const label = k >= 12 ? timeFmt.year.format(t) : m === 0 ? timeFmt.monthYear.format(t) : timeFmt.month.format(t);
+          out.push({ t, label });
+        }
+        m += k;
+      }
+      return out;
+    }
+  }
+  return out;
+}
+
+export function formatDateUTC(t: number, style: "day" | "full" = "day"): string {
+  if (style === "full") return new Date(t).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+  return timeFmt.day.format(t);
+}
