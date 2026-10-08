@@ -993,7 +993,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork95 adaptive-precision-slider
+  {
+    id: "bjork95",
+    slug: "adaptive-precision-slider",
+    title: "Adaptive precision slider",
+    route: "/controls/adaptive-precision-slider",
+    sourcePath: "components/bjork-ui/controls/adaptive-precision-slider.tsx",
+    tier: "copy",
+    collection: "Controls",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork96 click-wheel
 
