@@ -4,7 +4,7 @@ import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -526,6 +526,7 @@ function SimpleComponentDemoPageContent({
   previewLayout = "single",
 }: SimpleComponentDemoPageProps) {
   const isPreview = usePreviewMode();
+  const isWideViewport = useIsWideViewport();
   const previewTheme = usePreviewSearchParam("theme");
   const isPreviewLight = previewTheme === "light";
   const { setTheme } = useTheme();
@@ -542,7 +543,7 @@ function SimpleComponentDemoPageContent({
 
   const isListPreview = previewLayout === "list";
   const previewFrameClassName =
-    isPreview && previewCaptureScaleClassName
+    isPreview && isWideViewport && previewCaptureScaleClassName
       ? previewCaptureScaleClassName
       : previewScaleClassName;
 
@@ -604,6 +605,18 @@ function SimpleComponentDemoPageContent({
     >
       {demo}
     </ComponentDemoShell>
+  );
+}
+
+function useIsWideViewport() {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia("(min-width: 768px)");
+      query.addEventListener("change", onChange);
+      return () => query.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia("(min-width: 768px)").matches,
+    () => false
   );
 }
 
