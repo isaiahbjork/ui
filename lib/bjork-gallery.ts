@@ -955,6 +955,30 @@ export const galleryItems: GalleryItem[] = [
     preview: "radial",
     accent: "#ffc107",
   },
+  {
+    id: "bjork115",
+    slug: "project-index",
+    title: "Project index",
+    route: "/galleries/project-index",
+    sourcePath: "components/bjork-ui/galleries/project-index.tsx",
+    tier: "copy",
+    collection: "Galleries",
+    preview: "gallery",
+    accent: "#ec5c13",
+    isNew: true,
+  },
+  {
+    id: "bjork119",
+    slug: "glow-rules",
+    title: "Glow rules",
+    route: "/misc/glow-rules",
+    sourcePath: "components/bjork-ui/misc/glow-rules.tsx",
+    tier: "copy",
+    collection: "Utilities",
+    preview: "table",
+    accent: "#ededed",
+    isNew: true,
+  },
 
   // @slot bjork94 radial-command-ring
 
