@@ -106,7 +106,6 @@ const MAX_ITEMS = 8;
 const MIN_ITEMS = 3;
 // Room around the ring for outer labels. The container is 2 * (radius + PAD) square.
 const PAD = 120;
-const HUB_R = 38; // innerRadius - 6, with the default inner radius of 44.
 const HOLD_CANCEL_PX = 8;
 const FLASH_MS = 90;
 const EDGE_GAP = 12;
@@ -216,6 +215,7 @@ export function RadialCommandRing({
   }, [rawItems.length]);
 
   const rootRef = useRef<HTMLDivElement>(null);
+  const surfaceRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const tetherRef = useRef<SVGLineElement>(null);
   const wedgeRef = useRef<SVGGElement>(null);
@@ -266,6 +266,7 @@ export function RadialCommandRing({
   const c = R + PAD;
   const S = 2 * c;
   const midR = (innerRadius + R) / 2;
+  const hubR = innerRadius - 6;
   const itemId = (i: number) => `${uid}-item-${i}`;
   const shownItem = shown.highlight !== null ? items[shown.highlight] : undefined;
 
@@ -328,7 +329,7 @@ export function RadialCommandRing({
     const dx = hidden ? 0 : pt.x - g.x;
     const dy = hidden ? 0 : pt.y - g.y;
     const d = Math.hypot(dx, dy);
-    if (hidden || d < HUB_R) {
+    if (hidden || d < hubR) {
       el.setAttribute("x1", String(g.c));
       el.setAttribute("y1", String(g.c));
       el.setAttribute("x2", String(g.c));
@@ -338,8 +339,8 @@ export function RadialCommandRing({
     const ux = dx / d;
     const uy = dy / d;
     const end = Math.min(d, g.radius);
-    el.setAttribute("x1", (g.c + ux * HUB_R).toFixed(2));
-    el.setAttribute("y1", (g.c + uy * HUB_R).toFixed(2));
+    el.setAttribute("x1", (g.c + ux * hubR).toFixed(2));
+    el.setAttribute("y1", (g.c + uy * hubR).toFixed(2));
     el.setAttribute("x2", (g.c + ux * end).toFixed(2));
     el.setAttribute("y2", (g.c + uy * end).toFixed(2));
   };
@@ -406,7 +407,7 @@ export function RadialCommandRing({
     holdRef.current = null;
     releaseCapture();
     commit({ open: false, flash: false });
-    if (menuHadFocus) rootRef.current?.focus({ preventScroll: true });
+    if (menuHadFocus) surfaceRef.current?.focus({ preventScroll: true });
     if (!wasAttract) live.current.onOpenChange?.(false);
   };
 
@@ -671,6 +672,15 @@ export function RadialCommandRing({
     labelAnchor = Math.abs(cosT) < Math.sin((15 * Math.PI) / 180) ? "middle" : cosT < 0 ? "end" : "start";
     [labelX, labelY] = polar(c, c, R + 18, theta);
   }
+  // The outer label renders only when it fits inside the root. The hub already names the item.
+  const lw = shownItem ? shownItem.label.length * 7 + 4 : 0;
+  const lx = shown.x - c + labelX;
+  const labelFits =
+    labelAnchor === "start"
+      ? lx + lw <= size.width - 4
+      : labelAnchor === "end"
+        ? lx - lw >= 4
+        : lx - lw / 2 >= 4 && lx + lw / 2 <= size.width - 4;
 
   const ringStyle: CSSProperties = {
     left: shown.x - c,
@@ -684,10 +694,6 @@ export function RadialCommandRing({
   return (
     <div
       ref={rootRef}
-      role="button"
-      tabIndex={0}
-      aria-haspopup="menu"
-      aria-expanded={shown.open}
       data-tone={resolvedTone}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -696,7 +702,7 @@ export function RadialCommandRing({
       onContextMenu={onContextMenu}
       onKeyDown={onKeyDown}
       className={cn(
-        "relative select-none outline-none focus-visible:ring-2 ring-[color:var(--bjork-accent)] ring-offset-2 ring-offset-[color:var(--bjork-ring-offset)]",
+        "relative select-none",
         className,
       )}
       style={{
@@ -704,7 +710,17 @@ export function RadialCommandRing({
         touchAction: shown.open ? "none" : undefined,
       } as CSSProperties}
     >
-      <VisuallyHidden>Press Enter for actions</VisuallyHidden>
+      <div
+        ref={surfaceRef}
+        role="button"
+        tabIndex={0}
+        aria-haspopup="menu"
+        aria-expanded={shown.open}
+        aria-label="Actions"
+        className="pointer-events-none absolute inset-0 z-0 rounded-[inherit] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color:var(--bjork-accent)]"
+      >
+        <VisuallyHidden>Press Enter for actions</VisuallyHidden>
+      </div>
       {children}
       <AnimatePresence>
         {shown.open && (
@@ -747,7 +763,7 @@ export function RadialCommandRing({
               </g>
               <path d={hairPath} stroke={p.hair} strokeWidth={1} fill="none" />
               <line ref={tetherRef} stroke={p.textFaint} strokeWidth={1} />
-              {shownItem && labelAnchor !== undefined && (
+              {shownItem && labelAnchor !== undefined && labelFits && (
                 <motion.text
                   key={shown.highlight ?? -1}
                   x={labelX}
@@ -768,17 +784,17 @@ export function RadialCommandRing({
             <div
               className="absolute grid place-items-center rounded-full border"
               style={{
-                left: c - HUB_R,
-                top: c - HUB_R,
-                width: 2 * HUB_R,
-                height: 2 * HUB_R,
+                left: c - hubR,
+                top: c - hubR,
+                width: 2 * hubR,
+                height: 2 * hubR,
                 background: p.surface,
                 borderColor: p.border,
               }}
             >
               <div className="flex w-[68px] flex-col items-center text-center">
                 <span
-                  className="block max-h-[26px] overflow-hidden font-mono text-[11px] uppercase leading-[13px] tracking-[0.08em]"
+                  className="block max-h-[26px] overflow-hidden font-mono text-[11px] uppercase leading-[13px] tracking-[0.08em] [text-box:trim-both_cap_alphabetic]"
                   style={{ color: p.text }}
                 >
                   {hubHead}

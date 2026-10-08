@@ -44,6 +44,21 @@ export function Demo() {
   );
 }`;
 
+function DotGrid({ p }: { p: (typeof BJORK_PALETTE)[BjorkTone] }) {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 rounded-[20px] border"
+      style={{
+        backgroundColor: p.surface,
+        borderColor: p.border,
+        backgroundImage: `radial-gradient(circle, ${p.hair} 1px, transparent 1.2px)`,
+        backgroundSize: "16px 16px",
+      }}
+    />
+  );
+}
+
 function RingSurface({
   tone,
   count,
@@ -61,9 +76,10 @@ function RingSurface({
 }) {
   const p = BJORK_PALETTE[tone];
   const items = ALL_ITEMS.slice(0, count);
+  const attract = usePreviewSearchParam("attract") === "1";
 
   if (posed) {
-    // Preview pose: open at the centre, Duplicate highlighted, no chrome.
+    // Preview pose: open at the centre, Duplicate highlighted, on the same surface as the live ring.
     return (
       <RadialCommandRing
         items={items}
@@ -72,9 +88,9 @@ function RingSurface({
         anchor={{ x: 320, y: 200 }}
         highlightedId="duplicate"
         tone={tone}
-        className="h-[400px] w-[640px]"
+        className="h-[400px] w-[640px] overflow-hidden rounded-[20px]"
       >
-        <span />
+        <DotGrid p={p} />
       </RadialCommandRing>
     );
   }
@@ -86,18 +102,10 @@ function RingSurface({
       openOn={openOn}
       haptics={haptics}
       tone={tone}
+      attract={attract}
       className="h-[400px] w-full overflow-hidden rounded-[20px]"
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 rounded-[20px] border"
-        style={{
-          backgroundColor: p.surface,
-          borderColor: p.border,
-          backgroundImage: `radial-gradient(circle, ${p.hair} 1px, transparent 1.2px)`,
-          backgroundSize: "16px 16px",
-        }}
-      />
+      <DotGrid p={p} />
       <p
         className="pointer-events-none absolute inset-0 grid place-items-center text-[13px]"
         style={{ color: p.textSoft }}
@@ -122,7 +130,7 @@ export default function RadialCommandRingPage() {
   if (isPreview) {
     return (
       <div className="flex min-h-screen items-center justify-center overflow-hidden" style={{ background: p.bg }}>
-        <div className="scale-[1.5]">
+        <div className="scale-[1.2]">
           <RingSurface tone={tone} count={7} openOn="both" haptics={false} onPick={() => {}} posed />
         </div>
       </div>
@@ -180,7 +188,7 @@ export default function RadialCommandRingPage() {
             value={openOn}
             options={[
               { value: "hold", label: "Hold" },
-              { value: "contextmenu", label: "Right-click" },
+              { value: "contextmenu", label: "Menu" },
               { value: "both", label: "Both" },
             ]}
             onChange={(v) => setOpenOn(v as RadialCommandOpenOn)}
@@ -195,17 +203,15 @@ export default function RadialCommandRingPage() {
             ]}
             onChange={setCount}
           />
-          <div className="flex justify-end">
-            <button
-              type="button"
-              aria-pressed={haptics}
-              onClick={() => setHaptics((v) => !v)}
-              className="rounded-[10px] border px-3 py-1 font-mono text-[12px] transition active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:outline-none"
-              style={{ background: p.raised, borderColor: p.borderStrong, color: p.text }}
-            >
-              Haptics {haptics ? "on" : "off"}
-            </button>
-          </div>
+          <ShellSegmented
+            label="Haptics"
+            value={haptics ? "on" : "off"}
+            options={[
+              { value: "on", label: "On" },
+              { value: "off", label: "Off" },
+            ]}
+            onChange={(v) => setHaptics(v === "on")}
+          />
         </>
       }
     >
