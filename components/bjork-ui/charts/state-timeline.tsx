@@ -311,6 +311,8 @@ export function StateTimeline({
 
     // Lanes.
     const hatch = hatchPattern(ctx, withAlpha(p.text, 0.16), 4, 1);
+    // Planned states (accent) are a hatched wash, so they never read as the solid red of an outage.
+    const planned = hatchPattern(ctx, p.accent, 3, 1);
     const hov = s.hover;
     const shares: { text: string; x: number; y: number; ax: number }[] = [];
     for (let i = 0; i < L.length; i++) {
@@ -348,11 +350,16 @@ export function StateTimeline({
         const isHover = !!hov && hov.lane === i && hov.seg === k;
         ctx.beginPath();
         roundRectPath(ctx, x0, y, sw, laneH, Math.min(3, sw / 2), Math.min(3, sw / 2));
-        ctx.fillStyle = stt ? toneColor(p, stt.tone) : withAlpha(p.text, 0.1);
+        const isPlanned = stt?.tone === "accent" && !!planned;
+        ctx.fillStyle = isPlanned ? withAlpha(p.accent, 0.3) : stt ? toneColor(p, stt.tone) : withAlpha(p.text, 0.1);
         ctx.globalAlpha = hov && !isHover ? 0.78 : 1;
         ctx.fill();
         if (stt?.tone === "idle" && hatch) {
           ctx.fillStyle = hatch;
+          ctx.fill();
+        }
+        if (isPlanned) {
+          ctx.fillStyle = planned;
           ctx.fill();
         }
         ctx.globalAlpha = 1;
@@ -440,7 +447,7 @@ export function StateTimeline({
         for (const sg of L[i].segments) {
           const stt = c.stateMap.get(sg.state);
           if (!stt || stt.tone === "ok") continue;
-          ctx.strokeStyle = toneColor(p, stt.tone);
+          ctx.strokeStyle = stt.tone === "accent" ? withAlpha(p.accent, 0.5) : toneColor(p, stt.tone);
           ctx.beginPath();
           const a = oxOf(sg.start);
           const b = Math.max(a + 0.5, oxOf(sg.end));
@@ -728,7 +735,14 @@ export function StateTimeline({
   };
 
   const legend = useMemo(
-    () => states.map((s2) => ({ id: s2.id, label: s2.label, color: s2.tone === "ok" ? withAlpha(pal.text, 0.3) : toneColor(pal, s2.tone), shape: "rect" as const })),
+    () => states.map((s2) => ({ id: s2.id, label: s2.label, color:
+          s2.tone === "ok"
+            ? withAlpha(pal.text, 0.3)
+            : s2.tone === "accent"
+              ? `repeating-linear-gradient(135deg, ${pal.accent} 0 1px, ${withAlpha(pal.accent, 0.3)} 1px 3px)`
+              : toneColor(pal, s2.tone),
+        shape: "rect" as const,
+      })),
     [states, pal],
   );
 
