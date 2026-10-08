@@ -980,7 +980,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork94 radial-command-ring
+  {
+    id: "bjork94",
+    slug: "radial-command-ring",
+    title: "Radial command ring",
+    route: "/navigation/radial-command-ring",
+    sourcePath: "components/bjork-ui/navigation/radial-command-ring.tsx",
+    tier: "copy",
+    collection: "Navigation",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork95 adaptive-precision-slider
 
