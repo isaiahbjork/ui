@@ -1183,6 +1183,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork128",
+    slug: "beeswarm",
+    title: "Beeswarm",
+    route: "/charts/beeswarm",
+    sourcePath: "components/bjork-ui/charts/beeswarm.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {
