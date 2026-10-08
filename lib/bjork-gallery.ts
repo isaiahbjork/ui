@@ -1315,6 +1315,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork139",
+    slug: "calibration-plot",
+    title: "Calibration plot",
+    route: "/charts/calibration-plot",
+    sourcePath: "components/bjork-ui/charts/calibration-plot.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {
