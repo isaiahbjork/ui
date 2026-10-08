@@ -14030,6 +14030,7 @@
         "clsx",
         "framer-motion",
         "lucide-react",
+        "next-themes",
         "tailwind-merge"
       ],
       "cssVars": {
@@ -14188,6 +14189,16 @@
           "path": "components/bjork-ui/misc/timer.tsx",
           "type": "registry:component",
           "target": "@components/bjork-ui/misc/timer.tsx"
+        },
+        {
+          "path": "components/bjork-ui/_core/palette.ts",
+          "type": "registry:component",
+          "target": "@components/bjork-ui/_core/palette.ts"
+        },
+        {
+          "path": "components/bjork-ui/_core/tone.ts",
+          "type": "registry:component",
+          "target": "@components/bjork-ui/_core/tone.ts"
         },
         {
           "path": "lib/utils.ts",
