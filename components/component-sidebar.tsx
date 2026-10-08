@@ -113,7 +113,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Animated Radial Chart", path: "/charts/animated-radial-chart" },
       { name: "Live Line", path: "/charts/live-line" },
 
-      // @slot route-trace
+      { name: "Route Trace", path: "/charts/route-trace" },
 
     ],
   },
