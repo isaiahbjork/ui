@@ -1,0 +1,219 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "elastic-frame",
+  "title": "Elastic frame",
+  "description": "Elastic frame is a production-ready interactive component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/interactive/elastic-frame.tsx",
+      "content": "\"use client\";\n\nimport {\n  forwardRef,\n  useEffect,\n  useImperativeHandle,\n  useMemo,\n  useRef,\n  type FocusEvent,\n  type ReactNode,\n} from \"react\";\nimport { useReducedMotion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { BJORK_PALETTE, type BjorkTone } from \"@/components/bjork-ui/_core/palette\";\nimport { useBjorkTone } from \"@/components/bjork-ui/_core/tone\";\nimport { useVisibleLoop } from \"@/components/bjork-ui/_core/loop\";\nimport { useElementSize } from \"@/components/bjork-ui/_core/canvas\";\nimport { resamplePath } from \"@/components/bjork-ui/_core/path\";\nimport { hashString, mulberry32 } from \"@/components/bjork-ui/_core/random\";\n\nexport interface ElasticFrameHandle {\n  /** Pulls the string outward near `at` (0 to 1 along the outline) by `strength` px and lets it ring. */\n  pluck: (at: number, strength?: number) => void;\n}\n\nexport interface ElasticFrameProps {\n  /** Content. Its corner radius should be `radius - padding / 2` so it sits concentric with the frame. */\n  children?: ReactNode;\n  radius?: number;\n  points?: number;\n  stiffness?: number;\n  coupling?: number;\n  damping?: number;\n  pluckDistance?: number;\n  maxStretch?: number;\n  strokeWidth?: number;\n  glow?: boolean;\n  glowColor?: string;\n  padding?: number;\n  tone?: BjorkTone;\n  attract?: boolean;\n  /** Posed state: one frozen displaced frame with no loop. Used by preview captures. */\n  debugState?: { at: number; amount: number };\n  className?: string;\n}\n\n// The outline sits 12px inside the root. Half-pixel values keep the 1.5px straight runs crisp.\nconst INSET = 12.5;\nconst SUBSTEP = 1 / 240;\nconst GRAB_ARC = 40;\nconst GRAB_SIGMA = 18;\nconst GRAB_GAIN = 400;\nconst PLUCK_SIGMA = 22;\nconst POSE_SIGMA = 56;\nconst BREATH_IMPULSE = 110;\nconst ATTRACT_INTERVAL = 2800;\nconst ATTRACT_IDLE = 4000;\nconst ATTRACT_STRENGTH = 30;\nconst DEFAULT_PLUCK = 24;\nconst IDLE_EPS = 0.05;\nconst GLOW_WIDTH = 6;\nconst GLOW_ALPHA = 0.18;\n\ntype RGB = [number, number, number];\n\ninterface Colors {\n  rest: RGB;\n  ink: RGB;\n}\n\ninterface Outline {\n  width: number;\n  height: number;\n  count: number;\n  rest: Float32Array;\n  normal: Float32Array;\n  spacing: number;\n  // Dense render outline: the simulation runs on `count` points, painting uses `renderCount`.\n  restPath: string;\n  renderCount: number;\n  renderRest: Float32Array;\n  renderNormal: Float32Array;\n}\n\ninterface Sim {\n  o: Float32Array;\n  v: Float32Array;\n  acc: Float32Array;\n  pts: Float32Array;\n}\n\ninterface Grab {\n  j: number;\n  s: number;\n}\n\ninterface Params {\n  stiffness: number;\n  coupling: number;\n  damping: number;\n  maxStretch: number;\n  pluckDistance: number;\n}\n\ninterface Bounds {\n  left: number;\n  top: number;\n  sx: number;\n  sy: number;\n}\n\nfunction roundedRectPath(x0: number, y0: number, x1: number, y1: number, r: number): string {\n  return [\n    `M${x0 + r} ${y0}`,\n    `H${x1 - r}`,\n    `A${r} ${r} 0 0 1 ${x1} ${y0 + r}`,\n    `V${y1 - r}`,\n    `A${r} ${r} 0 0 1 ${x1 - r} ${y1}`,\n    `H${x0 + r}`,\n    `A${r} ${r} 0 0 1 ${x0} ${y1 - r}`,\n    `V${y0 + r}`,\n    `A${r} ${r} 0 0 1 ${x0 + r} ${y0}`,\n    \"Z\",\n  ].join(\" \");\n}\n\n// Outward unit normals for a closed loop of interleaved points.\nfunction outwardNormals(points: Float32Array, count: number): Float32Array {\n  const normal = new Float32Array(count * 2);\n  for (let i = 0; i < count; i++) {\n    const prev = (i - 1 + count) % count;\n    const next = (i + 1) % count;\n    const tx = points[next * 2] - points[prev * 2];\n    const ty = points[next * 2 + 1] - points[prev * 2 + 1];\n    const len = Math.hypot(tx, ty) || 1;\n    // Clockwise in screen space, so (ty, -tx) points outward.\n    normal[i * 2] = ty / len;\n    normal[i * 2 + 1] = -tx / len;\n  }\n  return normal;\n}\n\n// Rest outline: equal arc-length samples plus outward unit normals, all in root coordinates.\nfunction buildOutline(width: number, height: number, radius: number, count: number): Outline | null {\n  if (width < 40 || height < 40) return null;\n  const x0 = INSET;\n  const y0 = INSET;\n  const x1 = width - INSET;\n  const y1 = height - INSET;\n  const r = Math.max(0, Math.min(radius, (x1 - x0) / 2, (y1 - y0) / 2));\n  const perimeter = 2 * (x1 - x0 - 2 * r) + 2 * (y1 - y0 - 2 * r) + 2 * Math.PI * r;\n  const restPath = roundedRectPath(x0, y0, x1, y1, r);\n\n  // The sampler returns count + 1 points; the last one repeats the first.\n  const sampled = resamplePath(restPath, count + 1);\n  const rest = new Float32Array(count * 2);\n  for (let i = 0; i < count; i++) {\n    rest[i * 2] = sampled[i * 2];\n    rest[i * 2 + 1] = sampled[i * 2 + 1];\n  }\n  const normal = outwardNormals(rest, count);\n\n  // Dense render outline (about 4px apart, at least 4 samples per sim point). Only painting uses it.\n  const renderCount = Math.max(count * 4, Math.ceil(perimeter / 4));\n  const denseSampled = resamplePath(restPath, renderCount + 1);\n  const renderRest = new Float32Array(renderCount * 2);\n  for (let k = 0; k < renderCount; k++) {\n    renderRest[k * 2] = denseSampled[k * 2];\n    renderRest[k * 2 + 1] = denseSampled[k * 2 + 1];\n  }\n  const renderNormal = outwardNormals(renderRest, renderCount);\n\n  return {\n    width,\n    height,\n    count,\n    rest,\n    normal,\n    spacing: perimeter / count,\n    restPath,\n    renderCount,\n    renderRest,\n    renderNormal,\n  };\n}\n\nfunction createSim(g: Outline): Sim {\n  return {\n    o: new Float32Array(g.count),\n    v: new Float32Array(g.count),\n    acc: new Float32Array(g.count),\n    pts: new Float32Array(g.renderCount * 2),\n  };\n}\n\n// Shortest index distance around the closed loop, in px of arc length.\nfunction arcPx(i: number, at: number, count: number, spacing: number): number {\n  const d = Math.abs(i - at);\n  return Math.min(d, count - d) * spacing;\n}\n\nfunction applyPose(sim: Sim, g: Outline, at: number, amount: number) {\n  const idx = (((at % 1) + 1) % 1) * g.count;\n  for (let i = 0; i < g.count; i++) {\n    const d = arcPx(i, idx, g.count, g.spacing);\n    sim.o[i] = amount * Math.exp(-(d * d) / (2 * POSE_SIGMA * POSE_SIGMA));\n    sim.v[i] = 0;\n  }\n}\n\nfunction pluckSim(g: Outline | null, sim: Sim | null, at: number, strength: number): boolean {\n  if (!g || !sim) return false;\n  const idx = (((at % 1) + 1) % 1) * g.count;\n  for (let i = 0; i < g.count; i++) {\n    const d = arcPx(i, idx, g.count, g.spacing);\n    sim.o[i] += strength * Math.exp(-(d * d) / (2 * PLUCK_SIGMA * PLUCK_SIGMA));\n  }\n  return true;\n}\n\n// Semi-implicit Euler in 1/240s substeps: a = -k·o + c·laplacian(o) - d·v + grab force.\nfunction stepSim(sim: Sim, g: Outline, grab: Grab | null, p: Params, dt: number) {\n  const n = g.count;\n  const { o, v, acc } = sim;\n  const steps = Math.max(1, Math.ceil(dt / SUBSTEP - 1e-6));\n  const h = dt / steps;\n  for (let s = 0; s < steps; s++) {\n    for (let i = 0; i < n; i++) {\n      const prev = i === 0 ? n - 1 : i - 1;\n      const next = i === n - 1 ? 0 : i + 1;\n      const lap = o[prev] + o[next] - 2 * o[i];\n      let force = 0;\n      if (grab) {\n        const d = arcPx(i, grab.j, n, g.spacing);\n        if (d <= GRAB_ARC) {\n          const target = Math.min(p.maxStretch, Math.max(-p.maxStretch, grab.s));\n          force = GRAB_GAIN * (target - o[i]) * Math.exp(-(d * d) / (2 * GRAB_SIGMA * GRAB_SIGMA));\n        }\n      }\n      acc[i] = -p.stiffness * o[i] + p.coupling * lap - p.damping * v[i] + force;\n    }\n    for (let i = 0; i < n; i++) {\n      v[i] += acc[i] * h;\n      o[i] += v[i] * h;\n    }\n  }\n}\n\nfunction maxAbs(a: Float32Array): number {\n  let m = 0;\n  for (let i = 0; i < a.length; i++) {\n    const x = Math.abs(a[i]);\n    if (x > m) m = x;\n  }\n  return m;\n}\n\nfunction hexToRgb(hex: string): RGB {\n  const n = parseInt(hex.slice(1), 16);\n  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];\n}\n\nfunction mixColor(a: RGB, b: RGB, t: number): string {\n  const r = Math.round(a[0] + (b[0] - a[0]) * t);\n  const g = Math.round(a[1] + (b[1] - a[1]) * t);\n  const bl = Math.round(a[2] + (b[2] - a[2]) * t);\n  return `rgb(${r},${g},${bl})`;\n}\n\n// Writes the displaced outline to both paths. Returns max |o|, used for energy and dev checks.\n// Rest state paints the exact rounded rect. Otherwise the dense render outline is offset by a\n// 1-D Catmull-Rom through the simulation samples, so the stroke stays smooth between them.\nfunction paintSim(\n  sim: Sim,\n  g: Outline,\n  maxStretch: number,\n  colors: Colors,\n  main: SVGPathElement | null,\n  glow: SVGPathElement | null,\n): number {\n  const { o, pts } = sim;\n  let maxO = 0;\n  for (let i = 0; i < g.count; i++) {\n    const a = Math.abs(o[i]);\n    if (a > maxO) maxO = a;\n  }\n  let d: string;\n  if (maxO < 0.01) {\n    d = g.restPath;\n  } else {\n    const n = g.count;\n    const m = g.renderCount;\n    const ratio = n / m;\n    for (let k = 0; k < m; k++) {\n      const s = k * ratio;\n      const i1 = Math.floor(s);\n      const t = s - i1;\n      const i0 = (i1 - 1 + n) % n;\n      const i2 = (i1 + 1) % n;\n      const i3 = (i1 + 2) % n;\n      const o0 = o[i0];\n      const o1 = o[i1];\n      const o2 = o[i2];\n      const o3 = o[i3];\n      const off =\n        0.5 *\n        (2 * o1 +\n          (-o0 + o2) * t +\n          (2 * o0 - 5 * o1 + 4 * o2 - o3) * t * t +\n          (-o0 + 3 * o1 - 3 * o2 + o3) * t * t * t);\n      pts[k * 2] = g.renderRest[k * 2] + g.renderNormal[k * 2] * off;\n      pts[k * 2 + 1] = g.renderRest[k * 2 + 1] + g.renderNormal[k * 2 + 1] * off;\n    }\n    const parts: string[] = new Array(m);\n    for (let k = 0; k < m; k++) {\n      const x = pts[k * 2].toFixed(2);\n      const y = pts[k * 2 + 1].toFixed(2);\n      parts[k] = k === 0 ? `M${x} ${y}` : `L${x} ${y}`;\n    }\n    d = `${parts.join(\" \")} Z`;\n  }\n  const energy = Math.min(1, maxO / maxStretch);\n  if (main) {\n    main.setAttribute(\"d\", d);\n    main.setAttribute(\"stroke\", mixColor(colors.rest, colors.ink, energy));\n  }\n  if (glow) {\n    glow.setAttribute(\"d\", d);\n    glow.setAttribute(\"stroke-opacity\", String(GLOW_ALPHA * energy));\n  }\n  return maxO;\n}\n\n/**\n * A frame drawn as a tensioned string. Bring the pointer near an edge to pluck it;\n * it rings back to rest. Children sit centred inside `padding`.\n * Concentric content: give children `borderRadius: radius - padding / 2`.\n */\nexport const ElasticFrame = forwardRef<ElasticFrameHandle, ElasticFrameProps>(function ElasticFrame(\n  {\n    children,\n    radius = 24,\n    points = 64,\n    stiffness = 180,\n    coupling = 900,\n    damping = 14,\n    pluckDistance = 36,\n    maxStretch = 28,\n    strokeWidth = 1.5,\n    glow = true,\n    glowColor,\n    padding = 32,\n    tone,\n    attract = false,\n    debugState,\n    className,\n  },\n  ref,\n) {\n  const resolvedTone = useBjorkTone(tone);\n  const palette = BJORK_PALETTE[resolvedTone];\n  const reduce = useReducedMotion() === true;\n  const rootRef = useRef<HTMLDivElement>(null);\n  const mainRef = useRef<SVGPathElement>(null);\n  const glowRef = useRef<SVGPathElement>(null);\n  const size = useElementSize(rootRef);\n  const outline = useMemo(\n    () => buildOutline(size.width, size.height, radius, points),\n    [size.width, size.height, radius, points],\n  );\n\n  const debugAt = debugState?.at;\n  const debugAmount = debugState?.amount ?? 0;\n  const glowCss = glowColor ?? palette.accent;\n  const colors = useMemo<Colors>(\n    () => ({\n      rest: hexToRgb(palette.borderStrong),\n      ink: hexToRgb(palette.accentInk),\n    }),\n    [palette],\n  );\n\n  const outlineRef = useRef<Outline | null>(null);\n  const simRef = useRef<Sim | null>(null);\n  const grabRef = useRef<Grab | null>(null);\n  const boundsRef = useRef<Bounds | null>(null);\n  const lastInputRef = useRef(Number.NEGATIVE_INFINITY);\n  const reduceRef = useRef(reduce);\n  const colorsRef = useRef<Colors>(colors);\n  const wakeRef = useRef<() => void>(() => {});\n  const measureRef = useRef<(() => void) | null>(null);\n  const paramsRef = useRef<Params>({\n    stiffness,\n    coupling,\n    damping,\n    maxStretch,\n    pluckDistance,\n  });\n\n  const frame = (dt: number): boolean => {\n    const g = outlineRef.current;\n    const sim = simRef.current;\n    if (!g || !sim) return false;\n    const p = paramsRef.current;\n    const grab = grabRef.current;\n    stepSim(sim, g, grab, p, dt);\n    const maxO = paintSim(sim, g, p.maxStretch, colorsRef.current, mainRef.current, glowRef.current);\n    if (process.env.NODE_ENV !== \"production\" && rootRef.current) {\n      rootRef.current.dataset.maxOffset = maxO.toFixed(2);\n    }\n    if (!grab && maxO < IDLE_EPS && maxAbs(sim.v) < IDLE_EPS) {\n      sim.o.fill(0);\n      sim.v.fill(0);\n      paintSim(sim, g, p.maxStretch, colorsRef.current, mainRef.current, glowRef.current);\n      return false;\n    }\n    return true;\n  };\n\n  const loop = useVisibleLoop(rootRef, frame, { enabled: !reduce && debugAt === undefined });\n\n  useImperativeHandle(\n    ref,\n    () => ({\n      pluck: (at: number, strength = DEFAULT_PLUCK) => {\n        if (reduceRef.current) return;\n        if (pluckSim(outlineRef.current, simRef.current, at, strength)) wakeRef.current();\n      },\n    }),\n    [],\n  );\n\n  // Keep the latest props and loop handle visible to the rAF and pointer callbacks.\n  useEffect(() => {\n    paramsRef.current = { stiffness, coupling, damping, maxStretch, pluckDistance };\n    wakeRef.current = loop.wake;\n  });\n\n  // Geometry, reduced motion and posed state: rebuild the sim and paint once.\n  useEffect(() => {\n    reduceRef.current = reduce;\n    outlineRef.current = outline;\n    const sim = outline ? createSim(outline) : null;\n    simRef.current = sim;\n    grabRef.current = null;\n    measureRef.current?.();\n    if (outline && sim) {\n      if (debugAt !== undefined) applyPose(sim, outline, debugAt, debugAmount);\n      paintSim(sim, outline, paramsRef.current.maxStretch, colorsRef.current, mainRef.current, glowRef.current);\n      wakeRef.current();\n    }\n  }, [outline, debugAt, debugAmount, reduce]);\n\n  // Colour and glow changes repaint without resetting the string.\n  useEffect(() => {\n    colorsRef.current = colors;\n    const g = outlineRef.current;\n    const sim = simRef.current;\n    if (g && sim) paintSim(sim, g, paramsRef.current.maxStretch, colors, mainRef.current, glowRef.current);\n  }, [colors, glow]);\n\n  // Pointer proximity. The pluck zone reaches 36px outside the element, so the listeners sit on\n  // window. They are attached only while the frame is near the viewport.\n  useEffect(() => {\n    const el = rootRef.current;\n    if (!el) return;\n    let listening = false;\n\n    const measure = () => {\n      const r = el.getBoundingClientRect();\n      const g = outlineRef.current;\n      boundsRef.current = {\n        left: r.left,\n        top: r.top,\n        sx: g && g.width ? r.width / g.width : 1,\n        sy: g && g.height ? r.height / g.height : 1,\n      };\n    };\n    measureRef.current = measure;\n\n    const release = () => {\n      if (grabRef.current) {\n        grabRef.current = null;\n        wakeRef.current();\n      }\n    };\n\n    const onMove = (e: PointerEvent) => {\n      const b = boundsRef.current;\n      const g = outlineRef.current;\n      const sim = simRef.current;\n      if (!b || !g || !sim || reduceRef.current) return;\n      const p = paramsRef.current;\n      const px = (e.clientX - b.left) / b.sx;\n      const py = (e.clientY - b.top) / b.sy;\n      const zone = p.pluckDistance;\n      if (px < -zone || py < -zone || px > g.width + zone || py > g.height + zone) {\n        release();\n        return;\n      }\n      let best = 0;\n      let bestD = Number.POSITIVE_INFINITY;\n      for (let j = 0; j < g.count; j++) {\n        const dx = px - g.rest[j * 2];\n        const dy = py - g.rest[j * 2 + 1];\n        const d2 = dx * dx + dy * dy;\n        if (d2 < bestD) {\n          bestD = d2;\n          best = j;\n        }\n      }\n      // Signed distance along the nearest normal: positive is outside the frame.\n      const s =\n        (px - g.rest[best * 2]) * g.normal[best * 2] + (py - g.rest[best * 2 + 1]) * g.normal[best * 2 + 1];\n      lastInputRef.current = performance.now();\n      if (Math.abs(s) <= p.maxStretch + 8) {\n        grabRef.current = { j: best, s };\n        wakeRef.current();\n      } else {\n        release();\n      }\n    };\n\n    // Pointer left the window: nothing is held any more.\n    const onOut = (e: PointerEvent) => {\n      if (!e.relatedTarget) release();\n    };\n\n    const onViewport = () => measure();\n\n    const start = () => {\n      if (listening) return;\n      listening = true;\n      measure();\n      window.addEventListener(\"pointermove\", onMove, { passive: true });\n      window.addEventListener(\"pointerout\", onOut, { passive: true });\n      window.addEventListener(\"scroll\", onViewport, { passive: true, capture: true });\n      window.addEventListener(\"resize\", onViewport, { passive: true });\n    };\n\n    const stop = () => {\n      if (!listening) return;\n      listening = false;\n      window.removeEventListener(\"pointermove\", onMove);\n      window.removeEventListener(\"pointerout\", onOut);\n      window.removeEventListener(\"scroll\", onViewport, { capture: true });\n      window.removeEventListener(\"resize\", onViewport);\n      grabRef.current = null;\n    };\n\n    const observer = new IntersectionObserver(\n      ([entry]) => {\n        if (entry?.isIntersecting) start();\n        else stop();\n      },\n      { rootMargin: \"96px\" },\n    );\n    observer.observe(el);\n\n    return () => {\n      observer.disconnect();\n      stop();\n      measureRef.current = null;\n    };\n  }, []);\n\n  // Attract: a seeded pluck every 2.8s, paused while the pointer or keyboard is inside.\n  useEffect(() => {\n    if (!attract) return;\n    const rng = mulberry32(hashString(\"elastic-frame\"));\n    const id = window.setInterval(() => {\n      if (reduceRef.current) return;\n      if (performance.now() - lastInputRef.current < ATTRACT_IDLE) return;\n      if (pluckSim(outlineRef.current, simRef.current, rng(), ATTRACT_STRENGTH)) wakeRef.current();\n    }, ATTRACT_INTERVAL);\n    return () => window.clearInterval(id);\n  }, [attract]);\n\n  // Breathe only for keyboard focus. A mouse click on a child should not ripple the frame.\n  const onFocus = (e: FocusEvent<HTMLDivElement>) => {\n    if (!(e.target as Element).matches?.(\":focus-visible\")) return;\n    lastInputRef.current = performance.now();\n    if (reduceRef.current) return;\n    const sim = simRef.current;\n    if (!sim) return;\n    for (let i = 0; i < sim.v.length; i++) sim.v[i] += BREATH_IMPULSE;\n    wakeRef.current();\n  };\n\n  const onPointerDown = () => {\n    lastInputRef.current = performance.now();\n  };\n\n  return (\n    <div\n      ref={rootRef}\n      onFocus={onFocus}\n      onPointerDown={onPointerDown}\n      className={cn(\"relative isolate w-full\", className)}\n    >\n      <svg\n        aria-hidden=\"true\"\n        focusable=\"false\"\n        width={size.width}\n        height={size.height}\n        viewBox={`0 0 ${size.width} ${size.height}`}\n        className=\"pointer-events-none absolute inset-0 overflow-visible\"\n      >\n        {glow ? (\n          <path\n            ref={glowRef}\n            fill=\"none\"\n            stroke={glowCss}\n            strokeWidth={GLOW_WIDTH}\n            strokeLinecap=\"round\"\n            strokeLinejoin=\"round\"\n          />\n        ) : null}\n        <path\n          ref={mainRef}\n          fill=\"none\"\n          stroke={palette.borderStrong}\n          strokeWidth={strokeWidth}\n          strokeLinecap=\"round\"\n          strokeLinejoin=\"round\"\n        />\n      </svg>\n      <div className=\"relative flex h-full w-full items-center justify-center\" style={{ padding }}>\n        {children}\n      </div>\n    </div>\n  );\n});\n\n/** Pulls the frame from outside through a ref: `pluck(frameRef, 0.4, 26)`. */\nexport function pluck(\n  target: { current: ElasticFrameHandle | null },\n  at: number,\n  strength?: number,\n): void {\n  target.current?.pluck(at, strength);\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/interactive/elastic-frame.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/palette.ts",
+      "content": "export type BjorkTone = \"dark\" | \"light\";\n\n// Canvas, WebGL and SVG attribute colours. DOM code uses the CSS tokens with these as fallbacks.\nexport const BJORK_PALETTE = {\n  dark: {\n    bg: \"#050505\", stage: \"#111111\", surface: \"#121212\", raised: \"#161616\", active: \"#202020\",\n    border: \"#232323\", borderStrong: \"#343434\",\n    text: \"#ededed\", textMedium: \"rgba(237,237,237,0.72)\", textMuted: \"rgba(237,237,237,0.52)\",\n    textSoft: \"rgba(237,237,237,0.36)\", textFaint: \"rgba(237,237,237,0.22)\", hair: \"rgba(237,237,237,0.12)\",\n    accent: \"#ec5c13\", accentInk: \"#ec5c13\", accentFill: \"#b84a12\", accentSoft: \"rgba(236,92,19,0.12)\", accentMuted: \"rgba(236,92,19,0.24)\",\n    accentFg: \"#fff2ea\", success: \"#4cc38a\", warning: \"#f2b544\", error: \"#ff5c4d\",\n  },\n  light: {\n    bg: \"#f7f5ef\", stage: \"#f7f5ef\", surface: \"#fffcf6\", raised: \"#f5efe3\", active: \"#efe7d8\",\n    border: \"#eee6db\", borderStrong: \"#e1d7c8\",\n    text: \"#171717\", textMedium: \"rgba(23,23,23,0.72)\", textMuted: \"rgba(23,23,23,0.52)\",\n    textSoft: \"rgba(23,23,23,0.36)\", textFaint: \"rgba(23,23,23,0.22)\", hair: \"rgba(23,23,23,0.10)\",\n    accent: \"#ec7d43\", accentInk: \"#b4531f\", accentFill: \"#ec7d43\", accentSoft: \"rgba(236,125,67,0.10)\", accentMuted: \"rgba(236,125,67,0.20)\",\n    accentFg: \"#3f2112\", success: \"#1f8a55\", warning: \"#a86b00\", error: \"#c8361f\",\n  },\n} as const;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/palette.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/tone.ts",
+      "content": "\"use client\";\n\nimport { useSyncExternalStore } from \"react\";\nimport { useTheme } from \"next-themes\";\nimport type { BjorkTone } from \"./palette\";\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\n/**\n * Resolves the tone for a component. An explicit `tone` always wins.\n * Otherwise it follows next-themes' resolved theme, but only after mount,\n * so the server render and first client render agree on dark.\n */\nexport function useBjorkTone(tone?: BjorkTone): BjorkTone {\n  const { resolvedTheme } = useTheme();\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  if (tone) return tone;\n  if (!mounted) return \"dark\";\n  return resolvedTheme === \"light\" ? \"light\" : \"dark\";\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/tone.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/loop.ts",
+      "content": "\"use client\";\n\nimport { useCallback, useEffect, useMemo, useRef, type RefObject } from \"react\";\n\nexport interface VisibleLoopOptions {\n  enabled?: boolean;\n  fpsCap?: number;\n  rootMargin?: string;\n}\n\n/**\n * Runs `frame(dt, t)` on requestAnimationFrame while the element is near the viewport,\n * the tab is visible and `enabled` is not false. Return `false` from `frame` to go idle\n * until `wake()` is called. Writes `data-loop` on the element: running, idle or paused.\n */\nexport function useVisibleLoop(\n  ref: RefObject<HTMLElement | null>,\n  frame: (dt: number, t: number) => boolean | void,\n  opts?: VisibleLoopOptions,\n): { wake: () => void } {\n  const enabled = opts?.enabled !== false;\n  const fpsCap = opts?.fpsCap ?? 0;\n  const rootMargin = opts?.rootMargin ?? \"96px\";\n\n  const frameRef = useRef(frame);\n  useEffect(() => {\n    frameRef.current = frame;\n  }, [frame]);\n\n  const wakeRef = useRef<() => void>(() => {});\n  const wake = useCallback(() => wakeRef.current(), []);\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el || typeof window === \"undefined\") return;\n\n    let wants = true; // false once the frame callback returns false\n    let inView = false;\n    let raf = 0;\n    let last = 0;\n    let t = 0;\n    const minFrame = fpsCap > 0 ? 1000 / fpsCap : 0;\n\n    const canRun = () => enabled && inView && document.visibilityState === \"visible\";\n    const stop = () => {\n      if (raf) cancelAnimationFrame(raf);\n      raf = 0;\n    };\n\n    const update = () => {\n      if (!enabled) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      if (!wants) {\n        stop();\n        el.dataset.loop = \"idle\";\n        return;\n      }\n      if (!canRun()) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      el.dataset.loop = \"running\";\n      if (!raf) {\n        last = performance.now();\n        raf = requestAnimationFrame(tick);\n      }\n    };\n\n    const tick = (now: number) => {\n      raf = 0;\n      if (!canRun() || !wants) {\n        update();\n        return;\n      }\n      const elapsed = now - last;\n      if (minFrame && elapsed < minFrame - 0.5) {\n        raf = requestAnimationFrame(tick);\n        return;\n      }\n      last = now;\n      const dt = Math.min(0.05, Math.max(0, elapsed / 1000));\n      t += dt;\n      const keep = frameRef.current(dt, t);\n      if (keep === false) {\n        wants = false;\n        update();\n        return;\n      }\n      raf = requestAnimationFrame(tick);\n    };\n\n    const observer = new IntersectionObserver(\n      ([entry]) => {\n        inView = entry.isIntersecting;\n        update();\n      },\n      { rootMargin },\n    );\n    observer.observe(el);\n\n    const onVisibility = () => update();\n    document.addEventListener(\"visibilitychange\", onVisibility);\n\n    wakeRef.current = () => {\n      wants = true;\n      update();\n    };\n\n    update();\n\n    return () => {\n      stop();\n      observer.disconnect();\n      document.removeEventListener(\"visibilitychange\", onVisibility);\n      wakeRef.current = () => {};\n    };\n  }, [ref, enabled, fpsCap, rootMargin]);\n\n  return useMemo(() => ({ wake }), [wake]);\n}\n\n// matchMedia based check. False on the server.\nexport function isCoarsePointer(): boolean {\n  if (typeof window === \"undefined\" || typeof window.matchMedia !== \"function\") return false;\n  return window.matchMedia(\"(pointer: coarse)\").matches;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/loop.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/canvas.ts",
+      "content": "\"use client\";\n\nimport { useEffect, useState, type RefObject } from \"react\";\nimport { isCoarsePointer } from \"./loop\";\n\n// Caps DPR at 1.5 on coarse pointers and 2 otherwise.\nexport function defaultMaxDpr(): number {\n  return isCoarsePointer() ? 1.5 : 2;\n}\n\n// Sets the backing size for a CSS box and returns the DPR used.\nexport function sizeCanvas(\n  canvas: HTMLCanvasElement,\n  cssW: number,\n  cssH: number,\n  maxDpr: number = defaultMaxDpr(),\n): number {\n  const dpr = Math.min(typeof window !== \"undefined\" ? window.devicePixelRatio || 1 : 1, maxDpr);\n  canvas.width = Math.max(1, Math.round(cssW * dpr));\n  canvas.height = Math.max(1, Math.round(cssH * dpr));\n  canvas.style.width = `${cssW}px`;\n  canvas.style.height = `${cssH}px`;\n  return dpr;\n}\n\n// Rounded size of an element, kept current with a ResizeObserver.\nexport function useElementSize(ref: RefObject<HTMLElement | null>): { width: number; height: number } {\n  const [size, setSize] = useState({ width: 0, height: 0 });\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el || typeof ResizeObserver === \"undefined\") return;\n    const observer = new ResizeObserver((entries) => {\n      const box = entries[0]?.contentRect;\n      if (!box) return;\n      const width = Math.round(box.width);\n      const height = Math.round(box.height);\n      setSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));\n    });\n    observer.observe(el);\n    return () => observer.disconnect();\n  }, [ref]);\n\n  return size;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/canvas.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/path.ts",
+      "content": "// SVG path helpers. Path sampling needs the DOM, so it returns zeros on the server.\n\nconst resampleCache = new Map<string, Float32Array>();\n\n// Interleaved x,y points at equal arc length along `d`, including both endpoints.\nexport function resamplePath(\n  d: string,\n  count: number,\n  viewBox?: [number, number, number, number],\n): Float32Array {\n  if (typeof document === \"undefined\") return new Float32Array(count * 2);\n  const key = `${d}|${count}|${viewBox ? viewBox.join(\",\") : \"\"}`;\n  const cached = resampleCache.get(key);\n  if (cached) return cached;\n\n  const svgNS = \"http://www.w3.org/2000/svg\";\n  const svg = document.createElementNS(svgNS, \"svg\");\n  svg.setAttribute(\"width\", \"0\");\n  svg.setAttribute(\"height\", \"0\");\n  svg.setAttribute(\"aria-hidden\", \"true\");\n  svg.style.position = \"absolute\";\n  svg.style.visibility = \"hidden\";\n  if (viewBox) svg.setAttribute(\"viewBox\", viewBox.join(\" \"));\n  const path = document.createElementNS(svgNS, \"path\");\n  path.setAttribute(\"d\", d);\n  svg.appendChild(path);\n  document.body.appendChild(svg);\n\n  const out = new Float32Array(count * 2);\n  try {\n    const total = path.getTotalLength();\n    for (let i = 0; i < count; i++) {\n      const at = count === 1 ? 0 : (i / (count - 1)) * total;\n      const p = path.getPointAtLength(at);\n      out[i * 2] = p.x;\n      out[i * 2 + 1] = p.y;\n    }\n  } finally {\n    svg.remove();\n  }\n  resampleCache.set(key, out);\n  return out;\n}\n\n// Catmull-Rom through interleaved x,y points, converted to cubic beziers. Returns a path `d`.\nexport function catmullRomToBezier(points: Float32Array, closed: boolean): string {\n  const n = Math.floor(points.length / 2);\n  if (n === 0) return \"\";\n  const P = (i: number) => {\n    let idx = i;\n    if (closed) idx = ((i % n) + n) % n;\n    else idx = Math.min(n - 1, Math.max(0, i));\n    return [points[idx * 2], points[idx * 2 + 1]] as const;\n  };\n  const f = (v: number) => v.toFixed(2);\n  let d = `M${f(points[0])} ${f(points[1])}`;\n  const segments = closed ? n : n - 1;\n  for (let i = 0; i < segments; i++) {\n    const p0 = P(i - 1);\n    const p1 = P(i);\n    const p2 = P(i + 1);\n    const p3 = P(i + 2);\n    const c1x = p1[0] + (p2[0] - p0[0]) / 6;\n    const c1y = p1[1] + (p2[1] - p0[1]) / 6;\n    const c2x = p2[0] - (p3[0] - p1[0]) / 6;\n    const c2y = p2[1] - (p3[1] - p1[1]) / 6;\n    d += ` C${f(c1x)} ${f(c1y)} ${f(c2x)} ${f(c2y)} ${f(p2[0])} ${f(p2[1])}`;\n  }\n  if (closed) d += \" Z\";\n  return d;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/path.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/random.ts",
+      "content": "// Seeded randomness and noise. Deterministic for a given seed, so previews and tests repeat.\n\n// Small fast PRNG. Returns floats in [0, 1).\nexport function mulberry32(seed: number): () => number {\n  let a = seed >>> 0;\n  return () => {\n    a = (a + 0x6d2b79f5) >>> 0;\n    let t = a;\n    t = Math.imul(t ^ (t >>> 15), t | 1);\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;\n  };\n}\n\n// FNV-1a 32-bit.\nexport function hashString(s: string): number {\n  let h = 0x811c9dc5;\n  for (let i = 0; i < s.length; i++) {\n    h ^= s.charCodeAt(i);\n    h = Math.imul(h, 0x01000193);\n  }\n  return h >>> 0;\n}\n\n// Integer lattice hash to [-1, 1].\nfunction latticeHash(seed: number, x: number, y = 0): number {\n  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(seed | 0, 2246822519);\n  h = Math.imul(h ^ (h >>> 13), 1274126177);\n  h ^= h >>> 16;\n  return ((h >>> 0) / 4294967295) * 2 - 1;\n}\n\nfunction smooth(t: number): number {\n  return t * t * (3 - 2 * t);\n}\n\nexport function valueNoise1D(seed: number): (x: number) => number {\n  return (x: number) => {\n    const i = Math.floor(x);\n    const f = x - i;\n    const a = latticeHash(seed, i);\n    const b = latticeHash(seed, i + 1);\n    return a + (b - a) * smooth(f);\n  };\n}\n\nexport function fbm1D(seed: number, octaves = 3): (x: number) => number {\n  const layers = Array.from({ length: octaves }, (_, o) => valueNoise1D(seed + o * 101));\n  let norm = 0;\n  for (let o = 0; o < octaves; o++) norm += 0.5 ** o;\n  return (x: number) => {\n    let sum = 0;\n    let amp = 1;\n    let freq = 1;\n    for (let o = 0; o < octaves; o++) {\n      sum += amp * layers[o](x * freq);\n      amp *= 0.5;\n      freq *= 2;\n    }\n    return sum / norm;\n  };\n}\n\nexport function valueNoise2D(seed: number): (x: number, y: number) => number {\n  return (x: number, y: number) => {\n    const xi = Math.floor(x);\n    const yi = Math.floor(y);\n    const fx = smooth(x - xi);\n    const fy = smooth(y - yi);\n    const a = latticeHash(seed, xi, yi);\n    const b = latticeHash(seed, xi + 1, yi);\n    const c = latticeHash(seed, xi, yi + 1);\n    const d = latticeHash(seed, xi + 1, yi + 1);\n    const top = a + (b - a) * fx;\n    const bottom = c + (d - c) * fx;\n    return top + (bottom - top) * fy;\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/random.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Interactive",
+    "registryUrl": "https://ui.isaiahbjork.com/elastic-frame.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/elastic-frame.json"
+  },
+  "type": "registry:component"
+}
