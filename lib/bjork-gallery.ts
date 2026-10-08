@@ -1255,6 +1255,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork134",
+    slug: "scatter-brush",
+    title: "Scatter brush",
+    route: "/charts/scatter-brush",
+    sourcePath: "components/bjork-ui/charts/scatter-brush.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {

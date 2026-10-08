@@ -120,6 +120,7 @@ const componentRoutes: ComponentGroup[] = [
 
       // @slot route-trace
 
+      { name: "Scatter Brush", path: "/charts/scatter-brush" },
       { name: "Slope Chart", path: "/charts/slope-chart" },
       { name: "Spark Table", path: "/charts/spark-table" },
       { name: "State Timeline", path: "/charts/state-timeline" },
