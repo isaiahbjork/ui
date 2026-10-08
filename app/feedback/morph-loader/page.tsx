@@ -116,7 +116,7 @@ export default function Page() {
         </div>
 
         <div className="flex flex-col items-center gap-6">
-          <MorphLoader size={64} state={rowState} target={target} progress={preview ? 0.75 : undefined} />
+          <MorphLoader size={preview ? 112 : 64} state={rowState} target={target} progress={preview ? 0.75 : undefined} />
           {!preview ? (
             <div className="flex w-[min(320px,calc(100vw-56px))] flex-col gap-2">
               <ShellSegmented
