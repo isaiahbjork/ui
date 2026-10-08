@@ -37,6 +37,7 @@ const galleryCollectionOrder = [
   "Cards",
   "Scheduling",
   "Badges",
+  "Feedback",
   "Controls",
   "Navigation",
   "Utilities",
@@ -507,6 +508,16 @@ function GalleryCard({
           <span className={cn("text-sm font-medium", isLight ? "text-[#171717]/60" : "text-[#ededed]/45")}>{item.id}</span>
         </div>
       </div>
+      {item.isNew ? (
+        <span
+          className={cn(
+            "pointer-events-none absolute right-3 top-3 rounded-[6px] px-1.5 py-0.5 font-mono text-[10px] uppercase leading-none tracking-[0.08em]",
+            isLight ? "bg-[rgba(236,125,67,0.10)] text-[#b4531f]" : "bg-[rgba(236,92,19,0.12)] text-[#ec5c13]"
+          )}
+        >
+          New
+        </span>
+      ) : null}
     </motion.article>
   );
 }

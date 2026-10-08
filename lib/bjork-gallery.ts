@@ -941,6 +941,47 @@ export const galleryItems: GalleryItem[] = [
     preview: "radial",
     accent: "#ffc107",
   },
+
+  // @slot bjork94 radial-command-ring
+
+  // @slot bjork95 adaptive-precision-slider
+
+  // @slot bjork96 click-wheel
+
+  // @slot bjork97 velocity-ink
+
+  // @slot bjork98 spring-tuner
+
+  // @slot bjork99 live-line
+
+  // @slot bjork100 flap-ledger
+
+  // @slot bjork101 route-trace
+
+  // @slot bjork102 solar-sky-panel
+
+  // @slot bjork103 agent-trace
+
+  // @slot bjork104 handoff-beam
+
+  // @slot bjork105 lattice-orb
+
+  // @slot bjork106 torn-edge-reveal
+
+  // @slot bjork107 mosaic-settle
+
+  // @slot bjork108 minimap-scrollbar
+
+  // @slot bjork109 morph-loader
+
+  // @slot bjork110 stroke-morph-icon
+
+  // @slot bjork111 scatter-rewind
+
+  // @slot bjork112 plane-type
+
+  // @slot bjork113 elastic-frame
+
 ];
 
 export function getGalleryItem(slug: string) {

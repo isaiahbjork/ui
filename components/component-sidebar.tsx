@@ -68,6 +68,12 @@ const componentRoutes: ComponentGroup[] = [
     title: "AI Components",
     routes: [
       { name: "AI Voice Input", path: "/ai/ai-voice-input" },
+      // @slot agent-trace
+
+      // @slot handoff-beam
+
+      // @slot lattice-orb
+
     ],
   },
   {
@@ -97,12 +103,18 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Profile Hover Card", path: "/cards/profile-hover-card" },
       { name: "Project Cards", path: "/cards/project-cards" },
       { name: "Video Upload Card", path: "/cards/video-upload-card" },
+      // @slot solar-sky-panel
+
     ],
   },
   {
     title: "Charts & Data",
     routes: [
       { name: "Animated Radial Chart", path: "/charts/animated-radial-chart" },
+      // @slot live-line
+
+      // @slot route-trace
+
     ],
   },
   {
@@ -123,6 +135,10 @@ const componentRoutes: ComponentGroup[] = [
     title: "Text",
     routes: [
       { name: "Reveal Text", path: "/heroes/reveal-text" },
+      // @slot plane-type
+
+      // @slot scatter-rewind
+
     ],
   },
   {
@@ -148,12 +164,18 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Message Dock", path: "/hud/message-dock" },
       { name: "Timer", path: "/misc/timer" },
       { name: "Voice Powered Orb", path: "/interactive/voice-powered-orb" },
+      // @slot elastic-frame
+
     ],
   },
   {
     title: "Layout & Navigation",
     routes: [
       { name: "Ruler Carousel", path: "/galleries/ruler-carousel" },
+      // @slot minimap-scrollbar
+
+      // @slot radial-command-ring
+
     ],
   },
   {
@@ -161,6 +183,10 @@ const componentRoutes: ComponentGroup[] = [
     routes: [
       { name: "Hover Image Gallery", path: "/galleries/hover-image-gallery" },
       { name: "Portfolio Gallery", path: "/galleries/portfolio-gallery" },
+      // @slot mosaic-settle
+
+      // @slot torn-edge-reveal
+
     ],
   },
   {
@@ -172,6 +198,35 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Periodic Table", path: "/tables/periodic-table" },
       { name: "Resizable Table", path: "/tables/resizable-table" },
       { name: "Server Management Table", path: "/tables/server-management" },
+      // @slot flap-ledger
+
+    ],
+  },
+  {
+    title: "Controls & Inputs",
+    routes: [
+      // @slot adaptive-precision-slider
+
+      // @slot click-wheel
+
+      // @slot velocity-ink
+
+    ],
+  },
+  {
+    title: "Utilities",
+    routes: [
+      // @slot spring-tuner
+
+      // @slot stroke-morph-icon
+
+    ],
+  },
+  {
+    title: "Feedback & Status",
+    routes: [
+      // @slot morph-loader
+
     ],
   },
 ];
