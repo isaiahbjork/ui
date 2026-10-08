@@ -1207,6 +1207,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork130",
+    slug: "dumbbell-chart",
+    title: "Dumbbell chart",
+    route: "/charts/dumbbell-chart",
+    sourcePath: "components/bjork-ui/charts/dumbbell-chart.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {
