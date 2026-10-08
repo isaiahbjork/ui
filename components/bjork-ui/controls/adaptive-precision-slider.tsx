@@ -199,18 +199,23 @@ export function AdaptivePrecisionSlider({
   const baseRef = useRef(initial);
 
   const frac = useMotionValue(fractionOf(initial, min, max));
-  const fracPct = useTransform(frac, (v) => `${v * 100}%`);
   const [trackW, setTrackW] = useState(0);
+  // Position by transform, not layout. Thumb and band move with x, and the fill scales.
+  const trackWMV = useMotionValue(0);
+  const thumbX = useTransform([frac, trackWMV], ([f, w]: number[]) => f * w);
   const [ui, setUi] = useState<UiState>({ raw: initial, out: initial, gain: 1, dragging: false });
   const shown = value !== undefined && !ui.dragging ? snapTo(value, min, max, unit) : ui.out;
 
   useEffect(() => {
     const el = trackRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([entry]) => setTrackW(entry.contentRect.width));
+    const ro = new ResizeObserver(([entry]) => {
+      setTrackW(entry.contentRect.width);
+      trackWMV.set(entry.contentRect.width);
+    });
     ro.observe(el);
     return () => ro.disconnect();
-  }, []);
+  }, [trackWMV]);
 
   // `grid` is the step the value lands on. Fine keyboard steps pass a finer grid.
   const emit = (raw: number, grid = unit) => {
@@ -256,7 +261,7 @@ export function AdaptivePrecisionSlider({
       rawRef.current = raw;
       activeRef.current = pose.drag;
       gainRef.current = pose.dist > 0 ? gainAt(pose.dist, minGain, precisionFalloff) : 1;
-      frac.set(fractionOf(raw, min, max));
+      moveFrac(fractionOf(raw, min, max), false);
       emit(raw);
       scheduleRender();
       return true;
@@ -287,14 +292,15 @@ export function AdaptivePrecisionSlider({
     }, ATTRACT_IDLE_MS);
   };
 
-  // Follow external value changes (controlled prop, or a reset) without disturbing a live gesture.
+  // Follow the controlled value only. Reacting to `shown` wrote stale values back during attract and drags.
   useEffect(() => {
-    if (outRef.current === shown) return;
-    outRef.current = shown;
-    if (dragRef.current) return;
-    rawRef.current = shown;
-    moveFrac(fractionOf(shown, min, max), true);
-  }, [shown, min, max, unit, moveFrac]);
+    if (value === undefined) return;
+    const v = snapTo(value, min, max, unit);
+    if (dragRef.current || v === outRef.current) return;
+    outRef.current = v;
+    rawRef.current = v;
+    moveFrac(fractionOf(v, min, max), true);
+  }, [value, min, max, unit, moveFrac]);
 
   useEffect(() => {
     return () => {
@@ -457,7 +463,8 @@ export function AdaptivePrecisionSlider({
         <motion.div
           className={cn("absolute top-0 h-[24px] w-[120px] -translate-x-1/2 overflow-hidden sm:w-[160px]", bandMotion)}
           style={{
-            left: fracPct,
+            left: 0,
+            x: thumbX,
             opacity: bandOpacity,
             maskImage: BAND_MASK,
             WebkitMaskImage: BAND_MASK,
@@ -496,8 +503,8 @@ export function AdaptivePrecisionSlider({
           style={{ background: borderStrong }}
         />
         <motion.span
-          className="absolute left-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full"
-          style={{ width: fracPct, background: accent }}
+          className="absolute left-0 top-1/2 h-[2px] w-full origin-left -translate-y-1/2 rounded-full"
+          style={{ scaleX: frac, background: accent }}
         />
         <motion.div
           ref={thumbRef}
@@ -513,7 +520,8 @@ export function AdaptivePrecisionSlider({
           onKeyDown={handleKeyDown}
           className="absolute top-1/2 size-[20px] -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)]"
           style={{
-            left: fracPct,
+            left: 0,
+            x: thumbX,
             background: surface,
             borderColor: borderStrong,
           }}

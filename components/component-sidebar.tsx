@@ -207,7 +207,7 @@ const componentRoutes: ComponentGroup[] = [
   {
     title: "Controls & Inputs",
     routes: [
-      { name: "Adaptive precision slider", path: "/controls/adaptive-precision-slider" },
+      { name: "Adaptive Precision Slider", path: "/controls/adaptive-precision-slider" },
 
       // @slot click-wheel
 

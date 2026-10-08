@@ -15,12 +15,17 @@ function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
+// Two decimals on the 0.01 grid, three once the fine step (0.001) lands between hundredths.
+function fineDecimals(v: number) {
+  return Number.isInteger(Math.round(v * 1e6) / 1e4) ? 2 : 3;
+}
+
 function formatEv(v: number) {
-  return `${v >= 0 ? "+" : ""}${v.toFixed(2)} EV`;
+  return `${v >= 0 ? "+" : ""}${v.toFixed(fineDecimals(v))} EV`;
 }
 
 function formatMeters(v: number) {
-  return `${v.toFixed(2)} m`;
+  return `${v.toFixed(fineDecimals(v))} m`;
 }
 
 // 25 frames a second. Values sit on a 0.04s grid, so frames are whole numbers.
@@ -87,11 +92,11 @@ export default function Page() {
           precisionFalloff={falloff}
           showGain={showGain}
         />
-        <p className="text-[12px] text-[color:var(--bjork-text-soft,rgba(237,237,237,0.36))]">
+        <p className="px-[12px] text-[12px] text-[color:var(--bjork-text-soft,rgba(237,237,237,0.36))]">
           Drag, then drift away from the track to fine-tune.
         </p>
         {!isPreview && (
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3 px-[12px]">
             <BjorkButtonGroup aria-label="Precision falloff">
               {[24, 48, 96].map((px) => (
                 <BjorkButton
