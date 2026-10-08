@@ -121,6 +121,7 @@ const componentRoutes: ComponentGroup[] = [
 
       // @slot route-trace
 
+      { name: "Sankey Flow", path: "/charts/sankey-flow" },
       { name: "Scatter Brush", path: "/charts/scatter-brush" },
       { name: "Slope Chart", path: "/charts/slope-chart" },
       { name: "Spark Table", path: "/charts/spark-table" },

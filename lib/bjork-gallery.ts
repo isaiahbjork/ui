@@ -1279,6 +1279,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork136",
+    slug: "sankey-flow",
+    title: "Sankey flow",
+    route: "/charts/sankey-flow",
+    sourcePath: "components/bjork-ui/charts/sankey-flow.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {
