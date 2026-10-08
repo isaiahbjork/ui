@@ -176,7 +176,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Ruler Carousel", path: "/galleries/ruler-carousel" },
       { name: "Minimap Scrollbar", path: "/navigation/minimap-scrollbar" },
 
-      // @slot radial-command-ring
+      { name: "Radial Command Ring", path: "/navigation/radial-command-ring" },
 
     ],
   },
