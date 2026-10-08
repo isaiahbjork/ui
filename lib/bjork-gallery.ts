@@ -931,7 +931,7 @@ export const galleryItems: GalleryItem[] = [
     hasStaticPreview: false,
   },
   {
-    id: "bjork94",
+    id: "bjork114",
     slug: "sumi",
     title: "Sumi",
     route: "https://isaiahbjork.com/sumi",
@@ -954,6 +954,8 @@ export const galleryItems: GalleryItem[] = [
     preview: "radial",
     accent: "#ffc107",
   },
+
+  // @slot bjork94 radial-command-ring
 
   // @slot bjork95 adaptive-precision-slider
 
