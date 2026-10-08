@@ -562,7 +562,7 @@ function studioOrigin() {
   return process.env.NODE_ENV === "development" ? "http://localhost:3456" : "https://isaiahbjork.com";
 }
 
-function StudioArchivePreview({ studio, isLight }: { studio: "silt" | "intaglio" | "phosphor"; isLight: boolean }) {
+function StudioArchivePreview({ studio, isLight }: { studio: "silt" | "intaglio" | "phosphor" | "sumi"; isLight: boolean }) {
   const tone = isLight ? "light" : "dark";
   return (
     <div className={cn("relative h-full w-full overflow-hidden", isLight ? "bg-white" : "bg-[#050505]")}>

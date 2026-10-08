@@ -24,7 +24,7 @@ export interface GalleryItem {
     | "shader"
     | "studio";
   /** Live studio embed. The card links out; the shader stays on the tool page. */
-  studio?: "silt" | "intaglio" | "phosphor";
+  studio?: "silt" | "intaglio" | "phosphor" | "sumi";
   accent: string;
   isNew?: boolean;
   hasStaticPreview?: boolean;
@@ -931,6 +931,19 @@ export const galleryItems: GalleryItem[] = [
     hasStaticPreview: false,
   },
   {
+    id: "bjork94",
+    slug: "sumi",
+    title: "Sumi",
+    route: "https://isaiahbjork.com/sumi",
+    sourcePath: "",
+    tier: "lab",
+    collection: "Shaders",
+    preview: "studio",
+    studio: "sumi",
+    accent: "#2f43cf",
+    hasStaticPreview: false,
+  },
+  {
     id: "bjork93",
     slug: "timer",
     title: "Timer",
@@ -941,8 +954,6 @@ export const galleryItems: GalleryItem[] = [
     preview: "radial",
     accent: "#ffc107",
   },
-
-  // @slot bjork94 radial-command-ring
 
   // @slot bjork95 adaptive-precision-slider
 
