@@ -155,7 +155,7 @@ export default function Page() {
     <SimpleComponentDemoPage
       item={item}
       description="A live system diagram routed like a circuit board. Traffic shows as packets, and failure shows as silence."
-      dependencies={["framer-motion", "lucide-react"]}
+      dependencies={["framer-motion"]}
       usageCode={usageCode}
       details={
         <div className="flex flex-col gap-3">

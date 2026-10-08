@@ -426,6 +426,7 @@ export function RouteTrace({
   const [clock, setClock] = useState(0);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
+  const [edgesOver, setEdgesOver] = useState({ start: false, end: false });
 
   const resolved = useMemo(
     () => resolveNodes(nodes, { w: cellW, h: cellH }),
@@ -457,12 +458,27 @@ export function RouteTrace({
 
   const scale = size.width > 0 ? Math.min(MAX_SCALE, Math.max(MIN_SCALE, size.width / bounds.w)) : 1;
 
+  const syncOverflow = () => {
+    const el = rootRef.current;
+    if (!el) return;
+    setEdgesOver({
+      start: el.scrollLeft > 1,
+      end: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
+    });
+  };
+
+  useEffect(() => {
+    syncOverflow();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [size.width, scale, bounds.w]);
+
   // Attract: one non-entry node goes down for 2.5s every 5s, and throughputs drift. Input pauses it for 4s.
   const attractOn = attract && !reduced && !frozen;
 
   useEffect(() => {
     if (!attractOn) return;
     const id = window.setInterval(() => {
+      if (rootRef.current?.dataset.loop !== "running") return;
       if (performance.now() - lastInputRef.current < ATTRACT_IDLE_MS) return;
       clockRef.current += ATTRACT_TICK_MS;
       setClock(clockRef.current);
@@ -544,6 +560,11 @@ export function RouteTrace({
       onPointerMove={() => stampInput(lastInputRef)}
       onPointerDown={() => stampInput(lastInputRef)}
       onKeyDown={() => stampInput(lastInputRef)}
+      onScroll={syncOverflow}
+      style={{
+        maskImage: `linear-gradient(to right, ${edgesOver.start ? "transparent" : "#000"} 0, #000 24px, #000 calc(100% - 24px), ${edgesOver.end ? "transparent" : "#000"} 100%)`,
+        WebkitMaskImage: `linear-gradient(to right, ${edgesOver.start ? "transparent" : "#000"} 0, #000 24px, #000 calc(100% - 24px), ${edgesOver.end ? "transparent" : "#000"} 100%)`,
+      }}
       className={cn("relative w-full min-w-0 overflow-x-auto overflow-y-hidden p-2", className)}
     >
       <style>{ROUTE_CSS}</style>
@@ -641,7 +662,8 @@ export function RouteTrace({
             const dimmed = activeId !== null && activeId !== n.id;
             const ledColour =
               st === "ok" ? palette.success : st === "degraded" ? palette.warning : palette.error;
-            const ledTop = n.sublabel ? 11 : 17;
+            // LED centre on the label's cap-height centre (blur test), 1px border included
+            const ledTop = n.sublabel ? 10 : 16;
             const selected = selectedId === n.id;
 
             return (
@@ -683,9 +705,10 @@ export function RouteTrace({
                       aria-hidden="true"
                       className="pointer-events-none absolute size-1"
                       style={{
-                        top: p.y - (c.y - NODE_HALF_H) - 2,
-                        left: p.side === "in" ? -2 : undefined,
-                        right: p.side === "out" ? -2 : undefined,
+                        // -2 half pin, -1 border: children are placed in the padding box
+                        top: p.y - (c.y - NODE_HALF_H) - 3,
+                        left: p.side === "in" ? -3 : undefined,
+                        right: p.side === "out" ? -3 : undefined,
                         background: `var(--bjork-border-strong, ${palette.borderStrong})`,
                       }}
                     />
