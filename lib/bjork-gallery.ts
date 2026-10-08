@@ -13,6 +13,7 @@ export interface GalleryItem {
     | "dock"
     | "orb"
     | "ruler"
+    | "minimap"
     | "video"
     | "table"
     | "rope"
@@ -983,7 +984,18 @@ export const galleryItems: GalleryItem[] = [
 
   // @slot bjork107 mosaic-settle
 
-  // @slot bjork108 minimap-scrollbar
+  {
+    id: "bjork108",
+    slug: "minimap-scrollbar",
+    title: "Minimap scrollbar",
+    route: "/navigation/minimap-scrollbar",
+    sourcePath: "components/bjork-ui/navigation/minimap-scrollbar.tsx",
+    tier: "copy",
+    collection: "Navigation",
+    preview: "minimap",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork109 morph-loader
 
