@@ -48,3 +48,6 @@ yarn-error.log*
 next-env.d.ts
 
 /research/
+
+# playwright
+/.playwright-mcp/
