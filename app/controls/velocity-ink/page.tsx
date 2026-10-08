@@ -34,7 +34,7 @@ function Demo() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ShellSegmented
-          label="Pen"
+          label="Tool"
           value={pen}
           options={PEN_OPTIONS}
           onChange={(next) => setPen(next as InkPen)}

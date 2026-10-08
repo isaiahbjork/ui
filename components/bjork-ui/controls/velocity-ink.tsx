@@ -140,6 +140,9 @@ function widthsFor(stroke: InkStroke, [lo, hi]: Range, live: boolean): number[] 
     out[i] = w;
   }
 
+  // Sample 0 has no speed yet; give it the first measured width so fast strokes don't start fat.
+  if (n > 1) out[0] = out[1];
+
   if (stroke.pen === "brush") {
     for (let i = 0; i < n; i++) {
       const head = i < 8 ? 0.3 + 0.7 * (i / 8) : 1;
@@ -356,7 +359,7 @@ function exportSvg(strokes: InkStroke[], w: number, h: number, width?: Range): s
 }
 
 function textSvg(text: string, w: number, h: number, ink: string): string {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r2(w)} ${r2(h)}"><text x="${(w * 0.08).toFixed(2)}" y="${(h * 0.72).toFixed(2)}" font-family="serif" font-style="italic" font-size="40" fill="${escAttr(ink)}">${escXml(text)}</text></svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${r2(w)} ${r2(h)}"><text x="${(w * 0.08).toFixed(2)}" y="${(h * 0.72).toFixed(2)}" font-family="'Bjork Grotesk Display', sans-serif" font-style="italic" font-size="40" fill="${escAttr(ink)}">${escXml(text)}</text></svg>`;
 }
 
 /** Serialises strokes as an SVG string: one path per stroke, coordinates to two decimals. */
@@ -1009,8 +1012,8 @@ export function VelocityInk({
             style={{
               left: "max(8px, calc(8% - 20px))",
               top: "72%",
-              // Optical: the cross reads low against the line, so it sits 1px higher (blur test).
-              transform: "translateY(calc(-50% - 1px))",
+              // Optical: the cross reads low against the line, so it sits 0.5px higher (blur test: -1px left the ink 0.5px above the line).
+              transform: "translateY(calc(-50% - 0.5px))",
               color: tokens.textSoft,
             }}
           >
@@ -1122,6 +1125,7 @@ export function VelocityInk({
           </label>
           <input
             id={inputId}
+            autoFocus
             value={typedText}
             onChange={(e) => onTypeChange(e.target.value)}
             autoComplete="off"
