@@ -716,6 +716,11 @@
           "target": "@components/bjork-ui/galleries/ruler-carousel.tsx"
         },
         {
+          "path": "hooks/use-is-dark-theme.ts",
+          "type": "registry:hook",
+          "target": "@hooks/use-is-dark-theme.ts"
+        },
+        {
           "path": "lib/utils.ts",
           "type": "registry:lib",
           "target": "@lib/utils.ts"
@@ -5923,6 +5928,11 @@
           "target": "@components/bjork-ui/hud/overlay-2.tsx"
         },
         {
+          "path": "hooks/use-is-dark-theme.ts",
+          "type": "registry:hook",
+          "target": "@hooks/use-is-dark-theme.ts"
+        },
+        {
           "path": "components/bjork-ui/hud/hud-button.tsx",
           "type": "registry:component",
           "target": "@components/bjork-ui/hud/hud-button.tsx"
@@ -6122,6 +6132,11 @@
           "path": "components/bjork-ui/hud/hud-button.tsx",
           "type": "registry:component",
           "target": "@components/bjork-ui/hud/hud-button.tsx"
+        },
+        {
+          "path": "hooks/use-is-dark-theme.ts",
+          "type": "registry:hook",
+          "target": "@hooks/use-is-dark-theme.ts"
         },
         {
           "path": "components/ui/hyper-text.tsx",
