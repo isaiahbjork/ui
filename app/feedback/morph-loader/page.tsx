@@ -44,7 +44,7 @@ function DeployButton() {
       className="min-w-[156px] justify-center has-[>[role=status]:first-child]:pl-3.5"
     >
       {phase !== "idle" ? (
-        <MorphLoader size={16} state={phase === "deploying" ? "loading" : "done"} />
+        <MorphLoader size={16} state={phase === "deploying" ? "loading" : "done"} labels={{ loading: "", done: "" }} />
       ) : null}
       {label}
     </BjorkButton>
@@ -110,13 +110,13 @@ export default function Page() {
             <Caption>40 · done</Caption>
           </div>
           <div className="flex flex-col items-center gap-3">
-            <MorphLoader size={64} state="error" progress={preview ? 0.5 : undefined} />
+            <MorphLoader size={64} state="error" />
             <Caption>64 · error</Caption>
           </div>
         </div>
 
         <div className="flex flex-col items-center gap-6">
-          <MorphLoader size={64} state={rowState} target={target} />
+          <MorphLoader size={64} state={rowState} target={target} progress={preview ? 0.75 : undefined} />
           {!preview ? (
             <div className="flex w-[min(320px,calc(100vw-56px))] flex-col gap-2">
               <ShellSegmented

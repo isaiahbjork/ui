@@ -227,7 +227,7 @@ const componentRoutes: ComponentGroup[] = [
   {
     title: "Feedback & Status",
     routes: [
-      { name: "Morph loader", path: "/feedback/morph-loader" },
+      { name: "Morph Loader", path: "/feedback/morph-loader" },
 
     ],
   },

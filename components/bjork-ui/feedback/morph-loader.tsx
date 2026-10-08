@@ -67,10 +67,9 @@ const DEFAULT_LABELS: Record<MorphState, string> = {
   error: "Failed",
   idle: "",
 };
-// OPTICAL-ALIGNMENT: the check's centroid sits low-left, so the check target is nudged
-// 0.3px right and 0.4px up (24-unit space). Checked with the blur test.
-const CHECK_NUDGE_X = 0.3;
-const CHECK_NUDGE_Y = -0.4;
+// Blur test (ink centroid, round caps, 24-space): the unnudged check sits +0.13 right, +0.86 low. Nudged back to the box centre.
+const CHECK_NUDGE_X = -0.15;
+const CHECK_NUDGE_Y = -0.8;
 
 // One shared keyframe for every loader. It is injected once into <head>, not into the component's markup.
 const SPIN_NAME = "morph-loader-spin";
