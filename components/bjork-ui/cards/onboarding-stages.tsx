@@ -371,7 +371,7 @@ export function OnboardingStages({
           </h1>
           {showPercentage && (
             <motion.div
-              className={cn("text-md font-bold", themeColors.percentageText)}
+              className={cn("text-md font-bold tabular-nums", themeColors.percentageText)}
               variants={shouldAnimate ? percentageVariants : {}}
             >
               {displayPercentage}%

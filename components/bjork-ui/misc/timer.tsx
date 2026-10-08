@@ -243,7 +243,7 @@ export function Timer({
           variants={itemVariants}
         >
           <motion.div 
-            className="text-7xl font-light mb-2"
+            className="text-7xl font-light mb-2 tabular-nums"
             style={{ color: textColor }}
             key={time}
             initial={{ scale: 0.9 }}
@@ -300,7 +300,7 @@ export function Timer({
             {isRunning ? (
               <Pause className="w-5 h-5" />
             ) : (
-              <Play className="w-5 h-5 ml-0.5" />
+              <Play className="w-5 h-5 translate-x-px" />
             )}
           </motion.div>
         </motion.button>

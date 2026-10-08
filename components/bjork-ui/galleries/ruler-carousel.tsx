@@ -31,9 +31,14 @@ const createInfiniteItems = (originalItems: CarouselItem[]) => {
   return items;
 };
 
+// Item geometry shared by the track layout and the centering math below.
+const ITEM_WIDTH = 400;
+const ITEM_GAP = 100;
+
 const RulerLines = ({
   top = true,
-  totalLines = 100,
+  // Odd count: index 50 sits exactly on 50%, so the centre tick is the true centre.
+  totalLines = 101,
   isDark,
 }: {
   top?: boolean;
@@ -42,10 +47,12 @@ const RulerLines = ({
 }) => {
   const lines = [];
   const lineSpacing = 100 / (totalLines - 1);
+  const centerIndex = (totalLines - 1) / 2;
 
   for (let i = 0; i < totalLines; i++) {
+    // Majors every 5th tick; 0..100 is symmetric around the centre for 101 ticks.
     const isFifth = i % 5 === 0;
-    const isCenter = i === Math.floor(totalLines / 2);
+    const isCenter = i === centerIndex;
 
     let height = "h-3";
     let color = isDark ? "#ededed55" : "#17171733";
@@ -60,16 +67,22 @@ const RulerLines = ({
 
     const positionClass = top ? "" : "bottom-0";
 
+    // -translate-x-1/2 centres the 2px hairline on its percentage position.
     lines.push(
       <div
         key={i}
-        className={`absolute w-0.5 ${height} ${positionClass}`}
+        className={`absolute w-0.5 -translate-x-1/2 ${height} ${positionClass}`}
         style={{ left: `${i * lineSpacing}%`, backgroundColor: color }}
       />
     );
   }
 
-  return <div className="relative w-full h-8 px-4">{lines}</div>;
+  // Ticks live in the content box (inset-x-4), not the padding box.
+  return (
+    <div className="relative h-8 w-full">
+      <div className="absolute inset-x-4 inset-y-0">{lines}</div>
+    </div>
+  );
 };
 
 export function RulerCarousel({
@@ -84,10 +97,11 @@ export function RulerCarousel({
   const infiniteItems = createInfiniteItems(originalItems);
   const itemsPerSet = originalItems.length;
 
-  // Start with the middle set, item 4 (UNIQLO)
-  const [activeIndex, setActiveIndex] = useState(itemsPerSet + 4);
+  // Start on the middle item of the middle set (index floor(N/2), e.g. ON CLOUD for 9 items).
+  const startIndex = itemsPerSet + Math.floor(itemsPerSet / 2);
+  const [activeIndex, setActiveIndex] = useState(startIndex);
   const [isResetting, setIsResetting] = useState(false);
-  const previousIndexRef = useRef(itemsPerSet + 4);
+  const previousIndexRef = useRef(startIndex);
 
   const handleItemClick = (newIndex: number) => {
     if (isResetting) return;
@@ -168,9 +182,11 @@ export function RulerCarousel({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isResetting]);
 
-  // Calculate target position - center the active item
-  const centerPosition = 5; // We want item 5 (index 4) to be centered initially
-  const targetX = -500 + (centerPosition - (activeIndex % itemsPerSet)) * 500;
+  // The track starts at the centre line (left-1/2) and items sit at pitch
+  // (ITEM_WIDTH + ITEM_GAP). Shift so the active item's centre lands on the
+  // centre line: works for any item count, no hardcoded offset.
+  const pitch = ITEM_WIDTH + ITEM_GAP;
+  const targetX = -(activeIndex * pitch + ITEM_WIDTH / 2);
 
   // Get current page info
   const currentPage = (activeIndex % itemsPerSet) + 1;
@@ -184,7 +200,8 @@ export function RulerCarousel({
         </div>
         <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
           <motion.div
-            className="flex items-center gap-[100px]"
+            className="absolute left-1/2 top-0 flex h-full items-center"
+            style={{ gap: ITEM_GAP }}
             animate={{
               x: isResetting ? targetX : targetX,
             }}
@@ -208,6 +225,8 @@ export function RulerCarousel({
                   onClick={() => handleItemClick(index)}
                   className={cn(
                     "flex cursor-pointer items-center justify-center whitespace-nowrap text-4xl font-bold tracking-[-0.055em] md:text-6xl",
+                    // Cap-height centring: all-caps ink sits ~0.023em below the line box centre (1.36px at 60px), so lift it.
+                    "-translate-y-[0.0227em]",
                     isActive
                       ? "text-[#ec5c13]"
                       : isDark
@@ -228,7 +247,7 @@ export function RulerCarousel({
                         }
                   }
                   style={{
-                    width: "400px",
+                    width: ITEM_WIDTH,
                   }}
                 >
                   {item.title}
@@ -250,17 +269,18 @@ export function RulerCarousel({
           className="flex cursor-pointer items-center justify-center transition hover:text-[#ec5c13]"
           aria-label="Previous item"
         >
-          <Rewind className="h-5 w-5" />
+          {/* Blur test: left-pointing ink centroid sits ~1.25px right of the box centre; pull back left. */}
+          <Rewind className="h-5 w-5 -translate-x-px" />
         </button>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">
+          <span className="text-sm font-medium tabular-nums">
             {currentPage}
           </span>
           <span className="text-sm opacity-55">
             /
           </span>
-          <span className="text-sm font-medium">
+          <span className="text-sm font-medium tabular-nums">
             {totalPages}
           </span>
         </div>
@@ -271,7 +291,8 @@ export function RulerCarousel({
           className="flex cursor-pointer items-center justify-center transition hover:text-[#ec5c13]"
           aria-label="Next item"
         >
-          <FastForward className="h-5 w-5" />
+          {/* Mirror of Rewind: ink sits ~1.25px left of centre; push right. */}
+          <FastForward className="h-5 w-5 translate-x-px" />
         </button>
       </div>
     </div>

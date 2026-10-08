@@ -309,9 +309,9 @@ const VideoComponent = ({
                     className="absolute bottom-0 left-0 w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-200 group"
                   >
                     {isPlaying ? (
-                      <Pause size={14} className="text-white ml-0.5" />
+                      <Pause size={14} className="text-white" />
                     ) : (
-                      <Play size={14} className="text-white ml-0.5" />
+                      <Play size={14} className="text-white translate-x-px" />
                     )}
                   </button>
                 </div>
@@ -328,7 +328,7 @@ const VideoComponent = ({
                       palette.playBg
                     )}
                   >
-                    <Play size={28} className={cn("ml-1", palette.playText)} />
+                    <Play size={28} className={cn("translate-x-0.5", palette.playText)} />
                   </div>
                 </div>
               )}

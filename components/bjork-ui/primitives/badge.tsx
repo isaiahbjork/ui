@@ -22,9 +22,9 @@ const bjorkBadgeVariants = cva(
           "border-[color:var(--bjork-accent-muted)] bg-[var(--bjork-accent-badge)] text-[color:var(--bjork-accent-badge-foreground)] shadow-[var(--bjork-shadow-soft)]",
       },
       size: {
-        sm: "px-1.5 py-0.5 text-[11px]",
-        md: "px-2 py-1 text-xs",
-        lg: "px-2.5 py-1.5 text-sm",
+        sm: "px-1.5 py-0.5 text-[11px] has-[>svg:first-child]:pl-1 has-[>svg:last-child]:pr-1",
+        md: "px-2 py-1 text-xs has-[>svg:first-child]:pl-1.5 has-[>svg:last-child]:pr-1.5",
+        lg: "px-2.5 py-1.5 text-sm has-[>svg:first-child]:pl-2 has-[>svg:last-child]:pr-2",
       },
     },
     defaultVariants: {

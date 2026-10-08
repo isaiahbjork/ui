@@ -28,9 +28,9 @@ const bjorkButtonVariants = cva(
           "bjork-layered-button-raised tracking-tight",
       },
       size: {
-        sm: "h-8 px-3 text-xs",
-        md: "h-[45px] px-4",
-        lg: "h-12 px-5 text-[15px]",
+        sm: "h-8 px-3 text-xs has-[>svg:first-child]:pl-2.5 has-[>svg:last-child]:pr-2.5",
+        md: "h-[45px] px-4 has-[>svg:first-child]:pl-3.5 has-[>svg:last-child]:pr-3.5",
+        lg: "h-12 px-5 text-[15px] has-[>svg:first-child]:pl-4.5 has-[>svg:last-child]:pr-4.5",
         icon: "size-[45px] p-0",
       },
     },

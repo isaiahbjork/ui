@@ -16,7 +16,7 @@ export function BjorkPagination() {
     <Pagination>
       <PaginationContent className="rounded-[18px] border border-[color:var(--bjork-border-muted)] bg-[var(--bjork-surface)] p-1.5 shadow-[var(--bjork-shadow-surface)]">
         <PaginationItem>
-          <PaginationPrevious className="h-9 rounded-[12px] !border-transparent px-3 text-[color:var(--bjork-text-muted)] shadow-none hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)] hover:shadow-[var(--bjork-shadow-soft)]" />
+          <PaginationPrevious className="h-9 rounded-[12px] !border-transparent pl-2.5 pr-3 text-[color:var(--bjork-text-muted)] shadow-none hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)] hover:shadow-[var(--bjork-shadow-soft)]" />
         </PaginationItem>
         {[1, 2, 3].map((page) => (
           <PaginationItem key={page}>
@@ -37,7 +37,7 @@ export function BjorkPagination() {
           <PaginationEllipsis className="text-[color:var(--bjork-text-faint)]" />
         </PaginationItem>
         <PaginationItem>
-          <PaginationNext className="h-9 rounded-[12px] !border-transparent px-3 text-[color:var(--bjork-text-muted)] shadow-none hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)] hover:shadow-[var(--bjork-shadow-soft)]" />
+          <PaginationNext className="h-9 rounded-[12px] !border-transparent pl-3 pr-2.5 text-[color:var(--bjork-text-muted)] shadow-none hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)] hover:shadow-[var(--bjork-shadow-soft)]" />
         </PaginationItem>
       </PaginationContent>
     </Pagination>

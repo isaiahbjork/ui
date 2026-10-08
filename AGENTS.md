@@ -772,3 +772,30 @@ These tokens automatically adapt between light and dark modes, ensuring consiste
 When working directly with SVGs use next-themes and the const isDark = theme === "dark" to determine the color of the svg.
 - useTheme() to get the current theme.
 This will ensure that the svg is always the correct color in both light and dark mode in our demos.
+
+## Optical Alignment
+
+Read these rules before changing any icon, tick, counter, label or button padding.
+
+Core rules:
+- Bounding boxes are the starting point, not the answer. Verify with the blur test (blur the element, see where the visual weight sits) and nudge by a few px where needed.
+- Nudge with `translate-*`, never `margin`, inside centred layouts. Comment each nudge with its value and reason.
+- Play/triangle glyphs follow the blur test direction. Our convention nudges play glyphs right (about 1px at 20px).
+- Icon-with-label buttons: trim 2px off the icon side with `has-[>svg:first-child]:pl-*` / `has-[>svg:last-child]:pr-*`. Never trim the label side.
+- Any number that changes (counters, percentages, timers, "page x of y") gets `tabular-nums`.
+- Ticks and hairlines: `absolute w-0.5 -translate-x-1/2` at `left: X%`. Use an odd tick count so the centre tick sits on 50%.
+- Derive centring offsets from item count, width and gap. Never hardcode a magic offset for one item count.
+- Do not disable `font-optical-sizing`. Do not force `font-variation-settings` unless the design requires it.
+
+Checklist for every component:
+1. Blur test: does the visual weight sit at the box centre? If not, add a px nudge.
+2. Nudges use `translate-*` and are written in px.
+3. Icon-with-label controls trim the icon side by 2px.
+4. Play, triangle and arrow glyphs follow the blur test direction.
+5. Changing numbers use `tabular-nums`.
+6. Ticks and dividers are centred with `-translate-x-1/2` (or equivalent), and centre elements sit at exactly 50%.
+7. Centring derives from data counts, not constants.
+8. Labels in pills and buttons are centred on cap height, or verified visually.
+9. Round and triangular glyphs in a shared box are balanced by eye.
+10. Display type keeps `font-optical-sizing: auto`.
+11. Each nudge has a comment with the value and the reason.

@@ -842,7 +842,7 @@ export function ContactsTable({
 
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between px-2">
-          <div className={`text-xs ${palette.secondaryText}`}>
+          <div className={`text-xs tabular-nums ${palette.secondaryText}`}>
             Page {currentPage} of {totalPages} • {sortedAndFilteredContacts.length} contacts
           </div>
           

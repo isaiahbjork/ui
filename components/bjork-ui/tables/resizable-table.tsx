@@ -721,7 +721,7 @@ export function ResizableTable({
 
       {totalPages > 1 && (
         <div className="mt-4 flex items-center justify-between px-2">
-          <div className="text-xs text-muted-foreground/70">
+          <div className="text-xs tabular-nums text-muted-foreground/70">
             Page {currentPage} of {totalPages} • {sortedEmployees.length} employees
           </div>
           

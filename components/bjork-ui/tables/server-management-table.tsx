@@ -251,7 +251,7 @@ export function ServerManagementTable({
             />
           ))}
         </div>
-        <span className={`min-w-[3rem] font-mono text-sm font-medium ${palette.primaryText}`}>
+        <span className={`min-w-[3rem] font-mono text-sm font-medium tabular-nums ${palette.primaryText}`}>
           {percentage}%
         </span>
       </div>
