@@ -164,7 +164,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Message Dock", path: "/hud/message-dock" },
       { name: "Timer", path: "/misc/timer" },
       { name: "Voice Powered Orb", path: "/interactive/voice-powered-orb" },
-      // @slot elastic-frame
+      { name: "Elastic Frame", path: "/interactive/elastic-frame" },
 
     ],
   },
