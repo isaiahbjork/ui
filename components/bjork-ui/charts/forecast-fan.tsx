@@ -539,7 +539,8 @@ export function ForecastFan({
       ctx.strokeStyle = p.stage;
       ctx.stroke();
       if (tip?.el) {
-        const pos = placeTooltip(x, y, tip.size.w, tip.size.h, w, h, 14);
+        // Bounded by the plot, so the card never sits on the band labels or the last-value badge in the gutter.
+        const pos = placeTooltip(x, y, tip.size.w, tip.size.h, plot.r, h, 14);
         tip.el.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
       }
     }
