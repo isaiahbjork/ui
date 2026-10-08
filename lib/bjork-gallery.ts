@@ -963,7 +963,18 @@ export const galleryItems: GalleryItem[] = [
 
   // @slot bjork97 velocity-ink
 
-  // @slot bjork98 spring-tuner
+  {
+    id: "bjork98",
+    slug: "spring-tuner",
+    title: "Spring tuner",
+    route: "/utilities/spring-tuner",
+    sourcePath: "components/bjork-ui/utilities/spring-tuner.tsx",
+    tier: "copy",
+    collection: "Utilities",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork99 live-line
 
