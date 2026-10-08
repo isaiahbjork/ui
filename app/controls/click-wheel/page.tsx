@@ -81,9 +81,13 @@ export default function Page() {
       details={details}
       previewScaleClassName="w-[360px] scale-[0.9]"
       previewCaptureScaleClassName="w-[360px] scale-[1.08]"
+      previewLayout={isPreview ? "list" : "single"}
     >
       {isPreview ? (
-        <ClickWheel items={TRACKS} value={4} attract={false} />
+        // Preview pose: the wheel alone as the hero, centred in the 900x520 clip. Lit detent at value 4.
+        <div className="flex w-full justify-center">
+          <ClickWheel items={TRACKS} value={4} attract={false} layout="wheel-only" size={340} />
+        </div>
       ) : (
         <ClickWheel
           items={TRACKS}
