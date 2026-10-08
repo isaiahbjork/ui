@@ -7,7 +7,7 @@ export const BJORK_PALETTE = {
     border: "#232323", borderStrong: "#343434",
     text: "#ededed", textMedium: "rgba(237,237,237,0.72)", textMuted: "rgba(237,237,237,0.52)",
     textSoft: "rgba(237,237,237,0.36)", textFaint: "rgba(237,237,237,0.22)", hair: "rgba(237,237,237,0.12)",
-    accent: "#ec5c13", accentInk: "#ec5c13", accentSoft: "rgba(236,92,19,0.12)", accentMuted: "rgba(236,92,19,0.24)",
+    accent: "#ec5c13", accentInk: "#ec5c13", accentFill: "#b84a12", accentSoft: "rgba(236,92,19,0.12)", accentMuted: "rgba(236,92,19,0.24)",
     accentFg: "#fff2ea", success: "#4cc38a", warning: "#f2b544", error: "#ff5c4d",
   },
   light: {
@@ -15,7 +15,7 @@ export const BJORK_PALETTE = {
     border: "#eee6db", borderStrong: "#e1d7c8",
     text: "#171717", textMedium: "rgba(23,23,23,0.72)", textMuted: "rgba(23,23,23,0.52)",
     textSoft: "rgba(23,23,23,0.36)", textFaint: "rgba(23,23,23,0.22)", hair: "rgba(23,23,23,0.10)",
-    accent: "#ec7d43", accentInk: "#b4531f", accentSoft: "rgba(236,125,67,0.10)", accentMuted: "rgba(236,125,67,0.20)",
+    accent: "#ec7d43", accentInk: "#b4531f", accentFill: "#ec7d43", accentSoft: "rgba(236,125,67,0.10)", accentMuted: "rgba(236,125,67,0.20)",
     accentFg: "#3f2112", success: "#1f8a55", warning: "#a86b00", error: "#c8361f",
   },
 } as const;

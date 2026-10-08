@@ -976,7 +976,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork99 live-line
+  {
+    id: "bjork99",
+    slug: "live-line",
+    title: "Live line",
+    route: "/charts/live-line",
+    sourcePath: "components/bjork-ui/charts/live-line.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork100 flap-ledger
 
