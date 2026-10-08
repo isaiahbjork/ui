@@ -124,6 +124,7 @@ type SidebarSortMode = "collection" | "id";
 
 const sidebarCollectionOrder = [
   "UI",
+  "Blocks",
   "Charts",
   "Interactive",
   "AI",

@@ -28,6 +28,16 @@ const componentRoutes: ComponentGroup[] = [
     routes: [{ name: "Introduction", path: "/docs" }],
   },
   {
+    title: "Blocks",
+    routes: [
+      { name: "Marketing Hero", path: "/blocks/marketing-hero-product" },
+      { name: "Marketing Feature Bento", path: "/blocks/marketing-feature-bento" },
+      { name: "Marketing Pricing", path: "/blocks/marketing-pricing" },
+      { name: "Marketing Testimonials Wall", path: "/blocks/marketing-testimonials-wall" },
+      { name: "Marketing CTA and Footer", path: "/blocks/marketing-cta-footer" },
+    ],
+  },
+  {
     title: "UI Primitives",
     routes: [
       { name: "Accordion", path: "/primitives/accordion" },
