@@ -1112,7 +1112,18 @@ export const galleryItems: GalleryItem[] = [
 
   // @slot bjork104 handoff-beam
 
-  // @slot bjork105 lattice-orb
+  {
+    id: "bjork105",
+    slug: "lattice-orb",
+    title: "Lattice orb",
+    route: "/ai/lattice-orb",
+    sourcePath: "components/bjork-ui/ai/lattice-orb.tsx",
+    tier: "lab",
+    collection: "AI",
+    preview: "orb",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork106 torn-edge-reveal
 

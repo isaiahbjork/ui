@@ -72,7 +72,7 @@ const componentRoutes: ComponentGroup[] = [
 
       // @slot handoff-beam
 
-      // @slot lattice-orb
+      { name: "Lattice Orb", path: "/ai/lattice-orb" },
 
     ],
   },
