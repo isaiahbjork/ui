@@ -25,7 +25,7 @@ function demoPanels(tone: "light" | "dark"): ApertureDivePanel[] {
       meta: "iOS · Skin analysis",
       media: { type: "video", src: "/aperture-dive/glass-onboarding.mp4", poster: "/aperture-dive/glass-onboarding.jpg", ...PHONE },
     },
-    { id: "hover-image-gallery", title: "Hover image gallery", media: { type: "image", src: shot("hover-image-gallery") } },
+    { id: "message-dock", title: "Message dock", media: { type: "image", src: shot("message-dock") } },
     { id: "voice-powered-orb", title: "Voice powered orb", media: { type: "image", src: shot("voice-powered-orb") } },
     {
       id: "betlytics-tracking",
@@ -42,7 +42,7 @@ function demoPanels(tone: "light" | "dark"): ApertureDivePanel[] {
       meta: "iOS · AI analyst",
       media: { type: "video", src: "/aperture-dive/betlytics-ai-chat.mp4", poster: "/aperture-dive/betlytics-ai-chat.jpg", ...PHONE },
     },
-    { id: "product-reveal", title: "Product reveal card", media: { type: "image", src: shot("product-reveal-card") } },
+    { id: "hud-graph", title: "HUD graph", media: { type: "image", src: shot("hud-graph") } },
     { id: "radial-chart", title: "Animated radial chart", media: { type: "image", src: shot("animated-radial-chart") } },
   ];
 }
