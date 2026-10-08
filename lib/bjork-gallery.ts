@@ -1231,6 +1231,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork132",
+    slug: "treemap",
+    title: "Treemap",
+    route: "/charts/treemap",
+    sourcePath: "components/bjork-ui/charts/treemap.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {

@@ -141,7 +141,8 @@ export function formatPercent(v: number, digits = 0): string {
 export function formatSigned(v: number, format: (n: number) => string = (n) => formatNumber(n)): string {
   if (!Number.isFinite(v)) return "–";
   const body = format(Math.abs(v));
-  if (Math.abs(v) < 1e-12) return body;
+  // A value that rounds to zero carries no sign.
+  if (Math.abs(v) < 1e-12 || !/[1-9]/.test(body)) return body;
   return `${v > 0 ? "+" : "−"}${body}`;
 }
 

@@ -123,6 +123,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Slope Chart", path: "/charts/slope-chart" },
       { name: "Spark Table", path: "/charts/spark-table" },
       { name: "State Timeline", path: "/charts/state-timeline" },
+      { name: "Treemap", path: "/charts/treemap" },
       { name: "Violin Plot", path: "/charts/violin-plot" },
       { name: "Waterfall Chart", path: "/charts/waterfall-chart" },
     ],
