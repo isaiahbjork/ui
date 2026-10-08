@@ -198,7 +198,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Periodic Table", path: "/tables/periodic-table" },
       { name: "Resizable Table", path: "/tables/resizable-table" },
       { name: "Server Management Table", path: "/tables/server-management" },
-      // @slot flap-ledger
+      { name: "Flap Ledger", path: "/tables/flap-ledger" },
 
     ],
   },
