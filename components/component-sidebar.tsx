@@ -216,7 +216,7 @@ const componentRoutes: ComponentGroup[] = [
   {
     title: "Utilities",
     routes: [
-      // @slot spring-tuner
+      { name: "Spring Tuner", path: "/utilities/spring-tuner" },
 
       // @slot stroke-morph-icon
 
