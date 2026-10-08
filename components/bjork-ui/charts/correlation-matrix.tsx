@@ -113,6 +113,17 @@ interface Run {
   attractAt: number;
 }
 
+// Style writes from the draw loop only when the value changes: a hover frame touches ~90 spans,
+// and rewriting identical styles still costs a recalc on each of them.
+const written = new WeakMap<HTMLElement, { opacity?: string; transform?: string }>();
+function put(el: HTMLElement, prop: "opacity" | "transform", value: string) {
+  let w = written.get(el);
+  if (!w) written.set(el, (w = {}));
+  if (w[prop] === value) return;
+  w[prop] = value;
+  el.style[prop] = value;
+}
+
 export function CorrelationMatrix({
   labels,
   matrix,
@@ -235,16 +246,17 @@ export function CorrelationMatrix({
           if (el) {
             const text = c.formatValue(r);
             if (el.textContent !== text) el.textContent = text;
-            el.dataset.strong = cellFill(p, r).strong ? "1" : "0";
-            el.style.opacity = String(clamp((g - 0.6) / 0.4, 0, 1) * dim);
-            el.style.transform = `translate3d(${(x + cell / 2).toFixed(1)}px, ${(y + cell / 2).toFixed(1)}px, 0) translate(-50%, -50%)`;
+            const strong = cellFill(p, r).strong ? "1" : "0";
+            if (el.dataset.strong !== strong) el.dataset.strong = strong;
+            put(el, "opacity", String(clamp((g - 0.6) / 0.4, 0, 1) * dim));
+            put(el, "transform", `translate3d(${(x + cell / 2).toFixed(1)}px, ${(y + cell / 2).toFixed(1)}px, 0) translate(-50%, -50%)`);
           }
         }
       }
     }
     for (let k = vi; k < valueRefs.current.length; k++) {
       const el = valueRefs.current[k];
-      if (el && el.style.opacity !== "0") el.style.opacity = "0";
+      if (el) put(el, "opacity", "0");
     }
 
     // Labels ride their slots.
@@ -252,15 +264,15 @@ export function CorrelationMatrix({
       const on = !hov || hov[0] === i || hov[1] === i;
       const R = rowRefs.current[i];
       if (R) {
-        R.style.transform = `translate3d(${(ox - 8).toFixed(1)}px, ${(oy + s.pos[i] * cell + cell / 2).toFixed(1)}px, 0) translate(-100%, -50%)`;
-        R.dataset.on = on ? "1" : "0";
-        R.style.opacity = String(Math.min(1, s.enter * 2));
+        put(R, "transform", `translate3d(${(ox - 8).toFixed(1)}px, ${(oy + s.pos[i] * cell + cell / 2).toFixed(1)}px, 0) translate(-100%, -50%)`);
+        if (R.dataset.on !== (on ? "1" : "0")) R.dataset.on = on ? "1" : "0";
+        put(R, "opacity", String(Math.min(1, s.enter * 2)));
       }
       const C = colRefs.current[i];
       if (C) {
-        C.style.transform = `translate3d(${(ox + s.pos[i] * cell + cell / 2).toFixed(1)}px, ${(oy + N * cell + 8).toFixed(1)}px, 0) translateX(-100%) rotate(-40deg)`;
-        C.dataset.on = on ? "1" : "0";
-        C.style.opacity = String(Math.min(1, s.enter * 2));
+        put(C, "transform", `translate3d(${(ox + s.pos[i] * cell + cell / 2).toFixed(1)}px, ${(oy + N * cell + 8).toFixed(1)}px, 0) translateX(-100%) rotate(-40deg)`);
+        if (C.dataset.on !== (on ? "1" : "0")) C.dataset.on = on ? "1" : "0";
+        put(C, "opacity", String(Math.min(1, s.enter * 2)));
       }
     }
 

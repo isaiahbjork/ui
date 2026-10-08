@@ -37,7 +37,7 @@ export default function Page() {
     >
       {isPreview ? (
         <div className="w-[540px]">
-          <CorrelationMatrix {...DEMO} defaultOrder="cluster" activeCell={[10, 5]} ariaLabel="Asset correlations" />
+          <CorrelationMatrix {...DEMO} defaultOrder="cluster" activeCell={[2, 0]} ariaLabel="Asset correlations" />
         </div>
       ) : (
         <DemoColumn width={600}>
