@@ -172,7 +172,7 @@ const componentRoutes: ComponentGroup[] = [
     title: "Layout & Navigation",
     routes: [
       { name: "Ruler Carousel", path: "/galleries/ruler-carousel" },
-      // @slot minimap-scrollbar
+      { name: "Minimap Scrollbar", path: "/navigation/minimap-scrollbar" },
 
       // @slot radial-command-ring
 
