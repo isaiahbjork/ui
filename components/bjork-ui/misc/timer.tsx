@@ -572,7 +572,7 @@ export function Timer({
             onPointerUp={onReadoutUp}
             onPointerCancel={onReadoutUp}
             className={cn(
-              "pointer-events-auto touch-none select-none rounded-xl font-display leading-none outline-none focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-[12px]",
+              "pointer-events-auto touch-none select-none rounded-xl font-display leading-none outline-none focus-visible:outline-solid focus-visible:outline-1 focus-visible:outline-offset-[12px]",
               running ? "cursor-default" : "cursor-ns-resize"
             )}
             style={{
