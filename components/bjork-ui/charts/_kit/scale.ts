@@ -224,12 +224,12 @@ export function timeTicks(t0: number, t1: number, px: number, minPx = 64): TimeT
       return out;
     }
   }
-  const daySteps = [1, 2, 7, 14];
+  const daySteps = [1, 2, 3, 7, 14];
   for (const k of daySteps) {
     if (k * DAY >= perTick) {
       const step = k * DAY;
       // Weekly steps land on Mondays.
-      const offset = k >= 7 ? 4 * DAY : 0;
+      const offset = k === 7 || k === 14 ? 4 * DAY : 0;
       for (let t = Math.ceil((t0 - offset) / step) * step + offset; t <= t1; t += step) out.push({ t, label: timeFmt.day.format(t) });
       return out;
     }

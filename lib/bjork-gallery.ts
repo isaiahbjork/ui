@@ -1135,6 +1135,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork124",
+    slug: "state-timeline",
+    title: "State timeline",
+    route: "/charts/state-timeline",
+    sourcePath: "components/bjork-ui/charts/state-timeline.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {

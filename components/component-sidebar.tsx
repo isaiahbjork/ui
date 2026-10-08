@@ -117,6 +117,7 @@ const componentRoutes: ComponentGroup[] = [
 
       // @slot route-trace
 
+      { name: "State Timeline", path: "/charts/state-timeline" },
     ],
   },
   {
