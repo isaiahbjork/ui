@@ -502,7 +502,7 @@ export function ViolinPlot({
   const tableCols = useMemo(() => ["Group", "Count", "Min", "p25", "Median", "p75", "Max", "Mean"], []);
 
   return (
-    <div ref={rootRef} data-loop="idle" className={cn("relative w-full select-none text-[color:var(--bjork-text)]", className)} style={{ ...vars, height }}>
+    <div ref={rootRef} data-loop="idle" className={cn("@container relative w-full select-none text-[color:var(--bjork-text)]", className)} style={{ ...vars, height }}>
       <div
         ref={wrapperRef}
         role="group"
@@ -546,10 +546,10 @@ export function ViolinPlot({
         />
         <div aria-hidden="true" className="pointer-events-none absolute flex" style={{ left: PAD_LEFT, right: PAD_RIGHT, bottom: 0, height: PAD_BOTTOM }}>
           {stats.groups.map((g) => (
-            <div key={g.id} className="flex min-w-0 flex-1 flex-col items-center justify-center gap-[5px]">
+            <div key={g.id} className="flex min-w-0 flex-1 flex-col items-center justify-center gap-[5px] px-1">
               <span
                 className={cn(
-                  "max-w-full truncate font-bjork-alpha text-[12px] font-medium leading-[14px]",
+                  "max-w-full truncate font-bjork-alpha text-[12px] font-medium leading-[14px] @max-[440px]:text-[11px]",
                   g.id === highlightId ? "text-[color:var(--bjork-accent-ink)]" : "text-[color:var(--bjork-text-medium)]",
                 )}
               >
