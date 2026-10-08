@@ -6,7 +6,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type CSSProperties,
 } from "react";
 import { useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -14,7 +13,8 @@ import { BJORK_PALETTE, type BjorkTone } from "@/components/bjork-ui/_core/palet
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
 import { useVisibleLoop } from "@/components/bjork-ui/_core/loop";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
-import { easeCss } from "@/components/bjork-ui/_core/motion";
+import { cubicBezier, ease } from "@/components/bjork-ui/_core/motion";
+import { sizeCanvas } from "@/components/bjork-ui/_core/canvas";
 
 export type FlapCharset = "digits" | "alpha" | "alnum" | string | string[];
 
@@ -56,13 +56,12 @@ const CHARSET_PRESETS: Record<"digits" | "alpha" | "alnum", string> = {
   alnum: " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
 };
 
-const FALL_EASE = "cubic-bezier(0.55,0,1,0.45)"; // gravity: the top half drops
-const RISE_EASE = "cubic-bezier(0,0.55,0.45,1)"; // the bottom half lifts into place
 const MAX_STEPS = 12;
 const MAX_FLIPPING = 160;
 const ROW_DELAY_MS = 40;
 const LAND_MS = 120;
 const LAND_DEG = -6;
+const EDGE_FADE_PX = 24;
 const ATTRACT_MS = 5000;
 const ATTRACT_RESUME_MS = 4000;
 
@@ -79,22 +78,30 @@ const WORD_TRAIL_EM = 0.03;
 
 const SIZE_SCALE = { sm: 0.72, md: 1, lg: 1.36 } as const;
 
-const MATERIAL = {
+interface Material {
+  board: string;
+  topFace: readonly [string, string];
+  bottomFace: readonly [string, string];
+  split: string;
+  splitHighlight: string;
+}
+
+const MATERIAL: Record<BjorkTone, Material> = {
   dark: {
     board: "#0b0b0b",
-    topFace: "linear-gradient(#1a1a1a, #151515)",
-    bottomFace: "linear-gradient(#131313, #101010)",
+    topFace: ["#1a1a1a", "#151515"],
+    bottomFace: ["#131313", "#101010"],
     split: "#050505",
     splitHighlight: "rgba(255,255,255,0.04)",
   },
   light: {
     board: "#efe9dd",
-    topFace: "linear-gradient(#fffcf6, #f8f2e7)",
-    bottomFace: "linear-gradient(#f5efe3, #efe7d8)",
+    topFace: ["#fffcf6", "#f8f2e7"],
+    bottomFace: ["#f5efe3", "#efe7d8"],
     split: "#e1d7c8",
     splitHighlight: "rgba(255,255,255,0.7)",
   },
-} as const;
+};
 
 interface Metrics {
   cellW: number;
@@ -201,342 +208,374 @@ function planFlips(cycle: string[], from: string, to: string): { jump: string | 
   return { jump, steps };
 }
 
-// --- Imperative cell controller -------------------------------------------
-// Flip frames are driven with WAAPI on the cell's DOM layers. React renders the
-// layers once, and text is written through the controller so a running flip is
-// never clobbered by a re-render.
+// --- Canvas engine -----------------------------------------------------------
+// The whole board is painted into one <canvas>, driven by one board-level rAF.
+// This deliberately departs from the plan's "WAAPI per flap layer". A full
+// board is 135 cells with two 3D-rotated halves each; as DOM layers that meant
+// creating about 315 Animation objects per 70ms step and, even when the
+// transforms were set directly from one rAF, re-layerizing ~270 composited
+// layers every frame (under 15fps at a 4x CPU throttle). Here every active cell
+// derives its step and phase from wall-clock time, only dirty cells are
+// repainted, and the loop goes idle when nothing is moving. The DOM keeps the
+// layout boxes (so nothing shifts) and the hidden table for assistive tech.
 
-interface CellCtl {
-  top: HTMLElement;
-  bottom: HTMLElement;
-  fall: HTMLElement;
-  rise: HTMLElement;
-  shade: HTMLElement;
-  gTop: HTMLElement;
-  gBottom: HTMLElement;
-  gFall: HTMLElement;
-  gRise: HTMLElement;
+interface CellState {
+  key: string;
+  c: number;
+  /** Device-pixel rect inside the canvas. */
+  x: number;
+  y: number;
+  w: number;
+  h: number;
   value: string;
-  pending: string | null;
   target: string | null;
-  run: number;
-  anims: Animation[];
-  active: boolean;
+  // What is drawn right now.
+  top: string;
+  bottom: string;
+  fallText: string;
+  riseText: string;
+  fallDeg: number; // 0 (flat) to -90 (edge-on)
+  riseDeg: number; // 90 (edge-on) to 0 (flat), LAND_DEG while landing
+  shade: number;
+  alpha: number;
+  // Active motion, valid while `mode` is not "idle".
+  mode: "idle" | "flip" | "fade";
+  started: boolean;
+  startMs: number;
+  jump: string | null;
+  steps: FlipStep[];
+  k: number;
   done: Promise<void>;
-}
-
-interface BoardState {
-  active: number;
-}
-
-const controllers = new WeakMap<HTMLElement, CellCtl>();
-
-function part(el: HTMLElement, name: string): HTMLElement {
-  const found = el.querySelector<HTMLElement>(`[data-part="${name}"]`);
-  if (!found) throw new Error(`FlapLedger cell is missing the ${name} layer`);
-  return found;
-}
-
-function glyph(el: HTMLElement, name: string): HTMLElement {
-  const found = el.querySelector<HTMLElement>(`[data-glyph="${name}"]`);
-  if (!found) throw new Error(`FlapLedger cell is missing the ${name} glyph`);
-  return found;
-}
-
-function getCtl(el: HTMLElement): CellCtl {
-  const existing = controllers.get(el);
-  if (existing) return existing;
-  const ctl: CellCtl = {
-    top: part(el, "top"),
-    bottom: part(el, "bottom"),
-    fall: part(el, "fall"),
-    rise: part(el, "rise"),
-    shade: part(el, "shade"),
-    gTop: glyph(el, "top"),
-    gBottom: glyph(el, "bottom"),
-    gFall: glyph(el, "fall"),
-    gRise: glyph(el, "rise"),
-    value: "",
-    pending: null,
-    target: null,
-    run: 0,
-    anims: [],
-    active: false,
-    done: Promise.resolve(),
-  };
-  controllers.set(el, ctl);
-  return ctl;
-}
-
-function setText(el: HTMLElement, value: string) {
-  const node = el.firstChild;
-  if (node && node.nodeType === Node.TEXT_NODE) (node as Text).data = value;
-  else el.textContent = value;
-}
-
-function paint(ctl: CellCtl, value: string) {
-  ctl.value = value;
-  setText(ctl.gTop, value);
-  setText(ctl.gBottom, value);
-}
-
-// visibility, not display: no layout change, only a paint toggle.
-function hideFlaps(ctl: CellCtl) {
-  ctl.fall.style.visibility = "hidden";
-  ctl.rise.style.visibility = "hidden";
-  ctl.shade.style.visibility = "hidden";
-}
-
-function showFlap(el: HTMLElement) {
-  el.style.visibility = "visible";
-}
-
-/** Cancels the running flip, lands on its destination and invalidates its loop. */
-function settle(ctl: CellCtl, board: BoardState) {
-  ctl.run++;
-  for (const anim of ctl.anims) anim.cancel();
-  ctl.anims = [];
-  if (ctl.pending !== null) {
-    paint(ctl, ctl.pending);
-    ctl.pending = null;
-  }
-  hideFlaps(ctl);
-  if (ctl.active) {
-    ctl.active = false;
-    board.active--;
-  }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
-
-async function flip(ctl: CellCtl, step: FlipStep, flapMs: number, perspectivePx: number, id: number): Promise<boolean> {
-  const half = flapMs / 2;
-  const persp = `perspective(${perspectivePx}px)`;
-  ctl.pending = step.to;
-  setText(ctl.gTop, step.to);
-  setText(ctl.gBottom, step.from);
-  setText(ctl.gFall, step.from);
-  setText(ctl.gRise, step.to);
-
-  showFlap(ctl.fall);
-  showFlap(ctl.rise);
-  showFlap(ctl.shade);
-  // Both halves start in the same frame. The rise is delayed by half a flip and
-  // held at 90deg (edge-on) until then, so the step needs one await, not two.
-  const fall = ctl.fall.animate(
-    [{ transform: `${persp} rotateX(0deg)` }, { transform: `${persp} rotateX(-90deg)` }],
-    { duration: half, easing: FALL_EASE, fill: "forwards" },
-  );
-  const rise = ctl.rise.animate(
-    [{ transform: `${persp} rotateX(90deg)` }, { transform: `${persp} rotateX(0deg)` }],
-    { duration: half, easing: RISE_EASE, delay: half, fill: "backwards" },
-  );
-  const shade = ctl.shade.animate(
-    [{ opacity: 0 }, { opacity: 1, offset: 0.5 }, { opacity: 0 }],
-    { duration: flapMs, easing: "linear" },
-  );
-  const stepAnims = [fall, rise, shade];
-  ctl.anims = stepAnims;
-  await rise.finished;
-  if (ctl.run !== id) return false;
-
-  setText(ctl.gBottom, step.to);
-  let land: Animation | null = null;
-  if (step.last) {
-    land = ctl.rise.animate(
-      [
-        { transform: `${persp} rotateX(0deg)`, easing: easeCss.out },
-        { transform: `${persp} rotateX(${LAND_DEG}deg)`, offset: 0.4, easing: easeCss.out },
-        { transform: `${persp} rotateX(0deg)`, offset: 1 },
-      ],
-      { duration: LAND_MS },
-    );
-    stepAnims.push(land);
-    ctl.anims = stepAnims;
-    await land.finished;
-    if (ctl.run !== id) return false;
-  }
-
-  for (const anim of stepAnims) anim.cancel();
-  ctl.anims = [];
-  ctl.pending = null;
-  ctl.value = step.to;
-  hideFlaps(ctl);
-  return true;
+  resolve: (() => void) | null;
 }
 
 type CellMode = "flip" | "crossfade" | "instant";
 
-function startCell(
-  ctl: CellCtl,
-  el: HTMLElement,
-  board: BoardState,
-  cycle: string[],
-  target: string,
-  mode: CellMode,
-  delay: number,
-  flapMs: number,
-  perspectivePx: number,
-) {
-  settle(ctl, board);
-  const id = ctl.run;
-  if (ctl.value === target) {
-    ctl.done = Promise.resolve();
-    return;
-  }
-  if (mode === "instant") {
-    paint(ctl, target);
-    ctl.done = Promise.resolve();
-    return;
-  }
-  if (mode === "crossfade") {
-    paint(ctl, target);
-    el.animate([{ opacity: 0.35 }, { opacity: 1 }], { duration: 120, easing: easeCss.out });
-    ctl.done = Promise.resolve();
-    return;
-  }
-  if (board.active >= MAX_FLIPPING) {
-    paint(ctl, target);
-    ctl.done = Promise.resolve();
-    return;
+interface Atlas {
+  canvas: HTMLCanvasElement;
+  /** Source x offset (device px) of each value. Width and height match the cell. */
+  index: Map<string, number>;
+}
+
+interface Look {
+  dpr: number;
+  board: string;
+  split: string;
+  splitHighlight: string;
+  perspective: number; // device px
+}
+
+const fallEase = cubicBezier(0.55, 0, 1, 0.45); // gravity: the top half drops
+const riseEase = cubicBezier(0, 0.55, 0.45, 1); // the bottom half lifts into place
+const landEase = cubicBezier(ease.out[0], ease.out[1], ease.out[2], ease.out[3]);
+const FADE_MS = 120;
+const STRIPS = 6;
+const DEG = Math.PI / 180;
+
+class BoardEngine {
+  ctx: CanvasRenderingContext2D;
+  cells = new Map<string, CellState>();
+  active = new Set<CellState>();
+  dirty = new Set<CellState>();
+  atlases: Atlas[] = [];
+  shadeSprite: HTMLCanvasElement | null = null;
+  look: Look = { dpr: 1, board: "#000", split: "#000", splitHighlight: "#000", perspective: 220 };
+  flapMs = 70;
+
+  constructor(public canvas: HTMLCanvasElement) {
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("FlapLedger needs a 2D canvas context");
+    this.ctx = ctx;
   }
 
-  const plan = planFlips(cycle, ctl.value, target);
-  board.active++;
-  ctl.active = true;
-  ctl.done = (async () => {
-    try {
-      if (delay > 0) await sleep(delay);
-      if (ctl.run !== id) return;
-      if (plan.jump !== null) paint(ctl, plan.jump);
-      for (const step of plan.steps) {
-        if (ctl.run !== id) return;
-        const ok = await flip(ctl, step, flapMs, perspectivePx, id);
-        if (!ok) return;
-      }
-    } finally {
-      if (ctl.run === id && ctl.active) {
-        ctl.active = false;
-        board.active--;
-      }
+  /** Repaints every cell, e.g. after a resize or a new atlas. */
+  invalidate() {
+    for (const cell of this.cells.values()) this.dirty.add(cell);
+  }
+
+  settle(cell: CellState) {
+    if (cell.mode === "idle") return;
+    cell.mode = "idle";
+    this.active.delete(cell);
+    const last = cell.steps[cell.steps.length - 1];
+    if (last) cell.value = last.to;
+    this.rest(cell, cell.value);
+    cell.steps = [];
+    cell.resolve?.();
+    cell.resolve = null;
+  }
+
+  rest(cell: CellState, value: string) {
+    cell.value = value;
+    cell.top = value;
+    cell.bottom = value;
+    cell.fallDeg = -90;
+    cell.riseDeg = 90;
+    cell.shade = 0;
+    cell.alpha = 1;
+    this.dirty.add(cell);
+  }
+
+  start(cell: CellState, cycle: string[], target: string, mode: CellMode, startMs: number): boolean {
+    this.settle(cell);
+    cell.done = Promise.resolve();
+    if (cell.value === target) return false;
+    if (mode === "instant" || this.active.size >= MAX_FLIPPING) {
+      this.rest(cell, target);
+      return false;
     }
-  })();
+    cell.done = new Promise<void>((resolve) => {
+      cell.resolve = resolve;
+    });
+    cell.started = false;
+    cell.startMs = startMs;
+    if (mode === "crossfade") {
+      cell.mode = "fade";
+      cell.steps = [{ from: cell.value, to: target, last: true }];
+      this.rest(cell, target);
+      cell.alpha = 0.35;
+      this.active.add(cell);
+      return true;
+    }
+    const plan = planFlips(cycle, cell.value, target);
+    if (plan.steps.length === 0) {
+      cell.resolve?.();
+      this.rest(cell, target);
+      return false;
+    }
+    cell.mode = "flip";
+    cell.jump = plan.jump;
+    cell.steps = plan.steps;
+    cell.k = -1;
+    this.active.add(cell);
+    return true;
+  }
+
+  /** Advances one cell to `now`. */
+  tick(cell: CellState, now: number) {
+    const e = now - cell.startMs;
+    if (e < 0) return;
+    if (cell.mode === "fade") {
+      const q = e / FADE_MS;
+      if (q >= 1) this.settle(cell);
+      else {
+        cell.alpha = 0.35 + 0.65 * landEase(q);
+        this.dirty.add(cell);
+      }
+      return;
+    }
+    if (!cell.started) {
+      cell.started = true;
+      if (cell.jump !== null) cell.value = cell.jump;
+    }
+    const ms = this.flapMs;
+    const total = cell.steps.length * ms;
+    this.dirty.add(cell);
+    if (e < total) {
+      const k = Math.floor(e / ms);
+      const p = (e - k * ms) / ms;
+      if (k !== cell.k) {
+        cell.k = k;
+        const step = cell.steps[k];
+        cell.value = step.from;
+        cell.top = step.to;
+        cell.bottom = step.from;
+        cell.fallText = step.from;
+        cell.riseText = step.to;
+      }
+      // Both halves share one phase: the top drops for the first half, the
+      // bottom stays edge-on until then and lifts during the second half.
+      cell.fallDeg = p < 0.5 ? -90 * fallEase(p * 2) : -90;
+      cell.riseDeg = p < 0.5 ? 90 : 90 * (1 - riseEase(p * 2 - 1));
+      cell.shade = 1 - Math.abs(2 * p - 1);
+      return;
+    }
+    const q = (e - total) / LAND_MS;
+    if (q < 1) {
+      const last = cell.steps[cell.steps.length - 1];
+      cell.value = last.to;
+      cell.top = last.to;
+      cell.bottom = last.to;
+      cell.riseText = last.to;
+      cell.fallDeg = -90;
+      cell.shade = 0;
+      // 0deg -> LAND_DEG at 40% -> 0deg, ease-out on both legs.
+      cell.riseDeg = q < 0.4 ? LAND_DEG * landEase(q / 0.4) : LAND_DEG * (1 - landEase((q - 0.4) / 0.6));
+      return;
+    }
+    this.settle(cell);
+  }
+
+  /** Advances every active cell and repaints what changed. Returns true while anything moves. */
+  frame(now: number): boolean {
+    for (const cell of this.active) this.tick(cell, now);
+    this.draw();
+    return this.active.size > 0;
+  }
+
+  draw() {
+    if (this.dirty.size === 0 || this.atlases.length === 0) return;
+    const { ctx, look } = this;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    for (const cell of this.dirty) this.drawCell(ctx, cell, look);
+    ctx.globalAlpha = 1;
+    this.dirty.clear();
+  }
+
+  drawCell(ctx: CanvasRenderingContext2D, cell: CellState, look: Look) {
+    const atlas = this.atlases[cell.c];
+    if (!atlas) return;
+    const { x, y, w, h } = cell;
+    const half = h / 2;
+    const mid = y + half;
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = look.board;
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = cell.alpha;
+    const src = (value: string) => atlas.index.get(value) ?? atlas.index.get(value === "" ? " " : "") ?? 0;
+    ctx.drawImage(atlas.canvas, src(cell.top), 0, w, half, x, y, w, half);
+    ctx.drawImage(atlas.canvas, src(cell.bottom), half, w, half, x, mid, w, half);
+    if (cell.shade > 0.001 && this.shadeSprite) {
+      ctx.globalAlpha = cell.alpha * cell.shade;
+      ctx.drawImage(this.shadeSprite, x, mid, w, half);
+      ctx.globalAlpha = cell.alpha;
+    }
+    const px = Math.max(1, Math.round(look.dpr));
+    ctx.fillStyle = look.split;
+    ctx.fillRect(x, mid - px, w, px);
+    ctx.fillStyle = look.splitHighlight;
+    ctx.fillRect(x, mid, w, px);
+
+    const fallOn = cell.fallDeg > -89.9;
+    const riseOn = cell.riseDeg < 89.9;
+    if (!fallOn && !riseOn) return;
+    // Flaps lean toward the viewer and grow slightly wider; the cell clips them,
+    // as `contain: paint` did on the DOM cell.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    ctx.clip();
+    if (fallOn) this.drawFlap(ctx, atlas.canvas, src(cell.fallText), cell, cell.fallDeg, true);
+    if (riseOn) this.drawFlap(ctx, atlas.canvas, src(cell.riseText), cell, cell.riseDeg, false);
+    ctx.restore();
+  }
+
+  /**
+   * Draws one half rotating about the split line, as CSS `perspective(P) rotateX(deg)`
+   * with the origin on the split. 2D canvas has no projective transform, so the
+   * half is drawn in horizontal strips, each scaled by its projected depth.
+   */
+  drawFlap(ctx: CanvasRenderingContext2D, img: HTMLCanvasElement, sx: number, cell: CellState, deg: number, upper: boolean) {
+    const { x, y, w, h } = cell;
+    const half = h / 2;
+    const mid = y + half;
+    const P = this.look.perspective;
+    const cos = Math.cos(deg * DEG);
+    // Depth toward the viewer per unit of distance from the axis.
+    const sin = upper ? Math.sin(-deg * DEG) : Math.sin(deg * DEG);
+    if (Math.abs(deg) < 0.05) {
+      ctx.drawImage(img, sx, upper ? 0 : half, w, half, x, upper ? y : mid, w, half);
+      return;
+    }
+    for (let i = 0; i < STRIPS; i++) {
+      const d0 = (half * i) / STRIPS;
+      const d1 = (half * (i + 1)) / STRIPS;
+      const y0 = (d0 * cos * P) / (P - d0 * sin);
+      const y1 = (d1 * cos * P) / (P - d1 * sin);
+      const dh = y1 - y0;
+      if (dh < 0.05) continue;
+      const s = P / (P - ((d0 + d1) / 2) * sin);
+      const dw = w * s;
+      const dx = x + (w - dw) / 2;
+      const pad = i < STRIPS - 1 ? 0.5 : 0; // overlap strips so no seam shows
+      if (upper) ctx.drawImage(img, sx, half - d1, w, d1 - d0, dx, mid - y1, dw, dh + pad);
+      else ctx.drawImage(img, sx, half + d0, w, d1 - d0, dx, mid + y0 - pad, dw, dh + pad);
+    }
+  }
+}
+
+interface AtlasSpec {
+  values: string[];
+  kind: "char" | "word";
+  w: number; // device px
+  h: number; // device px
+}
+
+function buildAtlas(spec: AtlasSpec, m: Metrics, dpr: number, family: string, ink: string, material: Material): Atlas {
+  const { w, h, kind } = spec;
+  const half = h / 2;
+  const gap = Math.ceil(2 * dpr);
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, spec.values.length * (w + gap));
+  canvas.height = Math.max(1, h);
+  const ctx = canvas.getContext("2d");
+  const index = new Map<string, number>();
+  if (!ctx) return { canvas, index };
+  const fs = (kind === "word" ? m.wordFs : m.charFs) * dpr;
+  const r = m.radius * dpr;
+  ctx.font = `500 ${fs}px ${family}`;
+  ctx.textBaseline = "alphabetic";
+  ctx.textAlign = "left";
+  const metrics = ctx.measureText("H");
+  const asc = metrics.fontBoundingBoxAscent ?? fs * 1.01;
+  const desc = metrics.fontBoundingBoxDescent ?? fs * 0.29;
+  // Same box as the DOM glyph: a line-height 1 line centred in the cell, plus the cap nudge.
+  const baseline = half + (asc - desc) / 2 + CAP_NUDGE_EM * fs;
+  const spacing = kind === "word" ? 0.06 * fs : 0;
+  const trail = kind === "word" ? WORD_TRAIL_EM * fs : 0;
+  const topGrad = ctx.createLinearGradient(0, 0, 0, half);
+  topGrad.addColorStop(0, material.topFace[0]);
+  topGrad.addColorStop(1, material.topFace[1]);
+  const bottomGrad = ctx.createLinearGradient(0, half, 0, h);
+  bottomGrad.addColorStop(0, material.bottomFace[0]);
+  bottomGrad.addColorStop(1, material.bottomFace[1]);
+
+  spec.values.forEach((value, n) => {
+    const ox = n * (w + gap);
+    index.set(value, ox);
+    ctx.save();
+    ctx.translate(ox, 0);
+    ctx.fillStyle = topGrad;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, w, half, [r, r, 0, 0]);
+    ctx.fill();
+    ctx.fillStyle = bottomGrad;
+    ctx.beginPath();
+    ctx.roundRect(0, half, w, half, [0, 0, r, r]);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.rect(0, 0, w, h);
+    ctx.clip();
+    ctx.fillStyle = ink;
+    const chars = Array.from(value);
+    const advances = chars.map((ch) => ctx.measureText(ch).width + spacing);
+    const total = advances.reduce((a, b) => a + b, 0);
+    let pen = (w - total) / 2 + trail;
+    chars.forEach((ch, j) => {
+      if (ch !== " ") ctx.fillText(ch, pen, baseline);
+      pen += advances[j];
+    });
+    ctx.restore();
+  });
+  return { canvas, index };
+}
+
+function makeShadeSprite(h: number): HTMLCanvasElement {
+  const sprite = document.createElement("canvas");
+  sprite.width = 1;
+  sprite.height = Math.max(1, Math.round(h));
+  const ctx = sprite.getContext("2d");
+  if (ctx) {
+    const grad = ctx.createLinearGradient(0, 0, 0, sprite.height);
+    grad.addColorStop(0, "rgba(0,0,0,0.35)");
+    grad.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1, sprite.height);
+  }
+  return sprite;
 }
 
 // --- Rendering ------------------------------------------------------------
-
-interface CellProps {
-  r: number;
-  c: number;
-  i: number;
-  kind: "char" | "word";
-  width: number;
-  m: Metrics;
-  ink: string;
-  material: (typeof MATERIAL)[keyof typeof MATERIAL];
-}
-
-function glyphStyle(m: Metrics, kind: "char" | "word", top: number, ink: string): CSSProperties {
-  const fs = kind === "word" ? m.wordFs : m.charFs;
-  const nudge = CAP_NUDGE_EM * fs;
-  const trail = kind === "word" ? WORD_TRAIL_EM * fs : 0;
-  return {
-    position: "absolute",
-    left: 0,
-    top,
-    width: "100%",
-    height: m.cellH,
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    lineHeight: 1,
-    fontSize: fs,
-    fontWeight: 500,
-    letterSpacing: kind === "word" ? "0.06em" : undefined,
-    whiteSpace: "pre",
-    color: ink,
-    transform: `translate(${trail}px, ${nudge}px)`,
-    pointerEvents: "none",
-  };
-}
-
-function FlapCell({ r, c, i, kind, width, m, ink, material }: CellProps) {
-  const half = m.cellH / 2;
-  const r0 = m.radius;
-  const layer: CSSProperties = { position: "absolute", left: 0, width: "100%", overflow: "hidden" };
-  return (
-    <span
-      data-flap-cell=""
-      data-r={r}
-      data-c={c}
-      data-i={i}
-      className="relative block shrink-0"
-      style={{ width, height: m.cellH, borderRadius: r0, contain: "layout paint style" }}
-    >
-      <span
-        data-part="top"
-        style={{ ...layer, top: 0, height: half, background: material.topFace, borderRadius: `${r0}px ${r0}px 0 0` }}
-      >
-        <span data-glyph="top" style={glyphStyle(m, kind, 0, ink)} />
-      </span>
-      <span
-        data-part="bottom"
-        style={{ ...layer, top: half, height: half, background: material.bottomFace, borderRadius: `0 0 ${r0}px ${r0}px` }}
-      >
-        <span data-glyph="bottom" style={glyphStyle(m, kind, -half, ink)} />
-      </span>
-      <span
-        data-part="shade"
-        aria-hidden="true"
-        style={{
-          ...layer,
-          top: half,
-          height: half,
-          visibility: "hidden",
-          background: "linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0))",
-        }}
-      />
-      <span
-        aria-hidden="true"
-        style={{ position: "absolute", left: 0, width: "100%", top: half - 1, height: 1, background: material.split }}
-      />
-      <span
-        aria-hidden="true"
-        style={{ position: "absolute", left: 0, width: "100%", top: half, height: 1, background: material.splitHighlight }}
-      />
-      <span
-        data-part="fall"
-        style={{
-          ...layer,
-          top: 0,
-          height: half,
-          visibility: "hidden",
-          transformOrigin: "50% 100%",
-          background: material.topFace,
-          borderRadius: `${r0}px ${r0}px 0 0`,
-        }}
-      >
-        <span data-glyph="fall" style={glyphStyle(m, kind, 0, ink)} />
-      </span>
-      <span
-        data-part="rise"
-        style={{
-          ...layer,
-          top: half,
-          height: half,
-          visibility: "hidden",
-          transformOrigin: "50% 0",
-          background: material.bottomFace,
-          borderRadius: `0 0 ${r0}px ${r0}px`,
-        }}
-      >
-        <span data-glyph="rise" style={glyphStyle(m, kind, -half, ink)} />
-      </span>
-    </span>
-  );
-}
 
 function Led({ state, m, colours }: { state: FlapStatus; m: Metrics; colours: Record<FlapStatus, string> }) {
   return (
@@ -618,7 +657,8 @@ export function FlapLedger({
 
   const rootRef = useRef<HTMLDivElement>(null);
   const boardRef = useRef<HTMLDivElement>(null);
-  const boardState = useRef<BoardState>({ active: 0 });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const engineRef = useRef<BoardEngine | null>(null);
   const genRef = useRef(0);
   const firstRunRef = useRef(true);
   const pauseUntilRef = useRef(0);
@@ -643,48 +683,165 @@ export function FlapLedger({
     setPrevRows(liveRows);
   }
 
-  const frame = useCallback((dt: number) => {
-    if (performance.now() < pauseUntilRef.current) return;
-    attractAccRef.current += dt;
-    if (attractAccRef.current >= ATTRACT_MS / 1000) {
-      attractAccRef.current = 0;
-      setAttractStep((s) => (s + 1) % FLAP_LEDGER_SAMPLE_ROWS.length);
-    }
-  }, []);
-  useVisibleLoop(rootRef, frame, { enabled: attractActive });
+  // One loop per board: it advances every flipping cell and the attract timer,
+  // and goes idle when neither has work.
+  const frame = useCallback(
+    (dt: number) => {
+      const now = performance.now();
+      const moving = engineRef.current ? engineRef.current.frame(now) : false;
+      if (attractActive && now >= pauseUntilRef.current) {
+        attractAccRef.current += dt;
+        if (attractAccRef.current >= ATTRACT_MS / 1000) {
+          attractAccRef.current = 0;
+          setAttractStep((s) => (s + 1) % FLAP_LEDGER_SAMPLE_ROWS.length);
+        }
+      }
+      return attractActive || moving;
+    },
+    [attractActive],
+  );
+  const { wake } = useVisibleLoop(rootRef, frame);
 
   const pauseAttract = useCallback(() => {
     pauseUntilRef.current = performance.now() + ATTRACT_RESUME_MS;
   }, []);
 
+  const ink = palette.text;
+  const ledColours: Record<FlapStatus, string> = {
+    ok: palette.success,
+    warn: palette.warning,
+    off: palette.textFaint,
+  };
+  const ledSpace = status ? m.led + m.ledGap : 0;
+  const boardWidth = columns.reduce((sum, col) => sum + columnPx(col.width, m), 0) + Math.max(0, columns.length - 1) * m.colGap;
+  const canvasW = ledSpace + boardWidth;
+  const canvasH = slots * m.cellH + Math.max(0, slots - 1) * m.rowGap;
+
+  // Canvas size, cell rects and glyph atlases. Re-run when the layout or the look changes.
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    const board = boardRef.current;
+    if (!canvas || !board) return;
+    const engine = (engineRef.current ??= new BoardEngine(canvas));
+    const dpr = sizeCanvas(canvas, canvasW, canvasH);
+    engine.look = {
+      dpr,
+      board: material.board,
+      split: material.split,
+      splitHighlight: material.splitHighlight,
+      perspective: m.perspective * dpr,
+    };
+    const h = Math.round(m.cellH * dpr);
+    const specs: AtlasSpec[] = columns.map((col, c) => {
+      const kind = Array.isArray(col.charset) ? "word" : "char";
+      const w = Math.round((kind === "word" ? columnPx(col.width, m) : m.cellW) * dpr);
+      return { values: cycles[c], kind, w, h };
+    });
+    const family = getComputedStyle(board).fontFamily || "ui-monospace, monospace";
+    const buildAll = () => {
+      engine.atlases = specs.map((spec) => buildAtlas(spec, m, dpr, family, ink, material));
+      engine.shadeSprite = makeShadeSprite(h / 2);
+      engine.invalidate();
+      engine.draw();
+    };
+
+    // Cell rects in device pixels. Existing cells keep their state.
+    const keep = new Set<string>();
+    let colX = ledSpace;
+    columns.forEach((col, c) => {
+      const isWord = Array.isArray(col.charset);
+      const count = isWord ? 1 : col.width;
+      for (let r = 0; r < slots; r++) {
+        for (let i = 0; i < count; i++) {
+          const key = `${r}:${c}:${i}`;
+          keep.add(key);
+          let cell = engine.cells.get(key);
+          if (!cell) {
+            cell = {
+              key,
+              c,
+              x: 0,
+              y: 0,
+              w: 0,
+              h: 0,
+              value: "",
+              target: null,
+              top: "",
+              bottom: "",
+              fallText: "",
+              riseText: "",
+              fallDeg: -90,
+              riseDeg: 90,
+              shade: 0,
+              alpha: 1,
+              mode: "idle",
+              started: false,
+              startMs: 0,
+              jump: null,
+              steps: [],
+              k: -1,
+              done: Promise.resolve(),
+              resolve: null,
+            };
+            engine.cells.set(key, cell);
+          }
+          cell.c = c;
+          cell.x = Math.round((colX + i * (m.cellW + m.cellGap)) * dpr);
+          cell.y = Math.round(r * (m.cellH + m.rowGap) * dpr);
+          cell.w = specs[c].w;
+          cell.h = h;
+        }
+      }
+      colX += columnPx(col.width, m) + m.colGap;
+    });
+    for (const [key, cell] of engine.cells) {
+      if (keep.has(key)) continue;
+      engine.settle(cell);
+      engine.dirty.delete(cell);
+      engine.cells.delete(key);
+    }
+    buildAll();
+
+    // Rebuild once the board font has loaded, so glyphs never stay in a fallback face.
+    let cancelled = false;
+    if (typeof document !== "undefined" && document.fonts) {
+      const fs = Math.max(m.charFs, m.wordFs) * dpr;
+      void document.fonts.load(`500 ${fs}px ${family}`).then(() => {
+        if (!cancelled) buildAll();
+      });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [slots, columns, cycles, m, ink, material, ledSpace, canvasW, canvasH]);
+
   // Flip the board toward the current rows. Only cells whose target changed move.
   useLayoutEffect(() => {
-    const board = boardRef.current;
-    if (!board) return;
+    const engine = engineRef.current;
+    if (!engine) return;
     const gen = ++genRef.current;
     const instant = firstRunRef.current;
     firstRunRef.current = false;
     const mode: CellMode = instant ? "instant" : reduced ? "crossfade" : "flip";
+    engine.flapMs = flapMs;
 
     const targetCache = new Map<string, string[]>();
-    const jobs = Array.from(board.querySelectorAll<HTMLElement>("[data-flap-cell]")).map((el) => {
-      const r = Number(el.dataset.r);
-      const c = Number(el.dataset.c);
-      const i = Number(el.dataset.i);
+    const jobs = Array.from(engine.cells.values()).map((cell) => {
+      const [r, c, i] = cell.key.split(":").map(Number);
       const key = `${r}:${c}`;
       let targets = targetCache.get(key);
       if (!targets) {
         targets = cellTargets(columns[c], cycles[c], liveRows[r]);
         targetCache.set(key, targets);
       }
-      return { el, r, c, ctl: getCtl(el), cycle: cycles[c], target: targets[i] };
+      return { cell, r, c, cycle: cycles[c], target: targets[i] };
     });
 
     const colDistance = columns.map(() => 0);
     if (mode === "flip") {
       for (const job of jobs) {
-        if (job.target === undefined || job.ctl.target === job.target) continue;
-        colDistance[job.c] += distance(job.cycle, job.ctl.value, job.target);
+        if (job.target === undefined || job.cell.target === job.target) continue;
+        colDistance[job.c] += distance(job.cycle, job.cell.value, job.target);
       }
     }
     let origin = 0;
@@ -699,31 +856,51 @@ export function FlapLedger({
       });
     }
 
+    const now = performance.now();
+    let moving = false;
     for (const job of jobs) {
-      if (job.target === undefined || job.ctl.target === job.target) continue;
-      job.ctl.target = job.target;
+      if (job.target === undefined || job.cell.target === job.target) continue;
+      job.cell.target = job.target;
       const delay = mode === "flip" ? Math.abs(job.c - origin) * stagger + job.r * ROW_DELAY_MS : 0;
-      startCell(job.ctl, job.el, boardState.current, job.cycle, job.target, mode, delay, flapMs, m.perspective);
+      if (engine.start(job.cell, job.cycle, job.target, mode, now + delay)) moving = true;
     }
+    engine.draw();
+    if (moving) wake();
 
     // Rows removed from the data flip to blank, then unmount.
     if (slots > liveRows.length) {
       const len = liveRows.length;
-      const removed = jobs.filter((job) => job.r >= len).map((job) => job.ctl.done);
+      const removed = jobs.filter((job) => job.r >= len).map((job) => job.cell.done);
       void Promise.all(removed).then(() => {
         if (genRef.current === gen) setSlots(len);
       });
     }
-  }, [liveRows, slots, columns, cycles, cascadeFrom, stagger, flapMs, reduced, m]);
+  }, [liveRows, slots, columns, cycles, cascadeFrom, stagger, flapMs, reduced, m, wake]);
 
-  const ink = palette.text;
-  const ledColours: Record<FlapStatus, string> = {
-    ok: palette.success,
-    warn: palette.warning,
-    off: palette.textFaint,
-  };
-  const ledSpace = status ? m.led + m.ledGap : 0;
-  const boardWidth = columns.reduce((sum, col) => sum + columnPx(col.width, m), 0) + Math.max(0, columns.length - 1) * m.colGap;
+  // When the board is wider than its container, fade the right edge so the
+  // clipped columns read as scrollable. The fade drops once scrolled to the end.
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    let faded: boolean | null = null;
+    const update = () => {
+      const more = root.scrollWidth - root.clientWidth - root.scrollLeft > 1;
+      if (more === faded) return;
+      faded = more;
+      const mask = more ? `linear-gradient(to right, #000 calc(100% - ${EDGE_FADE_PX}px), transparent)` : "";
+      root.style.maskImage = mask;
+      root.style.setProperty("-webkit-mask-image", mask);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(root);
+    if (boardRef.current) observer.observe(boardRef.current);
+    root.addEventListener("scroll", update, { passive: true });
+    return () => {
+      observer.disconnect();
+      root.removeEventListener("scroll", update);
+    };
+  }, []);
 
   return (
     <div
@@ -771,57 +948,22 @@ export function FlapLedger({
           })}
         </div>
 
-        <div className="flex flex-col" style={{ gap: m.rowGap }}>
+        <div className="relative flex flex-col" style={{ gap: m.rowGap }}>
           {Array.from({ length: slots }, (_, r) => {
             const state: FlapStatus = status && r < liveRows.length ? status(liveRows[r]) : "off";
             return (
               <div key={r} className="flex items-center">
                 {status ? <Led state={state} m={m} colours={ledColours} /> : null}
-                {columns.map((col, c) => {
-                  const cells = Array.from({ length: col.width }, (_, i) => i);
-                  const isWord = Array.isArray(col.charset);
-                  return (
-                    <div
-                      key={col.key}
-                      className="flex shrink-0"
-                      style={{
-                        width: columnPx(col.width, m),
-                        gap: m.cellGap,
-                        marginLeft: c > 0 ? m.colGap : 0,
-                      }}
-                    >
-                      {isWord ? (
-                        <FlapCell
-                          r={r}
-                          c={c}
-                          i={0}
-                          kind="word"
-                          width={columnPx(col.width, m)}
-                          m={m}
-                          ink={ink}
-                          material={material}
-                        />
-                      ) : (
-                        cells.map((i) => (
-                          <FlapCell
-                            key={i}
-                            r={r}
-                            c={c}
-                            i={i}
-                            kind="char"
-                            width={m.cellW}
-                            m={m}
-                            ink={ink}
-                            material={material}
-                          />
-                        ))
-                      )}
-                    </div>
-                  );
-                })}
+                <span className="block shrink-0" style={{ width: boardWidth, height: m.cellH }} />
               </div>
             );
           })}
+          <canvas
+            ref={canvasRef}
+            data-flap-canvas=""
+            className="pointer-events-none absolute top-0 left-0 block"
+            style={{ width: canvasW, height: canvasH }}
+          />
         </div>
       </div>
 
