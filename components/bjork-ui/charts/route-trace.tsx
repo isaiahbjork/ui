@@ -707,8 +707,8 @@ export function RouteTrace({
                       style={{
                         // -2 half pin, -1 border: children are placed in the padding box
                         top: p.y - (c.y - NODE_HALF_H) - 3,
-                        left: p.side === "in" ? -3 : undefined,
-                        right: p.side === "out" ? -3 : undefined,
+                        left: p.side === "in" ? -2.5 : undefined,
+                        right: p.side === "out" ? -3.5 : undefined,
                         background: `var(--bjork-border-strong, ${palette.borderStrong})`,
                       }}
                     />
