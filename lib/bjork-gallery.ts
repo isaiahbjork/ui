@@ -1303,6 +1303,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork138",
+    slug: "depth-chart",
+    title: "Depth chart",
+    route: "/charts/depth-chart",
+    sourcePath: "components/bjork-ui/charts/depth-chart.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {

@@ -114,6 +114,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Beeswarm", path: "/charts/beeswarm" },
       { name: "Candlestick Chart", path: "/charts/candlestick-chart" },
       { name: "Correlation Matrix", path: "/charts/correlation-matrix" },
+      { name: "Depth Chart", path: "/charts/depth-chart" },
       { name: "Distribution Plot", path: "/charts/distribution-plot" },
       { name: "Drawdown Chart", path: "/charts/drawdown-chart" },
       { name: "Dumbbell Chart", path: "/charts/dumbbell-chart" },
