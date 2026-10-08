@@ -1114,7 +1114,18 @@ export const galleryItems: GalleryItem[] = [
 
   // @slot bjork105 lattice-orb
 
-  // @slot bjork106 torn-edge-reveal
+  {
+    id: "bjork106",
+    slug: "torn-edge-reveal",
+    title: "Torn edge reveal",
+    route: "/galleries/torn-edge-reveal",
+    sourcePath: "components/bjork-ui/galleries/torn-edge-reveal.tsx",
+    tier: "copy",
+    collection: "Galleries",
+    preview: "gallery",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork107 mosaic-settle
 
