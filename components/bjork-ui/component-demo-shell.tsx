@@ -184,7 +184,11 @@ export function ComponentDemoShell({
   const [sourceLoading, setSourceLoading] = useState(false);
   const previewSurfaceRef = useRef<HTMLDivElement>(null);
   const optionsDragControls = useDragControls();
-  const shouldReduceMotion = useReducedMotion();
+  // Read the reduced-motion preference only after mount, so the server and
+  // first client render agree (avoids a hydration mismatch under reduced motion).
+  const isMounted = useSyncExternalStore(subscribeNoop, () => true, () => false);
+  const reducedMotionPreference = useReducedMotion();
+  const shouldReduceMotion = isMounted && reducedMotionPreference === true;
   const { resolvedTheme, setTheme, theme } = useTheme();
 
   const setSidebarOpen = useCallback((open: boolean) => {
@@ -606,6 +610,10 @@ function SimpleComponentDemoPageContent({
       {demo}
     </ComponentDemoShell>
   );
+}
+
+function subscribeNoop() {
+  return () => {};
 }
 
 function useIsWideViewport() {
