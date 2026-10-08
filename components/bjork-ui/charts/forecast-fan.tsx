@@ -335,10 +335,19 @@ export function ForecastFan({
       if (j === bandCount - 1 && bandCount > 1) {
         const pat = hatchPattern(ctx, withAlpha(p.accent, 0.32), 5, 1);
         if (pat) {
+          // Hatch only the outer ring: cut the next band in out of the path, so the core stays a clean wash.
+          for (let k = 0; k < fc.length; k++) {
+            const x = xOf(fc[k].t);
+            const y = yOf(edgeAt(k, j - 1, 1));
+            if (k === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+          }
+          for (let k = fc.length - 1; k >= 0; k--) ctx.lineTo(xOf(fc[k].t), yOf(edgeAt(k, j - 1, 0)));
+          ctx.closePath();
           ctx.save();
           ctx.globalAlpha = s.vis[j] ?? 1;
           ctx.fillStyle = pat;
-          ctx.fill();
+          ctx.fill("evenodd");
           ctx.restore();
         }
       }
@@ -552,7 +561,8 @@ export function ForecastFan({
   const describe = (i: number) => {
     const pt = pointAt(i);
     if (!pt) return "";
-    if (!pt.f || i < history.length - 1) return `${formatTime(pt.t)}, actual ${formatValue(pt.v)}`;
+    // The last real point is also the forecast anchor, where every band is zero wide: read it as actual.
+    if (!pt.f || i < history.length) return `${formatTime(pt.t)}, actual ${formatValue(pt.v)}`;
     const parts = pt.f.bands
       .map((b, j) => (visibleBands?.[j] === false ? null : `${bandLabels[j] ?? ""} ${formatValue(b[0])} to ${formatValue(b[1])}`))
       .filter(Boolean);
