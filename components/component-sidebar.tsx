@@ -120,6 +120,7 @@ const componentRoutes: ComponentGroup[] = [
   {
     title: "Heroes",
     routes: [
+      { name: "Aperture Dive", path: "/heroes/aperture-dive" },
       { name: "Video Scroll Hero", path: "/heroes/video-scroll-hero" },
     ],
   },
@@ -162,6 +163,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Draggable Rope", path: "/interactive/draggable-rope" },
       { name: "Gradient Selector", path: "/dropdowns/gradient-selector" },
       { name: "Message Dock", path: "/hud/message-dock" },
+      { name: "Scene States", path: "/interactive/scene-states" },
       { name: "Timer", path: "/misc/timer" },
       { name: "Voice Powered Orb", path: "/interactive/voice-powered-orb" },
       // @slot elastic-frame
