@@ -86,6 +86,10 @@ function bandHeight(v: number): number {
   return 0.08 + 0.9 * v;
 }
 
+function gatedHeight(v: number): number {
+  return clamp01(v * 8) * bandHeight(v);
+}
+
 interface PaletteSpec {
   colors: string[]; // one per lobe
   composite: GlobalCompositeOperation;
@@ -115,8 +119,9 @@ function resolvePalette(palette: HandoffBeamProps["palette"], tone: BjorkTone): 
   }
   return {
     colors: ["#d4541a", "#ef7a2e", "#ef7a2e", "#e2488e", "#f2a65c"],
-    composite: "source-over",
-    alpha: 0.55,
+    // Light surfaces wash a soft glow out; full-strength multiply keeps it ember (acceptance 6: saturation 0.38).
+    composite: "multiply",
+    alpha: 1,
   };
 }
 
@@ -163,6 +168,8 @@ interface Engine {
   inputAt: number; // loop clock of the last pointer or key input, -Infinity if none
   attractT: number;
   sweepT: number; // seconds spent thinking, so the sweep starts centred on gather
+  lastPhase: BeamPhase | null;
+  heights: Float32Array; // lobe heights, reused every frame
   voiceListen: () => [number, number, number];
   voiceSpeak: () => [number, number, number];
   analyserNode: AnalyserNode | null;
@@ -204,6 +211,8 @@ function createEngine(phase: BeamPhase): Engine {
     inputAt: Number.NEGATIVE_INFINITY,
     attractT: 0,
     sweepT: 0,
+    lastPhase: null,
+    heights: new Float32Array(5),
     voiceListen: createSimulatedVoice(11),
     voiceSpeak: createSimulatedVoice(29),
     analyserNode: null,
@@ -367,12 +376,18 @@ export function HandoffBeam({
         analyserNode = null;
       } else if (!inputActive) {
         e.attractT = (e.attractT + dt) % ATTRACT_PERIOD;
-        const seg = ATTRACT_SEGMENTS.find((s) => e.attractT < s.until) ?? ATTRACT_SEGMENTS[0];
+        let seg = ATTRACT_SEGMENTS[0];
+        for (let k = 0; k < ATTRACT_SEGMENTS.length; k++) {
+          if (e.attractT < ATTRACT_SEGMENTS[k].until) { seg = ATTRACT_SEGMENTS[k]; break; }
+        }
         phaseNow = seg.phase;
         analyserNode = null;
         levelSource = seg.phase === "speaking" ? e.voiceSpeak : e.voiceListen;
       }
     }
+    // Each thought starts centred: the sweep restarts when thinking begins.
+    if (phaseNow === "thinking" && e.lastPhase !== "thinking") e.sweepT = 0;
+    e.lastPhase = phaseNow;
 
     // Levels: raw input, then the envelope (or a direct copy under reduced motion).
     if (staticFrame) {
@@ -416,14 +431,9 @@ export function HandoffBeam({
     // Lobe heights. Lobe 0 breathes while idle, and the other lobes sit at 0 until spread lifts them.
     const breath = L.reduce ? 0.12 : 0.12 + 0.04 * Math.sin(2 * Math.PI * IDLE_BREATH_HZ * t);
     // Silence gates a lobe to 0, so a quiet listening state never out-glows idle (acceptance 2).
-    const gated = (b: number) => clamp01(e.bands[b] * 8) * bandHeight(e.bands[b]);
-    const heights = [
-      s * gated(0) + (1 - s) * breath,
-      s * gated(LOBE_BAND[1]),
-      s * gated(LOBE_BAND[2]),
-      s * gated(LOBE_BAND[3]),
-      s * gated(LOBE_BAND[4]),
-    ];
+    const heights = e.heights;
+    heights[0] = s * gatedHeight(e.bands[0]) + (1 - s) * breath;
+    for (let i = 1; i < 5; i++) heights[i] = s * gatedHeight(e.bands[LOBE_BAND[i]]);
 
     // Pixel buffer at half the CSS height, scaled up. The glow is soft, so this costs nothing visible.
     const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, DPR_CAP);

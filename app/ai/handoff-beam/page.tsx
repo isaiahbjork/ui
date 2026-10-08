@@ -74,7 +74,7 @@ function Composer({
   onMic: () => void;
 }) {
   return (
-    <div className="flex h-16 w-full items-center gap-2 rounded-[32px] border border-[color:var(--bjork-border,#232323)] bg-[color:var(--bjork-surface,#121212)] py-2 pr-2 pl-5 shadow-[var(--bjork-shadow-surface)] has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-[color:var(--bjork-accent)] has-[input:focus-visible]:ring-offset-2 has-[input:focus-visible]:ring-offset-[color:var(--bjork-ring-offset)]">
+    <div className="flex h-16 w-full items-center gap-2 rounded-[32px] border border-[color:var(--bjork-border,#232323)] bg-[color:var(--bjork-surface,#121212)] py-2 pr-2 pl-5 has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-inset has-[input:focus-visible]:ring-[color:var(--bjork-accent)]">
       <input
         aria-label="Message"
         placeholder="Ask anything"
@@ -129,7 +129,16 @@ export default function Page() {
 
   // Only a click requests the microphone. Nothing asks on load.
   const useMicrophone = () => {
-    if (micRef.current || typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
+    // A second click releases the microphone and falls back to the simulated voice.
+    const held = micRef.current;
+    if (held) {
+      held.stream.getTracks().forEach((track) => track.stop());
+      void held.context.close();
+      micRef.current = null;
+      setMic(null);
+      return;
+    }
+    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) return;
     navigator.mediaDevices
       .getUserMedia({ audio: true })
       .then((stream) => {
@@ -156,7 +165,7 @@ export default function Page() {
         previewCaptureScaleClassName="w-[560px] scale-[1.2]"
       >
         <div className="w-[min(560px,calc(100vw-56px))]">
-          <HandoffBeam phase="listening" level={POSE_LEVEL_FN} palette="ember" className="w-full">
+          <HandoffBeam phase="listening" level={POSE_LEVEL_FN} palette="ember" className="w-full shadow-[var(--bjork-shadow-surface)]">
             <Composer micOn={false} onMic={() => {}} />
           </HandoffBeam>
         </div>
@@ -188,7 +197,7 @@ export default function Page() {
           palette={palette}
           gatherOffset={0.5}
           attract={attract}
-          className="w-full"
+          className="w-full shadow-[var(--bjork-shadow-surface)]"
         >
           <Composer micOn={mic !== null} onMic={useMicrophone} />
         </HandoffBeam>
