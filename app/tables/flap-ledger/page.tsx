@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useVisibleLoop } from "@/components/bjork-ui/_core/loop";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { BjorkButton, BjorkButtonGroup } from "@/components/bjork-ui/primitives";
@@ -61,23 +62,21 @@ export default function FlapLedgerDemo() {
   const size = isPreview ? "md" : narrow ? "sm" : sizeChoice;
 
   const [step, setStep] = useState(0);
-  const [inView, setInView] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
+  // The demo shell mounts its children after the first commit, so a plain ref is
+  // still null when the loop subscribes. Hold the element in state instead.
+  const [wrapEl, setWrapEl] = useState<HTMLDivElement | null>(null);
+  const wrapRef = useMemo(() => ({ current: wrapEl }), [wrapEl]);
+  const accRef = useRef(0);
 
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(([entry]) => setInView(entry.isIntersecting));
-    observer.observe(el);
-    return () => observer.disconnect();
+  // Demo data updates every 6s while on screen and the tab is visible. Preview captures stay on the first set.
+  const tick = useCallback((dt: number) => {
+    accRef.current += dt;
+    if (accRef.current >= 6) {
+      accRef.current = 0;
+      setStep((s) => (s + 1) % FLAP_LEDGER_SAMPLE_ROWS.length);
+    }
   }, []);
-
-  // Demo data updates every 6s while on screen. Preview captures stay on the first set.
-  useEffect(() => {
-    if (isPreview || attractParam || !inView) return;
-    const id = window.setInterval(() => setStep((s) => (s + 1) % FLAP_LEDGER_SAMPLE_ROWS.length), 6000);
-    return () => window.clearInterval(id);
-  }, [isPreview, attractParam, inView]);
+  useVisibleLoop(wrapRef, tick, { enabled: !isPreview && !attractParam });
 
   const rows = FLAP_LEDGER_SAMPLE_ROWS[isPreview ? 0 : step];
 
@@ -97,7 +96,7 @@ const columns: FlapColumn[] = [
   rows={rows}
   status={(row) => (row.status === "DELAYED" ? "warn" : "ok")}
 />`}
-      previewScaleClassName="w-[1000px] scale-[0.78]"
+      previewScaleClassName="w-[1012px] scale-[0.78]"
       previewLayout={isPreview ? "single" : "list"}
     >
       {!isPreview ? (
@@ -130,7 +129,7 @@ const columns: FlapColumn[] = [
           </BjorkButtonGroup>
         </div>
       ) : null}
-      <div ref={wrapRef} className="w-full min-w-0">
+      <div ref={setWrapEl} className="w-full min-w-0">
         <FlapLedger
           columns={columns}
           rows={rows}
