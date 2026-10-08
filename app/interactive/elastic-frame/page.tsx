@@ -154,7 +154,7 @@ export function Demo() {
                 pluck(frameRef, (plucks.current * 0.31) % 1, 26);
                 plucks.current += 1;
               }}
-              className="rounded-[10px] border px-3 py-1 text-sm transition active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#ec5c13] focus-visible:outline-none"
+              className="rounded-[10px] border px-3 py-1 text-sm transition active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:outline-none"
               style={{ background: BJORK_PALETTE[tone].raised, borderColor: BJORK_PALETTE[tone].borderStrong, color: BJORK_PALETTE[tone].text }}
             >
               Pluck
