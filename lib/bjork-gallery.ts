@@ -1115,7 +1115,18 @@ export const galleryItems: GalleryItem[] = [
 
   // @slot bjork111 scatter-rewind
 
-  // @slot bjork112 plane-type
+  {
+    id: "bjork112",
+    slug: "plane-type",
+    title: "Plane type",
+    route: "/text/plane-type",
+    sourcePath: "components/bjork-ui/text/plane-type.tsx",
+    tier: "copy",
+    collection: "Text",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   {
     id: "bjork113",

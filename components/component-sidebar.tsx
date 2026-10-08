@@ -136,7 +136,7 @@ const componentRoutes: ComponentGroup[] = [
     title: "Text",
     routes: [
       { name: "Reveal Text", path: "/heroes/reveal-text" },
-      // @slot plane-type
+      { name: "Plane Type", path: "/text/plane-type" },
 
       // @slot scatter-rewind
 
