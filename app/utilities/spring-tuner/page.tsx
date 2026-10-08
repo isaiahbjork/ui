@@ -48,7 +48,11 @@ export default function Page() {
       item={item}
       description="Tune a spring by grabbing its overshoot, see it run, and copy the exact config."
       usageCode={`<SpringTuner
-  defaultValue={{ stiffness: 300, damping: 30, mass: 0.8 }}
+  defaultValue={{ stiffness: 400, damping: 25, mass: 1 }}
+  defaultGhosts={[
+    { stiffness: 300, damping: 30, mass: 0.8 },
+    { stiffness: 200, damping: 25, mass: 1.2 },
+  ]}
   onCopy={(code) => console.log(code)}
 />
 
@@ -59,12 +63,20 @@ export default function Page() {
   )}
 </SpringTuner>`}
       details={<FlipDemo />}
-      previewScaleClassName="w-[760px] scale-[0.9]"
+      previewScaleClassName="w-[340px]"
+      previewCaptureScaleClassName="w-[760px] scale-[1.3]"
     >
       {isPreview ? (
         <SpringTuner value={springs.snappy} defaultGhosts={[springs.standard, springs.press, springs.soft]} />
       ) : (
-        <SpringTuner defaultValue={{ stiffness: 300, damping: 30, mass: 0.8 }} attract={false} />
+        <div className="w-[min(560px,calc(100vw-56px))] min-w-0">
+          <SpringTuner
+            className="w-full"
+            defaultValue={springs.snappy}
+            defaultGhosts={[springs.standard, springs.soft]}
+            attract={false}
+          />
+        </div>
       )}
     </SimpleComponentDemoPage>
   );

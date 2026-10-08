@@ -187,6 +187,10 @@ export function SpringTuner({
 
   const [history, setHistory] = useState<SpringConfig[]>(defaultGhosts ?? []);
   const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current);
+  }, []);
 
   // Gesture bookkeeping. A gesture (one drag, one held key, one preset click) pushes its starting config
   // into the ghost history once, when it ends with a different config.
@@ -359,8 +363,10 @@ export function SpringTuner({
 
   const onHandleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const step: Record<string, [keyof SpringConfig, number]> = {
-      ArrowUp: ["damping", 1],
-      ArrowDown: ["damping", -1],
+      // Deliberately flipped from the plan text: ArrowUp lowers damping, which raises overshoot, so the key
+      // moves the handle the same way a drag up does.
+      ArrowUp: ["damping", -1],
+      ArrowDown: ["damping", 1],
       ArrowRight: ["stiffness", 10],
       ArrowLeft: ["stiffness", -10],
     };
@@ -398,7 +404,11 @@ export function SpringTuner({
       await navigator.clipboard.writeText(code);
       onCopy?.(code);
       setCopied(true);
-      window.setTimeout(() => setCopied(false), 1200);
+      if (copiedTimer.current !== null) window.clearTimeout(copiedTimer.current);
+      copiedTimer.current = window.setTimeout(() => {
+        copiedTimer.current = null;
+        setCopied(false);
+      }, 1200);
     } catch {
       // Clipboard is blocked or unavailable. Nothing to report.
     }
