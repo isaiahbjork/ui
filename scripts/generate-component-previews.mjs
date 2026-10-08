@@ -22,9 +22,14 @@ const viewport = { width: 1280, height: 720 };
 const clip = { x: 190, y: 100, width: 900, height: 520, scale: 1 };
 
 const registry = await readFile(registryPath, "utf8");
-const items = [...registry.matchAll(/slug: "([^"]+)"[\s\S]*?route: "([^"]+)"/g)].map(
-  ([, slug, route]) => ({ slug, route })
-);
+// Studio routes (absolute http URLs) are live iframes and are never captured.
+const previewOnly = process.env.PREVIEW_ONLY
+  ? new Set(process.env.PREVIEW_ONLY.split(",").map((slug) => slug.trim()).filter(Boolean))
+  : null;
+const items = [...registry.matchAll(/slug: "([^"]+)"[\s\S]*?route: "([^"]+)"/g)]
+  .map(([, slug, route]) => ({ slug, route }))
+  .filter((item) => !item.route.startsWith("http"))
+  .filter((item) => !previewOnly || previewOnly.has(item.slug));
 
 if (items.length === 0) {
   throw new Error("No gallery items found in lib/bjork-gallery.ts");
@@ -44,7 +49,7 @@ await mkdir(outDir, { recursive: true });
 const userDataDir = await mkdtemp(join(tmpdir(), "bjork-preview-chrome-"));
 const chrome = spawn(chromePath, [
   "--headless=new",
-  "--disable-gpu",
+  "--use-angle=metal",
   "--hide-scrollbars",
   "--no-first-run",
   "--no-default-browser-check",
