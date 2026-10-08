@@ -1131,7 +1131,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork109 morph-loader
+  {
+    id: "bjork109",
+    slug: "morph-loader",
+    title: "Morph loader",
+    route: "/feedback/morph-loader",
+    sourcePath: "components/bjork-ui/feedback/morph-loader.tsx",
+    tier: "copy",
+    collection: "Feedback",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   {
     id: "bjork110",
