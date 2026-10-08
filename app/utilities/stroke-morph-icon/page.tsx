@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import { BjorkButtonGroup } from "@/components/bjork-ui/primitives/button-group";
+import { BjorkSelect } from "@/components/bjork-ui/primitives/select";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import {
   StrokeMorphIcon,
@@ -95,21 +96,14 @@ function Demo() {
         />
         {!isPreview && (
           <div className="flex items-center gap-2">
-            <label className="sr-only" htmlFor="stroke-morph-hero-name">
-              Morph the hero icon to
+            <label className="inline-flex items-center">
+              <span className="sr-only">Morph the hero icon to</span>
+              <BjorkSelect
+                options={ALL_NAMES.map((name) => ({ value: name, label: name }))}
+                value={heroName}
+                onValueChange={(value) => setHeroName(value as StrokeIconName)}
+              />
             </label>
-            <select
-              id="stroke-morph-hero-name"
-              value={heroName}
-              onChange={(event) => setHeroName(event.target.value)}
-              className="h-9 rounded-[12px] border border-[var(--bjork-border,#232323)] bg-[var(--bjork-surface,#121212)] px-3 font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-[#ec5c13]/45"
-            >
-              {ALL_NAMES.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
             <BjorkButton variant="secondary" size="sm" onClick={() => setHeroName((n) => randomNameOtherThan(n))}>
               Random
             </BjorkButton>
@@ -127,7 +121,7 @@ function Demo() {
               type="button"
               aria-label={`Morph ${current} to ${next}`}
               onClick={() => stepCell(cell)}
-              className="flex size-[72px] cursor-pointer items-center justify-center rounded-[14px] border border-[var(--bjork-border,#232323)] bg-[var(--bjork-surface,#121212)] outline-none transition-[border-color] duration-150 ease-out hover:border-[var(--bjork-border-strong,#343434)] focus-visible:ring-2 focus-visible:ring-[#ec5c13]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bjork-ring-offset,#050505)] active:scale-[0.97]"
+              className="flex size-[72px] cursor-pointer items-center justify-center rounded-[14px] border border-[var(--bjork-border,#232323)] bg-[var(--bjork-surface,#121212)] outline-none transition-[border-color] duration-150 ease-out hover:border-[var(--bjork-border-strong,#343434)] focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bjork-ring-offset,#050505)] active:scale-[0.97]"
             >
               <StrokeMorphIcon name={current} size={28} strokeWidth={strokeWidth} spring={spring} />
             </button>
@@ -186,7 +180,8 @@ export function Demo() {
     </button>
   );
 }`}
-      previewScaleClassName="w-[760px] scale-[0.8]"
+      previewScaleClassName="w-[420px]"
+      previewCaptureScaleClassName="w-[420px] scale-[1.7]"
     >
       <Demo />
     </SimpleComponentDemoPage>
