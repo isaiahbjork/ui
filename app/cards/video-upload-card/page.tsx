@@ -15,7 +15,7 @@ export default function VideoUploadCardPage() {
   const previewTone = isPreview ? (isPreviewLight ? "light" : "dark") : undefined;
   const demo = (
     <div className="flex w-full items-center justify-center px-6">
-      <VideoUploadCard tone={previewTone} />
+      <VideoUploadCard tone={previewTone} triggerAnimation />
     </div>
   );
 
