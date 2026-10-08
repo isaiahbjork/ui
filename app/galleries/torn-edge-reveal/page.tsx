@@ -69,7 +69,7 @@ function Pieces({
         edges={["left"]}
         tearDepth={depth}
         reveal={reveal}
-        className="w-full max-w-[180px]"
+        className="w-full max-w-[220px]"
       >
         <div className="flex min-h-[240px] flex-col justify-between bg-[color:var(--bjork-surface,#121212)] p-6">
           <p className="font-bjork-display text-[28px] leading-[1.1] text-[color:var(--bjork-text,#ededed)]">
@@ -117,7 +117,8 @@ export default function Page() {
             <BjorkButton variant="ghost" size="sm" onClick={() => setSeedKey(newSeedKey())}>
               Re-roll seed
             </BjorkButton>
-            <div className="flex w-[200px] items-center gap-3">
+            <div className="flex w-[240px] items-center gap-3">
+              <span className="font-mono text-[12px] text-[color:var(--bjork-text-medium,rgba(237,237,237,0.72))]">Depth</span>
               <BjorkSlider
                 aria-label="Tear depth"
                 min={0.2}

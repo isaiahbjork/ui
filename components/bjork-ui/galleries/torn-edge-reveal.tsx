@@ -48,7 +48,6 @@ const MIN_TEAR_SIZE = 48;
 const ATTRACT_MS = 6000;
 const ATTRACT_IDLE_MS = 4000;
 const RESIZE_DEBOUNCE_MS = 100;
-const CORNER_TAPER = 12; // px over which a torn edge tapers into a torn neighbour
 const HOVER_LIFT = { y: -3, rotate: -0.3 } as const;
 const easeOut = cubicBezier(0.23, 1, 0.32, 1);
 
@@ -106,11 +105,6 @@ interface TearOptions {
   radius: number;
 }
 
-function smooth(x: number): number {
-  const t = Math.min(1, Math.max(0, x));
-  return t * t * (3 - 2 * t);
-}
-
 function edgeFrame(edge: TornEdge, w: number, h: number): EdgeFrame {
   // Origin, travel direction (clockwise), and inward normal for each edge.
   switch (edge) {
@@ -148,20 +142,10 @@ function buildTearModel(w: number, h: number, opts: TearOptions): TearModel {
     const fbm = fbm1D(base);
     const vDepth = valueNoise1D(base + 1);
     const vRim = valueNoise1D(base + 2);
-    // Where this edge meets another torn edge, depth and rim taper to zero so the corner does not spike.
-    const idx = EDGE_ORDER.indexOf(edge);
-    const startTorn = torn.includes(EDGE_ORDER[(idx + 3) % 4]);
-    const endTorn = torn.includes(EDGE_ORDER[(idx + 1) % 4]);
-    const taper = (s: number) => {
-      let t = 1;
-      if (startTorn) t = Math.min(t, smooth(s / CORNER_TAPER));
-      if (endTorn) t = Math.min(t, smooth((frame.length - s) / CORNER_TAPER));
-      return t;
-    };
     const samples: TearSample[] = [];
     for (let i = 0; i <= count; i++) {
       const s = (i * frame.length) / count;
-      const t = taper(s);
+      const t = 1;
       const depth =
         Math.max(0, opts.tearDepth * 14 * (0.5 + 0.5 * fbm(s / 90)) + vDepth(s / 7) * 1.2) * t;
       const rim = opts.rimWidth * (0.6 + 0.8 * (vRim(s / 40) * 0.5 + 0.5)) * t;
@@ -170,6 +154,12 @@ function buildTearModel(w: number, h: number, opts: TearOptions): TearModel {
     tears[edge] = { frame, samples, step: frame.length / count };
   });
   return { w, h, r, tears };
+}
+
+function inwardAt(tear: TearEdge, j: number, p: number, rimMode: boolean): number {
+  const sample = tear.samples[j];
+  const torn = p >= 1 || sample.s / tear.frame.length < p;
+  return torn ? (rimMode ? sample.depth + sample.rim : sample.depth) : 0;
 }
 
 // Outline of the paper (rimMode false) or the media window (rimMode true).
@@ -194,11 +184,17 @@ function outlinePath(m: TearModel, p: number, rimMode: boolean): string {
     const corner = { x: f.x, y: f.y };
     const tear = m.tears[edge];
     if (tear) {
+      const prev = m.tears[at(i - 1)];
+      const next = m.tears[at(i + 1)];
+      const last = tear.samples.length - 1;
       for (let j = 0; j < tear.samples.length; j++) {
         const sample = tear.samples[j];
-        const torn = p >= 1 || sample.s / f.length < p;
-        const inward = torn ? (rimMode ? sample.depth + sample.rim : sample.depth) : 0;
-        const pt = pointAt(f, sample.s, inward);
+        const inward = inwardAt(tear, j, p, rimMode);
+        // Where two torn edges meet, both end on the same inner point, so the corner is cut inward, never spiked.
+        let s = sample.s;
+        if (j === 0 && prev) s = inwardAt(prev, prev.samples.length - 1, p, rimMode);
+        if (j === last && next) s = f.length - inwardAt(next, 0, p, rimMode);
+        const pt = pointAt(f, s, inward);
         if (start === null) {
           start = pt;
           emit("M", pt);
