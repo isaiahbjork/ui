@@ -993,7 +993,18 @@ export const galleryItems: GalleryItem[] = [
 
   // @slot bjork112 plane-type
 
-  // @slot bjork113 elastic-frame
+  {
+    id: "bjork113",
+    slug: "elastic-frame",
+    title: "Elastic frame",
+    route: "/interactive/elastic-frame",
+    sourcePath: "components/bjork-ui/interactive/elastic-frame.tsx",
+    tier: "copy",
+    collection: "Interactive",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
 ];
 
