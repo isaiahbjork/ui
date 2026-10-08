@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useSyncExternalStore,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -56,6 +57,8 @@ export interface AgentTraceProps {
   tone?: BjorkTone;
   /** Plays a built-in demo script on a loop. Ignores `steps`. */
   attract?: boolean;
+  /** Demo/preview only: freezes the clock. */
+  now?: number;
   className?: string;
 }
 
@@ -69,8 +72,10 @@ const TICK_MS = 100;
 const AUTO_COLLAPSE_MS = 800;
 const ATTRACT_IDLE_MS = 4000;
 const ATTRACT_CYCLE_S = 16;
+// Gap between a glyph's edge and the rail: 8px glyph radius + 3px air.
+const GLYPH_GAP = 11;
 const SHIMMER_KEYFRAMES =
-  "@keyframes agent-trace-shimmer { from { background-position: 0 -24px; } to { background-position: 0 calc(100% + 24px); } }";
+  "@keyframes agent-trace-shimmer { from { transform: translateY(-24px); } to { transform: translateY(var(--rail-h, 48px)); } }";
 
 const STATUS_ICON: Record<AgentStepStatus, StrokeIconName> = {
   pending: "dot",
@@ -160,7 +165,7 @@ function liveElapsed(
 function railOf(owner: AgentStep | undefined, slow: boolean, reduce: boolean): RailState {
   const color = slow ? "var(--bjork-warning)" : "var(--bjork-accent)";
   if (!owner) return { scale: 0, color, shimmer: false };
-  if (owner.status === "done") return { scale: 1, color, shimmer: false };
+  if (owner.status === "done" || owner.status === "skipped") return { scale: 1, color, shimmer: false };
   if (owner.status === "active") {
     // Reduced motion: a static half-filled segment instead of the shimmer.
     return reduce ? { scale: 0.5, color, shimmer: false } : { scale: 0, color, shimmer: true };
@@ -184,11 +189,19 @@ export function AgentTrace({
   density = "comfortable",
   tone: toneProp,
   attract = false,
+  now,
   className,
 }: AgentTraceProps) {
   const tone = useBjorkTone(toneProp);
   const pal = BJORK_PALETTE[tone];
-  const reduce = useReducedMotion() === true;
+  // Hydration-safe: the server and the first client render both report "not reduced", then the real value applies.
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const reducedMotion = useReducedMotion();
+  const reduce = hydrated && reducedMotion === true;
   const rootRef = useRef<HTMLDivElement>(null);
   const listId = useId();
 
@@ -241,20 +254,20 @@ export function AgentTrace({
   const activeSince = useRef(new Map<string, number>());
   const liveSlowRef = useRef(new Set<string>());
   const [liveSlow, setLiveSlow] = useState<ReadonlySet<string>>(() => new Set());
-  const latest = useRef({ displayed, slowThresholdMs, playing });
+  const latest = useRef({ displayed, slowThresholdMs, playing, now });
 
   const paintLive = useCallback(() => {
     const root = rootRef.current;
     if (!root) return;
     const { displayed: list, playing: live } = latest.current;
-    const now = Date.now();
+    const clock = latest.current.now ?? Date.now();
     let total = 0;
     for (const s of list) if (s.durationMs !== undefined) total += s.durationMs;
     const active = list.find((s) => s.status === "active");
-    if (active) total += liveElapsed(active, now, live, elapsedRef.current, activeSince.current);
+    if (active) total += liveElapsed(active, clock, live, elapsedRef.current, activeSince.current);
     root.querySelectorAll<HTMLElement>("[data-live-elapsed]").forEach((el) => {
       const step = list.find((s) => s.id === el.dataset.liveElapsed);
-      if (step) el.textContent = formatMs(liveElapsed(step, now, live, elapsedRef.current, activeSince.current));
+      if (step) el.textContent = formatMs(liveElapsed(step, clock, live, elapsedRef.current, activeSince.current));
     });
     const totalEl = root.querySelector<HTMLElement>("[data-live-total]");
     if (totalEl) totalEl.textContent = formatMs(total);
@@ -262,14 +275,14 @@ export function AgentTrace({
 
   // Runs after every commit. It records when steps became active and repaints the live text.
   useLayoutEffect(() => {
-    latest.current = { displayed, slowThresholdMs, playing };
-    const now = Date.now();
+    latest.current = { displayed, slowThresholdMs, playing, now };
+    const clock = now ?? Date.now();
     const since = activeSince.current;
     const activeIds = new Set<string>();
     for (const s of displayed) {
       if (s.status !== "active") continue;
       activeIds.add(s.id);
-      if (s.startedAt === undefined && !since.has(s.id)) since.set(s.id, now);
+      if (s.startedAt === undefined && !since.has(s.id)) since.set(s.id, clock);
     }
     for (const id of since.keys()) if (!activeIds.has(id)) since.delete(id);
     paintLive();
@@ -277,10 +290,10 @@ export function AgentTrace({
 
   const tick = useCallback(() => {
     paintLive();
-    const { displayed: list, slowThresholdMs: threshold, playing: live } = latest.current;
+    const { displayed: list, slowThresholdMs: threshold, playing: live, now: frozen } = latest.current;
     const active = list.find((s) => s.status === "active");
     if (!active || liveSlowRef.current.has(active.id)) return;
-    const ms = liveElapsed(active, Date.now(), live, elapsedRef.current, activeSince.current);
+    const ms = liveElapsed(active, frozen ?? Date.now(), live, elapsedRef.current, activeSince.current);
     if (ms > threshold) {
       liveSlowRef.current.add(active.id);
       setLiveSlow(new Set(liveSlowRef.current));
@@ -289,10 +302,10 @@ export function AgentTrace({
 
   const hasActive = displayed.some((s) => s.status === "active");
   useEffect(() => {
-    if (!hasActive) return;
+    if (!hasActive || now !== undefined) return;
     const id = window.setInterval(tick, TICK_MS);
     return () => window.clearInterval(id);
-  }, [hasActive, tick]);
+  }, [hasActive, now, tick]);
 
   // Attract clock. Pauses for 4s after any pointer or key input inside the component.
   const markInput = useCallback(() => {
@@ -510,9 +523,11 @@ function StepRow({ step, aboveRail, belowRail, slow, pal, reduce, pad, centre, m
 
   return (
     <motion.li
-      initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6, filter: "blur(4px)" }}
-      animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0, filter: "blur(0px)" }}
-      transition={reduce ? { duration: 0.12, ease: ease.out } : springs.blurIn}
+      // The blur is set on both sides of the reduced branch: hydration starts unreduced, so a reduced
+      // animate target without a filter would leave the blur in place.
+      initial={reduce ? { opacity: 0, filter: "blur(0px)" } : { opacity: 0, y: 6, filter: "blur(4px)" }}
+      animate={reduce ? { opacity: 1, filter: "blur(0px)" } : { opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={reduce ? { opacity: { duration: 0.12, ease: ease.out }, filter: { duration: 0 } } : springs.blurIn}
       className="relative"
       style={{ minHeight, paddingTop: pad, paddingBottom: pad }}
       data-status={step.status}
@@ -529,7 +544,7 @@ function StepRow({ step, aboveRail, belowRail, slow, pal, reduce, pad, centre, m
         <div className="flex min-w-0 items-baseline gap-3">
           <div className="flex min-w-0 flex-1 items-baseline">
             {step.kind && (
-              <span className="mr-2 hidden shrink-0 font-mono text-[10px] uppercase leading-5 tracking-[0.08em] text-[color:var(--bjork-text-faint)] @[420px]:inline">
+              <span className="mr-2 hidden w-[44px] shrink-0 truncate font-mono text-[10px] uppercase leading-5 tracking-[0.08em] text-[color:var(--bjork-text-faint)] @[420px]:inline-block">
                 {step.kind}
               </span>
             )}
@@ -588,9 +603,23 @@ function RailHalf({
   centre: number;
   reduce: boolean;
 }) {
-  const position = edge === "upper" ? { top: 0, height: centre } : { top: centre, bottom: 0 };
+  // The rail stops short of the glyph, so no line is drawn through a check, a busy ring or a pending dot.
+  const position =
+    edge === "upper"
+      ? { top: 0, height: Math.max(0, centre - GLYPH_GAP) }
+      : { top: centre + GLYPH_GAP, bottom: 0 };
+  const railRef = useRef<HTMLDivElement>(null);
+  // The shimmer travels the full rail height, so it measures the rail and publishes it as a custom property.
+  useEffect(() => {
+    const el = railRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => el.style.setProperty("--rail-h", `${el.clientHeight}px`));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
     <div
+      ref={railRef}
       aria-hidden="true"
       className="pointer-events-none absolute left-[14px] w-px -translate-x-1/2 overflow-hidden bg-[color:var(--bjork-border)]"
       style={position}
@@ -605,9 +634,9 @@ function RailHalf({
       />
       {state.shimmer && (
         <div
-          className="absolute inset-0"
+          className="absolute inset-x-0 top-0 h-[24px]"
           style={{
-            background: `linear-gradient(to bottom, transparent, ${state.color}, transparent) 0 -24px / 100% 24px no-repeat`,
+            background: `linear-gradient(to bottom, transparent, ${state.color}, transparent)`,
             animation: "agent-trace-shimmer 1.4s linear infinite",
           }}
         />
