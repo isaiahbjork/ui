@@ -50,6 +50,7 @@ const TWEEN_MS = 120;
 const FLICK_SPEED = 8; // items per second
 const FLICK_EVERY = 4; // seconds of idle before an attract flick
 const SNAP_SPEED = 0.5; // items per second, below which the wheel snaps to a detent
+const MAX_FLICK = 6; // items/s, keeps any flick's settle ≤ 1.2s
 const RELEASE_WINDOW_MS = 80;
 const SAMPLE_KEEP_MS = 200;
 const RUBBER = 0.35;
@@ -296,11 +297,12 @@ export function ClickWheel({
         const pr = (now - f.t0) / FLASH_MS;
         const el = tickEls.current[f.tick];
         if (pr >= 1) {
-          if (el) el.style.opacity = "";
+          if (el) el.style.transform = "";
           continue;
         }
-        // Opacity 0.3, 1, 0.3 over 160ms.
-        if (el) el.style.opacity = String(pr < 0.5 ? 0.3 + 1.4 * pr : 0.3 + 1.4 * (1 - pr));
+        // Ticks rest at full opacity, so the flash is a pulse: the tick grows from 6px to 10px and back over 160ms.
+        // This deliberately replaces the plan's opacity flash, which dipped the tick below its resting opacity.
+        if (el) el.style.transform = `scaleY(${(1 + 0.67 * Math.sin(Math.PI * pr)).toFixed(3)})`;
         keep.push(f);
       }
       flashes.current = keep;
@@ -445,6 +447,7 @@ export function ClickWheel({
       const span = (b.t - a.t) / 1000;
       if (span > 0) v = (b.p - a.p) / span;
     }
+    v = clamp(v, -MAX_FLICK, MAX_FLICK);
     const pos = posRef.current;
     const outside = !loop && n > 0 && (pos < 0 || pos > n - 1);
     const target = restStep(Math.round(pos), n, loop);
@@ -640,7 +643,8 @@ export function ClickWheel({
                 style={{
                   left: "calc(50% - 0.5px)",
                   top: 7,
-                  background: n > 0 && i === shown % detents ? accent : faint,
+                  transformOrigin: "50% 0",
+                  background: n > 0 && i === shown % detents ? accent : resolvedTone === "light" ? soft : faint,
                 }}
               />
             </span>
@@ -652,6 +656,7 @@ export function ClickWheel({
             />
           </span>
         </div>
+        {/* pl offsets the trailing letter-spacing so the ink is centred (blur test: -0.44px) */}
         <motion.button
           type="button"
           aria-label={current ? `Select ${current.label}` : "Select"}
@@ -659,7 +664,7 @@ export function ClickWheel({
           onClick={selectCurrent}
           whileTap={{ scale: 0.96 }}
           transition={springs.press}
-          className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full font-mono text-[11px] uppercase leading-none tracking-[0.08em] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)] disabled:opacity-45"
+          className="absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full pl-[0.08em] font-mono text-[11px] uppercase leading-none tracking-[0.08em] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)] disabled:opacity-45"
           style={{
             width: centerD,
             height: centerD,

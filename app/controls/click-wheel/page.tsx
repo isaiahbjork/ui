@@ -5,7 +5,7 @@ import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-sh
 import { ClickWheel, type ClickWheelItem } from "@/components/bjork-ui/controls/click-wheel";
 import { BjorkSelect } from "@/components/bjork-ui/primitives/select";
 import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
-import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("click-wheel");
@@ -45,6 +45,7 @@ const DETENT_OPTIONS = [
 
 export default function Page() {
   const isPreview = usePreviewMode();
+  const attractParam = usePreviewSearchParam("attract") === "1";
   const [inertia, setInertia] = useState("0.94");
   const [detents, setDetents] = useState("12");
   const [loop, setLoop] = useState(false);
@@ -79,6 +80,7 @@ export default function Page() {
 />`}
       details={details}
       previewScaleClassName="w-[360px] scale-[0.9]"
+      previewCaptureScaleClassName="w-[360px] scale-[1.08]"
     >
       {isPreview ? (
         <ClickWheel items={TRACKS} value={4} attract={false} />
@@ -89,7 +91,7 @@ export default function Page() {
           inertia={Number(inertia)}
           detentsPerRev={Number(detents)}
           loop={loop}
-          attract={false}
+          attract={attractParam}
           onSelect={(picked) => setSelected(picked.label)}
         />
       )}
