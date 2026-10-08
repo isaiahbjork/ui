@@ -165,7 +165,9 @@ async function fetchJson(url) {
 
 async function assertPageCaptured(target, cdp) {
   const { result } = await cdp.send("Runtime.evaluate", {
-    expression: "document.body?.innerText || ''",
+    // The Next dev overlay lives in a shadow root, so read that as well.
+    expression:
+      "(document.body?.innerText || '') + ' ' + [...document.querySelectorAll('nextjs-portal')].map((el) => el.shadowRoot?.textContent || '').join(' ')",
     returnByValue: true,
   });
   const bodyText = result?.value ?? "";
@@ -174,6 +176,7 @@ async function assertPageCaptured(target, cdp) {
     bodyText.includes("This site can't be reached") ||
     bodyText.includes("ERR_CONNECTION_REFUSED") ||
     bodyText.includes("Runtime Error") ||
+    bodyText.includes("Build Error") ||
     bodyText.includes("Cannot find module")
   ) {
     throw new Error(`Preview route failed before capture: ${target.toString()}`);

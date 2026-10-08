@@ -1,0 +1,207 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "decode-text",
+  "title": "Decode text",
+  "description": "Decode text is a production-ready text component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/text/decode-text.tsx",
+      "content": "\"use client\";\n\nimport {\n  useCallback,\n  useEffect,\n  useImperativeHandle,\n  useLayoutEffect,\n  useMemo,\n  useRef,\n  useState,\n  type Ref,\n} from \"react\";\nimport { useReducedMotion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { BJORK_PALETTE, type BjorkTone } from \"../_core/palette\";\nimport { useBjorkTone } from \"../_core/tone\";\nimport { useVisibleLoop } from \"../_core/loop\";\nimport { mulberry32 } from \"../_core/random\";\n\nexport type DecodeCharsetName = \"blocks\" | \"box\" | \"braille\" | \"katakana-half\" | \"math\" | \"binary\";\n/** A named glyph set, or any custom string of glyphs to scramble through. */\nexport type DecodeCharset = DecodeCharsetName | (string & {});\nexport type DecodeOrder = \"left\" | \"center\" | \"random\";\nexport type DecodeTrigger = \"mount\" | \"inView\" | \"hover\" | \"manual\";\n\nexport interface DecodeTextHandle {\n  /** Scramble and decode again from the start. */\n  replay: () => void;\n}\n\nexport interface DecodeTextProps {\n  /** Text to decode. Ignored when `words` is set. */\n  text?: string;\n  /** Cycle through these, decoding from one to the next. */\n  words?: string[];\n  charset?: DecodeCharset;\n  /** Where the lock-in starts. */\n  order?: DecodeOrder;\n  trigger?: DecodeTrigger;\n  /** Seconds from the first glyph locking to the last. */\n  duration?: number;\n  /** Seconds before the first glyph can lock. */\n  delay?: number;\n  /** 0..1 share of each glyph's settle time that is randomised. */\n  jitter?: number;\n  /** Scramble glyph changes per second, per cell. */\n  scrambleRate?: number;\n  /** Seconds a resolved word holds before the next one decodes. */\n  interval?: number;\n  /** Deterministic scramble and settle order. */\n  seed?: number;\n  /** 0..1 renders a still frame of the decode at that point. No loop runs. */\n  frozenProgress?: number;\n  tone?: BjorkTone;\n  color?: string;\n  /** Flash on each glyph as it locks. */\n  accentColor?: string;\n  /** Colour of unresolved glyphs. */\n  scrambleColor?: string;\n  /** Upper bound in px. The line shrinks to fit its container. */\n  fontSize?: number;\n  fontFamily?: string;\n  fontWeight?: number;\n  /** Letter spacing in em. */\n  tracking?: number;\n  uppercase?: boolean;\n  align?: \"left\" | \"center\";\n  className?: string;\n  ariaLabel?: string;\n  onComplete?: () => void;\n  ref?: Ref<DecodeTextHandle>;\n}\n\nconst CHARSETS: Record<DecodeCharsetName, string> = {\n  blocks: \"░▒▓█▌▐▀▄▖▗▘▝▚▞\",\n  box: \"─│┼╳┌┐└┘├┤┬┴╱╲═║╋\",\n  braille: Array.from({ length: 255 }, (_, i) => String.fromCharCode(0x2801 + i)).join(\"\"),\n  \"katakana-half\": Array.from({ length: 56 }, (_, i) => String.fromCharCode(0xff66 + i)).join(\"\"),\n  math: \"∑∂∆∇∫∏√∞≈≠≤≥±×÷∈∩∪∀∃∅⊂⊕\",\n  binary: \"01\",\n};\n\nconst FLASH = 0.45; // seconds the lock flash takes to fade\nconst START_LEAD = 0.4; // share of a cell's settle time spent showing the old glyph on word changes\n\nfunction resolveCharset(c: DecodeCharset): string[] {\n  const named = (CHARSETS as Record<string, string>)[c];\n  const glyphs = Array.from(named ?? c).filter((g) => g.trim() !== \"\");\n  return glyphs.length ? glyphs : Array.from(CHARSETS.blocks);\n}\n\n// Integer hash to [0, 1).\nfunction hash3(a: number, b: number, c: number): number {\n  let h = Math.imul(a | 0, 374761393) ^ Math.imul(b | 0, 668265263) ^ Math.imul(c | 0, 2246822519);\n  h = Math.imul(h ^ (h >>> 13), 1274126177);\n  h ^= h >>> 16;\n  return (h >>> 0) / 4294967296;\n}\n\ninterface Plan {\n  chars: string[];\n  from: string[];\n  settle: number[];\n  start: number[];\n  rate: number[];\n  seed: number;\n  end: number;\n}\n\nfunction makePlan(\n  chars: string[],\n  from: string[],\n  order: DecodeOrder,\n  delay: number,\n  duration: number,\n  jitter: number,\n  scrambleRate: number,\n  seed: number,\n): Plan {\n  const rand = mulberry32(seed);\n  const n = chars.length;\n  const mid = (n - 1) / 2;\n  const settle: number[] = [];\n  const start: number[] = [];\n  const rate: number[] = [];\n  let end = 0;\n  for (let i = 0; i < n; i++) {\n    const r1 = rand();\n    const r2 = rand();\n    let rank: number;\n    if (order === \"center\") rank = mid > 0 ? Math.abs(i - mid) / mid : 0;\n    else if (order === \"random\") rank = r1;\n    else rank = n > 1 ? i / (n - 1) : 0;\n    const s = delay + duration * ((1 - jitter) * rank + jitter * r2);\n    settle.push(s);\n    start.push(from.length ? s * START_LEAD : 0);\n    rate.push(scrambleRate * (0.7 + 0.6 * r1));\n    end = Math.max(end, s);\n  }\n  return { chars, from, settle, start, rate, seed, end: end + FLASH };\n}\n\n/** What a cell shows at time t, and how much of the lock flash remains (0..1). */\nfunction cellAt(plan: Plan, i: number, t: number, glyphs: string[]): { ch: string; state: 0 | 1 | 2; flash: number } {\n  const target = plan.chars[i];\n  if (target === \" \") return { ch: \" \", state: 2, flash: 0 };\n  if (t >= plan.settle[i]) {\n    const f = 1 - (t - plan.settle[i]) / FLASH;\n    return { ch: target, state: 2, flash: f > 0 ? f : 0 };\n  }\n  if (t < plan.start[i]) {\n    const old = plan.from[i];\n    if (old && old !== \" \") return { ch: old, state: 1, flash: 0 };\n    if (plan.from.length) return { ch: \" \", state: 1, flash: 0 };\n  }\n  const tick = Math.floor(t * plan.rate[i]);\n  const g = glyphs[Math.floor(hash3(plan.seed, i, tick) * glyphs.length)];\n  return { ch: g, state: 0, flash: 0 };\n}\n\nexport function DecodeText({\n  text = \"Signal received\",\n  words,\n  charset = \"blocks\",\n  order = \"left\",\n  trigger = \"inView\",\n  duration = 1.15,\n  delay = 0.18,\n  jitter = 0.4,\n  scrambleRate = 16,\n  interval = 2.4,\n  seed = 7,\n  frozenProgress,\n  tone,\n  color,\n  accentColor,\n  scrambleColor,\n  fontSize = 72,\n  fontFamily = \"var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace\",\n  fontWeight = 500,\n  tracking = -0.02,\n  uppercase = false,\n  align = \"center\",\n  className,\n  ariaLabel,\n  onComplete,\n  ref,\n}: DecodeTextProps) {\n  const resolvedTone = useBjorkTone(tone);\n  const palette = BJORK_PALETTE[resolvedTone];\n  const ink = color ?? palette.text;\n  const accent = accentColor ?? palette.accent;\n  const dim = scrambleColor ?? palette.textSoft;\n  const reduced = useReducedMotion() ?? false;\n  const frozen = frozenProgress !== undefined;\n\n  const list = useMemo(() => {\n    const raw = words && words.length ? words : [text];\n    return raw.map((w) => (uppercase ? w.toUpperCase() : w));\n  }, [words, text, uppercase]);\n  const glyphs = useMemo(() => resolveCharset(charset), [charset]);\n\n  const [wordIndex, setWordIndex] = useState(0);\n  const index = wordIndex % list.length;\n  const current = list[index];\n  const chars = useMemo(() => Array.from(current), [current]);\n\n  const rootRef = useRef<HTMLSpanElement>(null);\n  const lineRef = useRef<HTMLSpanElement>(null);\n  const clock = useRef(0);\n  const playStart = useRef(0);\n  const playing = useRef(false);\n  const plays = useRef(0);\n  const prevChars = useRef<string[]>([]);\n  const holdUntil = useRef<number | null>(null);\n  const hasPlayed = useRef(false);\n  const inViewSeen = useRef(trigger !== \"inView\");\n\n  const opts = useRef({ order, delay, duration, jitter, scrambleRate, seed, interval, onComplete });\n  useEffect(() => {\n    opts.current = { order, delay, duration, jitter, scrambleRate, seed, interval, onComplete };\n  }, [order, delay, duration, jitter, scrambleRate, seed, interval, onComplete]);\n\n  const buildPlan = useCallback(\n    (from: string[], salt: number) => {\n      const o = opts.current;\n      return makePlan(chars, from, o.order, o.delay, o.duration, o.jitter, o.scrambleRate, (o.seed + salt * 977) | 0);\n    },\n    [chars],\n  );\n\n  const plan = useRef<Plan>(makePlan(chars, [], order, delay, duration, jitter, scrambleRate, seed));\n  const colors = useRef({ ink, accent, dim });\n  useEffect(() => {\n    colors.current = { ink, accent, dim };\n  }, [ink, accent, dim]);\n\n  // Writes every cell for time t into the plan. Returns true once fully settled.\n  const paint = useCallback(\n    (t: number) => {\n      const line = lineRef.current;\n      if (!line) return true;\n      const p = plan.current;\n      const { ink: c, accent: a, dim: d } = colors.current;\n      const cells = line.children;\n      let done = true;\n      for (let i = 0; i < cells.length && i < p.chars.length; i++) {\n        const glyph = cells[i].lastElementChild as HTMLElement | null;\n        if (!glyph) continue;\n        const { ch, state, flash } = cellAt(p, i, t, glyphs);\n        if (glyph.textContent !== ch) glyph.textContent = ch;\n        let col: string;\n        if (state === 0) col = d;\n        else if (state === 1) col = c;\n        else if (flash > 0) col = `color-mix(in oklab, ${a} ${Math.round(flash * flash * 62)}%, ${c})`;\n        else col = c;\n        if (glyph.dataset.col !== col) {\n          glyph.style.color = col;\n          glyph.dataset.col = col;\n        }\n        const st = state === 0 ? \"scramble\" : \"set\";\n        if (glyph.dataset.state !== st) {\n          // Scramble glyphs come from fallback fonts with taller boxes; set them a touch smaller.\n          glyph.style.fontSize = state === 0 ? \"0.8em\" : \"\";\n          glyph.dataset.state = st;\n        }\n        if (state !== 2 || flash > 0) done = false;\n      }\n      return done;\n    },\n    [glyphs],\n  );\n\n  const paintSettled = useCallback(() => {\n    plan.current = makePlan(chars, [], \"left\", 0, 0, 0, 1, 1);\n    paint(1e6);\n  }, [chars, paint]);\n\n  const start = useCallback(\n    (from: string[]) => {\n      plays.current += 1;\n      plan.current = buildPlan(from, plays.current - 1);\n      playStart.current = clock.current;\n      playing.current = true;\n      holdUntil.current = null;\n      hasPlayed.current = true;\n    },\n    [buildPlan],\n  );\n\n  const animated = !reduced && !frozen;\n  const autoplay = trigger === \"mount\" || trigger === \"inView\";\n\n  const frame = useCallback(\n    (dt: number) => {\n      clock.current += dt;\n      if (autoplay && !hasPlayed.current && inViewSeen.current) start([]);\n      if (playing.current) {\n        const done = paint(clock.current - playStart.current);\n        if (done) {\n          playing.current = false;\n          opts.current.onComplete?.();\n          if (list.length > 1 && autoplay) holdUntil.current = clock.current + opts.current.interval;\n        }\n        return;\n      }\n      if (holdUntil.current !== null && clock.current >= holdUntil.current) {\n        holdUntil.current = null;\n        prevChars.current = chars;\n        setWordIndex((w) => w + 1);\n        return;\n      }\n      if (holdUntil.current !== null) return;\n      if (autoplay && !hasPlayed.current) return;\n      return false;\n    },\n    [autoplay, chars, list.length, paint, start],\n  );\n\n  const { wake } = useVisibleLoop(rootRef, frame, { enabled: animated });\n\n  // A new word mounted its cells: decode into it from the previous word.\n  useLayoutEffect(() => {\n    if (!animated) return;\n    if (prevChars.current.length) {\n      const from = prevChars.current;\n      prevChars.current = [];\n      start(from);\n      paint(0);\n      wake();\n    }\n  }, [chars, animated, start, paint, wake]);\n\n  // First paint before the browser shows anything.\n  useLayoutEffect(() => {\n    if (frozen) {\n      const p = makePlan(chars, [], order, delay, duration, jitter, scrambleRate, seed);\n      plan.current = p;\n      paint((p.end - FLASH) * Math.min(1, Math.max(0, frozenProgress ?? 0)));\n      return;\n    }\n    if (!animated || !autoplay) {\n      if (!playing.current) paintSettled();\n      return;\n    }\n    if (!hasPlayed.current) {\n      plan.current = makePlan(chars, [], order, delay, duration, jitter, scrambleRate, seed);\n      paint(0);\n    }\n  }, [frozen, frozenProgress, animated, autoplay, chars, order, delay, duration, jitter, scrambleRate, seed, paint, paintSettled]);\n\n  // Colours changed: repaint the current frame.\n  useEffect(() => {\n    if (!playing.current) {\n      if (frozen) {\n        paint((plan.current.end - FLASH) * Math.min(1, Math.max(0, frozenProgress ?? 0)));\n      } else if (hasPlayed.current || !autoplay || !animated) paintSettled();\n    }\n  }, [ink, accent, dim, frozen, frozenProgress, autoplay, animated, paint, paintSettled]);\n\n  // In-view trigger waits until half the line is on screen.\n  useEffect(() => {\n    if (trigger !== \"inView\" || !animated) return;\n    const el = rootRef.current;\n    if (!el) return;\n    const io = new IntersectionObserver(\n      ([entry]) => {\n        if (entry.isIntersecting) {\n          inViewSeen.current = true;\n          wake();\n          io.disconnect();\n        }\n      },\n      { threshold: 0.5 },\n    );\n    io.observe(el);\n    return () => io.disconnect();\n  }, [trigger, animated, wake]);\n\n  const replay = useCallback(() => {\n    if (!animated) return;\n    start([]);\n    paint(0);\n    wake();\n  }, [animated, start, paint, wake]);\n\n  useImperativeHandle(ref, () => ({ replay }), [replay]);\n\n  const onHover = useCallback(() => {\n    if (trigger !== \"hover\" || !animated || playing.current) return;\n    if (list.length > 1) {\n      prevChars.current = chars;\n      setWordIndex((w) => w + 1);\n    } else {\n      replay();\n    }\n  }, [trigger, animated, list.length, chars, replay]);\n\n  const longest = list.reduce((m, w) => Math.max(m, Array.from(w).length), 1);\n  // Fit by character count: monospace advance is ~0.6em, plus tracking.\n  const fitCqi = 100 / (longest * Math.max(0.3, 0.62 + tracking));\n\n  const label = ariaLabel ?? (list.length > 1 ? list.join(\", \") : list[0]);\n\n  return (\n    <span\n      ref={rootRef}\n      className={cn(\"relative block w-full\", className)}\n      style={{ containerType: \"inline-size\" }}\n      onPointerEnter={onHover}\n      onFocus={onHover}\n    >\n      <span className=\"sr-only\">{label}</span>\n      <span\n        aria-hidden=\"true\"\n        className=\"grid select-none\"\n        style={{\n          fontFamily,\n          fontWeight,\n          fontSize: `min(${fontSize}px, ${fitCqi.toFixed(3)}cqi)`,\n          letterSpacing: `${tracking}em`,\n          lineHeight: 1.1,\n          justifyItems: align === \"center\" ? \"center\" : \"start\",\n          color: ink,\n        }}\n      >\n        {/* Every word sits in the same grid cell, invisible, so the box is always the widest word. */}\n        {list.map((w, i) => (\n          <span key={`ghost-${i}`} className=\"invisible whitespace-pre\" style={{ gridArea: \"1 / 1\" }}>\n            {w}\n          </span>\n        ))}\n        <span ref={lineRef} className=\"whitespace-pre\" style={{ gridArea: \"1 / 1\" }}>\n          {chars.map((ch, i) => (\n            <span key={`${index}-${i}`} className=\"relative inline-block\">\n              {/* The final glyph holds the cell's width, so scrambling never shifts the line. */}\n              <span className=\"invisible\">{ch}</span>\n              <span className=\"absolute inset-0 flex items-center justify-center\" />\n            </span>\n          ))}\n        </span>\n      </span>\n    </span>\n  );\n}\n\nexport default DecodeText;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/text/decode-text.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/palette.ts",
+      "content": "export type BjorkTone = \"dark\" | \"light\";\n\n// Canvas, WebGL and SVG attribute colours. DOM code uses the CSS tokens with these as fallbacks.\nexport const BJORK_PALETTE = {\n  dark: {\n    bg: \"#050505\", stage: \"#111111\", surface: \"#121212\", raised: \"#161616\", active: \"#202020\",\n    border: \"#232323\", borderStrong: \"#343434\",\n    text: \"#ededed\", textMedium: \"rgba(237,237,237,0.72)\", textMuted: \"rgba(237,237,237,0.52)\",\n    textSoft: \"rgba(237,237,237,0.36)\", textFaint: \"rgba(237,237,237,0.22)\", hair: \"rgba(237,237,237,0.12)\",\n    accent: \"#ec5c13\", accentInk: \"#ec5c13\", accentFill: \"#b84a12\", accentSoft: \"rgba(236,92,19,0.12)\", accentMuted: \"rgba(236,92,19,0.24)\",\n    accentFg: \"#fff2ea\", success: \"#4cc38a\", warning: \"#f2b544\", error: \"#ff5c4d\",\n  },\n  light: {\n    bg: \"#f7f5ef\", stage: \"#f7f5ef\", surface: \"#fffcf6\", raised: \"#f5efe3\", active: \"#efe7d8\",\n    border: \"#eee6db\", borderStrong: \"#e1d7c8\",\n    text: \"#171717\", textMedium: \"rgba(23,23,23,0.72)\", textMuted: \"rgba(23,23,23,0.52)\",\n    textSoft: \"rgba(23,23,23,0.36)\", textFaint: \"rgba(23,23,23,0.22)\", hair: \"rgba(23,23,23,0.10)\",\n    accent: \"#ec7d43\", accentInk: \"#b4531f\", accentFill: \"#ec7d43\", accentSoft: \"rgba(236,125,67,0.10)\", accentMuted: \"rgba(236,125,67,0.20)\",\n    accentFg: \"#3f2112\", success: \"#1f8a55\", warning: \"#a86b00\", error: \"#c8361f\",\n  },\n} as const;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/palette.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/tone.ts",
+      "content": "\"use client\";\n\nimport { useSyncExternalStore } from \"react\";\nimport { useTheme } from \"next-themes\";\nimport type { BjorkTone } from \"./palette\";\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\n/**\n * Resolves the tone for a component. An explicit `tone` always wins.\n * Otherwise it follows next-themes' resolved theme, but only after mount,\n * so the server render and first client render agree on dark.\n */\nexport function useBjorkTone(tone?: BjorkTone): BjorkTone {\n  const { resolvedTheme } = useTheme();\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  if (tone) return tone;\n  if (!mounted) return \"dark\";\n  return resolvedTheme === \"light\" ? \"light\" : \"dark\";\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/tone.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/loop.ts",
+      "content": "\"use client\";\n\nimport { useCallback, useEffect, useMemo, useRef, type RefObject } from \"react\";\n\nexport interface VisibleLoopOptions {\n  enabled?: boolean;\n  fpsCap?: number;\n  rootMargin?: string;\n}\n\n/**\n * Runs `frame(dt, t)` on requestAnimationFrame while the element is near the viewport,\n * the tab is visible and `enabled` is not false. Return `false` from `frame` to go idle\n * until `wake()` is called. Writes `data-loop` on the element: running, idle or paused.\n */\nexport function useVisibleLoop(\n  ref: RefObject<HTMLElement | null>,\n  frame: (dt: number, t: number) => boolean | void,\n  opts?: VisibleLoopOptions,\n): { wake: () => void } {\n  const enabled = opts?.enabled !== false;\n  const fpsCap = opts?.fpsCap ?? 0;\n  const rootMargin = opts?.rootMargin ?? \"96px\";\n\n  const frameRef = useRef(frame);\n  useEffect(() => {\n    frameRef.current = frame;\n  }, [frame]);\n\n  const wakeRef = useRef<() => void>(() => {});\n  const wake = useCallback(() => wakeRef.current(), []);\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el || typeof window === \"undefined\") return;\n\n    let wants = true; // false once the frame callback returns false\n    let inView = false;\n    let raf = 0;\n    let last = 0;\n    let t = 0;\n    const minFrame = fpsCap > 0 ? 1000 / fpsCap : 0;\n\n    const canRun = () => enabled && inView && document.visibilityState === \"visible\";\n    const stop = () => {\n      if (raf) cancelAnimationFrame(raf);\n      raf = 0;\n    };\n\n    const update = () => {\n      if (!enabled) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      if (!wants) {\n        stop();\n        el.dataset.loop = \"idle\";\n        return;\n      }\n      if (!canRun()) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      el.dataset.loop = \"running\";\n      if (!raf) {\n        last = performance.now();\n        raf = requestAnimationFrame(tick);\n      }\n    };\n\n    const tick = (now: number) => {\n      raf = 0;\n      if (!canRun() || !wants) {\n        update();\n        return;\n      }\n      const elapsed = now - last;\n      if (minFrame && elapsed < minFrame - 0.5) {\n        raf = requestAnimationFrame(tick);\n        return;\n      }\n      last = now;\n      const dt = Math.min(0.05, Math.max(0, elapsed / 1000));\n      t += dt;\n      const keep = frameRef.current(dt, t);\n      if (keep === false) {\n        wants = false;\n        update();\n        return;\n      }\n      raf = requestAnimationFrame(tick);\n    };\n\n    const observer = new IntersectionObserver(\n      ([entry]) => {\n        inView = entry.isIntersecting;\n        update();\n      },\n      { rootMargin },\n    );\n    observer.observe(el);\n\n    const onVisibility = () => update();\n    document.addEventListener(\"visibilitychange\", onVisibility);\n\n    wakeRef.current = () => {\n      wants = true;\n      update();\n    };\n\n    update();\n\n    return () => {\n      stop();\n      observer.disconnect();\n      document.removeEventListener(\"visibilitychange\", onVisibility);\n      wakeRef.current = () => {};\n    };\n  }, [ref, enabled, fpsCap, rootMargin]);\n\n  return useMemo(() => ({ wake }), [wake]);\n}\n\n// matchMedia based check. False on the server.\nexport function isCoarsePointer(): boolean {\n  if (typeof window === \"undefined\" || typeof window.matchMedia !== \"function\") return false;\n  return window.matchMedia(\"(pointer: coarse)\").matches;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/loop.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/random.ts",
+      "content": "// Seeded randomness and noise. Deterministic for a given seed, so previews and tests repeat.\n\n// Small fast PRNG. Returns floats in [0, 1).\nexport function mulberry32(seed: number): () => number {\n  let a = seed >>> 0;\n  return () => {\n    a = (a + 0x6d2b79f5) >>> 0;\n    let t = a;\n    t = Math.imul(t ^ (t >>> 15), t | 1);\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;\n  };\n}\n\n// FNV-1a 32-bit.\nexport function hashString(s: string): number {\n  let h = 0x811c9dc5;\n  for (let i = 0; i < s.length; i++) {\n    h ^= s.charCodeAt(i);\n    h = Math.imul(h, 0x01000193);\n  }\n  return h >>> 0;\n}\n\n// Integer lattice hash to [-1, 1].\nfunction latticeHash(seed: number, x: number, y = 0): number {\n  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(seed | 0, 2246822519);\n  h = Math.imul(h ^ (h >>> 13), 1274126177);\n  h ^= h >>> 16;\n  return ((h >>> 0) / 4294967295) * 2 - 1;\n}\n\nfunction smooth(t: number): number {\n  return t * t * (3 - 2 * t);\n}\n\nexport function valueNoise1D(seed: number): (x: number) => number {\n  return (x: number) => {\n    const i = Math.floor(x);\n    const f = x - i;\n    const a = latticeHash(seed, i);\n    const b = latticeHash(seed, i + 1);\n    return a + (b - a) * smooth(f);\n  };\n}\n\nexport function fbm1D(seed: number, octaves = 3): (x: number) => number {\n  const layers = Array.from({ length: octaves }, (_, o) => valueNoise1D(seed + o * 101));\n  let norm = 0;\n  for (let o = 0; o < octaves; o++) norm += 0.5 ** o;\n  return (x: number) => {\n    let sum = 0;\n    let amp = 1;\n    let freq = 1;\n    for (let o = 0; o < octaves; o++) {\n      sum += amp * layers[o](x * freq);\n      amp *= 0.5;\n      freq *= 2;\n    }\n    return sum / norm;\n  };\n}\n\nexport function valueNoise2D(seed: number): (x: number, y: number) => number {\n  return (x: number, y: number) => {\n    const xi = Math.floor(x);\n    const yi = Math.floor(y);\n    const fx = smooth(x - xi);\n    const fy = smooth(y - yi);\n    const a = latticeHash(seed, xi, yi);\n    const b = latticeHash(seed, xi + 1, yi);\n    const c = latticeHash(seed, xi, yi + 1);\n    const d = latticeHash(seed, xi + 1, yi + 1);\n    const top = a + (b - a) * fx;\n    const bottom = c + (d - c) * fx;\n    return top + (bottom - top) * fy;\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/random.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Text",
+    "registryUrl": "https://ui.isaiahbjork.com/decode-text.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/decode-text.json"
+  },
+  "type": "registry:component"
+}

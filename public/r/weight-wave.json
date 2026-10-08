@@ -1,0 +1,207 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "weight-wave",
+  "title": "Weight wave",
+  "description": "Weight wave is a production-ready text component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/text/weight-wave.tsx",
+      "content": "\"use client\";\n\nimport { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from \"react\";\nimport { useReducedMotion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { BJORK_PALETTE, type BjorkTone } from \"../_core/palette\";\nimport { useBjorkTone } from \"../_core/tone\";\nimport { useVisibleLoop } from \"../_core/loop\";\nimport { stepSpring, type SpringConfig, type SpringState } from \"../_core/spring\";\n\nexport interface WeightWaveProps {\n  /** The line to set. One span per glyph; keep it to a single display line. */\n  text?: string;\n  tone?: BjorkTone;\n  /** Ink colour. Defaults to the tone's text colour. */\n  color?: string;\n  /** Tint that blooms on the heaviest glyphs only. Pass `null` to keep the line one colour. */\n  accentColor?: string | null;\n  /** Lightest weight on the `wght` axis (rest state). */\n  minWeight?: number;\n  /** Heaviest weight on the `wght` axis (crest under the cursor). */\n  maxWeight?: number;\n  /** Gaussian falloff of the cursor, as a sigma in em. 0.9 reaches roughly two letters each side. */\n  radius?: number;\n  /** A crest that travels the line while the pointer is away (and on touch devices). */\n  idle?: boolean;\n  /** Seconds for the idle crest to cross the line once. */\n  waveDuration?: number;\n  /** Width of the idle crest, as a sigma in glyphs. */\n  waveWidth?: number;\n  /** Faux slant in degrees applied with the weight (Geist has no slnt axis, so this is a skew). */\n  slant?: number;\n  /** Upper bound in px. The line also shrinks to fit its container at max weight. */\n  fontSize?: number;\n  fontFamily?: string;\n  /** Letter spacing in em. */\n  tracking?: number;\n  /** Spring for each glyph's weight. */\n  spring?: Partial<SpringConfig>;\n  /** 0..1 renders a still frame of the idle crest at that point of its pass. No loop runs. */\n  frozenPhase?: number;\n  className?: string;\n  ariaLabel?: string;\n}\n\nconst DEFAULT_SPRING: SpringConfig = { stiffness: 140, damping: 19, mass: 1 };\nconst EDGE = 3; // glyphs of run-up before and after the idle crest\n// Share of each glyph's extra advance (heavy minus light) absorbed by negative side margins.\n// Enough that the light letters at the line's ends barely drift as the crest passes, not so\n// much that heavy neighbours touch.\nconst ADVANCE_ABSORB = 0.42;\n\ninterface Metrics {\n  /** Rest-weight glyph centres relative to the line centre, in px at the fitted size. */\n  centers: number[];\n  /** Per glyph, heavy advance minus light advance, in em. */\n  grow: number[];\n  fontPx: number;\n  width: number;\n}\n\nconst clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);\n\nexport function WeightWave({\n  text = \"Feel the weight\",\n  tone,\n  color,\n  accentColor,\n  minWeight = 140,\n  maxWeight = 900,\n  radius = 0.95,\n  idle = true,\n  waveDuration = 3.2,\n  waveWidth = 1.7,\n  slant = 0,\n  fontSize = 132,\n  fontFamily = \"var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif\",\n  tracking = -0.035,\n  spring,\n  frozenPhase,\n  className,\n  ariaLabel,\n}: WeightWaveProps) {\n  const resolvedTone = useBjorkTone(tone);\n  const palette = BJORK_PALETTE[resolvedTone];\n  const ink = color ?? palette.text;\n  const accent = accentColor === null ? null : accentColor ?? palette.accent;\n  const reduced = useReducedMotion() ?? false;\n  const frozen = frozenPhase !== undefined || reduced;\n\n  const glyphs = useMemo(() => Array.from(text), [text]);\n  const cfg = useMemo<SpringConfig>(() => ({ ...DEFAULT_SPRING, ...spring }), [spring]);\n\n  const rootRef = useRef<HTMLDivElement>(null);\n  const lineRef = useRef<HTMLDivElement>(null);\n  const minRowRef = useRef<HTMLDivElement>(null);\n  const maxRowRef = useRef<HTMLDivElement>(null);\n\n  const metrics = useRef<Metrics>({ centers: [], grow: [], fontPx: 0, width: 0 });\n  const states = useRef<SpringState[]>([]);\n  const written = useRef<{ w: number; tint: number }[]>([]);\n  const pointer = useRef({ x: 0, y: 0, active: false, presence: 0, touch: false });\n\n  // Everything the frame needs, kept current without re-subscribing the loop.\n  const live = useRef({ minWeight, maxWeight, radius, idle, waveDuration, waveWidth, slant, ink, accent, cfg });\n  useEffect(() => {\n    live.current = { minWeight, maxWeight, radius, idle, waveDuration, waveWidth, slant, ink, accent, cfg };\n  }, [minWeight, maxWeight, radius, idle, waveDuration, waveWidth, slant, ink, accent, cfg]);\n\n  const writeGlyphs = useCallback((force = false) => {\n    const line = lineRef.current;\n    if (!line) return;\n    const { minWeight: lo, maxWeight: hi, slant: sl, ink: c, accent: a } = live.current;\n    const spans = line.children;\n    for (let i = 0; i < spans.length; i++) {\n      const el = spans[i] as HTMLElement;\n      const x = clamp01(states.current[i]?.x ?? 0);\n      const w = Math.round(lo + (hi - lo) * x);\n      const tintRaw = a ? clamp01((x - 0.7) / 0.3) : 0;\n      const tint = Math.round(tintRaw * tintRaw * 58);\n      const prev = written.current[i] ?? { w: -1, tint: -1 };\n      if (force || prev.w !== w) {\n        el.style.fontVariationSettings = `\"wght\" ${w}`;\n        const g = metrics.current.grow[i] ?? 0;\n        el.style.marginInline = g > 0 ? `${(-(g * ADVANCE_ABSORB * (w - lo)) / (hi - lo || 1) / 2).toFixed(4)}em` : \"\";\n        if (sl) el.style.transform = `skewX(${(-sl * x).toFixed(2)}deg)`;\n        else if (force) el.style.transform = \"\";\n      }\n      if (force || prev.tint !== tint) {\n        el.style.color = tint > 0 && a ? `color-mix(in oklab, ${a} ${tint}%, ${c})` : c;\n      }\n      written.current[i] = { w, tint };\n    }\n  }, []);\n\n  const idleTarget = useCallback((i: number, n: number, phase: number) => {\n    const { waveWidth: ww } = live.current;\n    const c = -EDGE + (n - 1 + EDGE * 2) * phase;\n    const d = (i - c) / ww;\n    return Math.exp(-0.5 * d * d);\n  }, []);\n\n  const measure = useCallback(() => {\n    const root = rootRef.current;\n    const line = lineRef.current;\n    const minRow = minRowRef.current;\n    const maxRow = maxRowRef.current;\n    if (!root || !line || !minRow || !maxRow) return;\n    const width = root.clientWidth;\n    if (!width) return;\n    // Rows are set at 100px; everything scales linearly from there.\n    const maxTotal = maxRow.scrollWidth;\n    const fit = maxTotal > 0 ? ((width * 0.97) / maxTotal) * 100 : fontSize;\n    const fontPx = Math.max(10, Math.min(fontSize, fit));\n    const s = fontPx / 100;\n    const kids = minRow.children;\n    const centers: number[] = [];\n    let cum = 0;\n    const advances: number[] = [];\n    for (let i = 0; i < kids.length; i++) {\n      const adv = (kids[i] as HTMLElement).getBoundingClientRect().width;\n      advances.push(adv);\n      cum += adv;\n    }\n    // getBoundingClientRect picks up any ancestor scale, so normalise against layout width.\n    const rowRect = minRow.getBoundingClientRect().width;\n    const layoutScale = rowRect > 0 && minRow.offsetWidth > 0 ? rowRect / minRow.offsetWidth : 1;\n    let run = 0;\n    for (let i = 0; i < advances.length; i++) {\n      const a = advances[i] / layoutScale;\n      centers.push((run + a / 2 - cum / layoutScale / 2) * s);\n      run += a;\n    }\n    const heavy = maxRow.children;\n    const grow: number[] = [];\n    for (let i = 0; i < kids.length; i++) {\n      const h = heavy[i] ? (heavy[i] as HTMLElement).getBoundingClientRect().width / layoutScale : 0;\n      grow.push(Math.max(0, (h - advances[i] / layoutScale) / 100));\n    }\n    metrics.current = { centers, grow, fontPx, width };\n    line.style.fontSize = `${fontPx}px`;\n    root.style.height = `${Math.ceil(fontPx * 1.18)}px`;\n  }, [fontSize]);\n\n  const settleTo = useCallback(\n    (phase: number) => {\n      const n = glyphs.length;\n      states.current = glyphs.map((_, i) => ({ x: idleTarget(i, n, phase), v: 0 }));\n      writeGlyphs(true);\n    },\n    [glyphs, idleTarget, writeGlyphs],\n  );\n\n  // Measure on mount, on resize, and again once the webfont is in.\n  useLayoutEffect(() => {\n    const root = rootRef.current;\n    if (!root) return;\n    let cancelled = false;\n    measure();\n    if (states.current.length !== glyphs.length) {\n      states.current = glyphs.map(() => ({ x: 0, v: 0 }));\n      written.current = [];\n    }\n    if (frozen) settleTo(frozenPhase ?? 0.46);\n    else writeGlyphs(true);\n    const ro = new ResizeObserver(() => {\n      measure();\n      writeGlyphs(true);\n    });\n    ro.observe(root);\n    document.fonts?.ready.then(() => {\n      if (cancelled) return;\n      measure();\n      writeGlyphs(true);\n    });\n    return () => {\n      cancelled = true;\n      ro.disconnect();\n    };\n  }, [measure, glyphs, frozen, frozenPhase, settleTo, writeGlyphs]);\n\n  // Colour or weight range changed while frozen or idle: repaint once.\n  useEffect(() => {\n    writeGlyphs(true);\n  }, [ink, accent, minWeight, maxWeight, slant, writeGlyphs]);\n\n  const frame = useCallback(\n    (dt: number, t: number) => {\n      const n = glyphs.length;\n      const m = metrics.current;\n      const p = pointer.current;\n      const L = live.current;\n      if (!n || !m.fontPx) return;\n\n      const presenceTarget = p.active ? 1 : 0;\n      p.presence += (presenceTarget - p.presence) * (1 - Math.exp(-dt * (p.active ? 7 : 2.4)));\n\n      const sigma = Math.max(4, L.radius * m.fontPx);\n      const lineCx = m.width / 2;\n      const phase = L.idle ? (t / L.waveDuration) % 1 : 0;\n      const idleMix = L.idle ? 1 - p.presence : 0;\n      let moving = false;\n\n      for (let i = 0; i < n; i++) {\n        const st = states.current[i];\n        if (!st) continue;\n        let target = 0;\n        if (idleMix > 0.001) target += idleTarget(i, n, phase) * idleMix;\n        if (p.presence > 0.001) {\n          const dx = (lineCx + m.centers[i] - p.x) / sigma;\n          const dy = Math.max(0, Math.abs(p.y) - m.fontPx * 0.45) / (sigma * 1.6);\n          target += Math.exp(-0.5 * (dx * dx + dy * dy)) * p.presence;\n        }\n        stepSpring(st, target, L.cfg, dt);\n        if (Math.abs(st.x - target) > 0.002 || Math.abs(st.v) > 0.002) moving = true;\n      }\n      writeGlyphs();\n      if (!L.idle && !p.active && p.presence < 0.002 && !moving) return false;\n    },\n    [glyphs.length, idleTarget, writeGlyphs],\n  );\n\n  const { wake } = useVisibleLoop(rootRef, frame, { enabled: !frozen });\n\n  // Window-level pointer so the falloff can reach past the box edge.\n  useEffect(() => {\n    if (frozen) return;\n    const root = rootRef.current;\n    if (!root) return;\n    const toLocal = (e: PointerEvent) => {\n      const rect = root.getBoundingClientRect();\n      const scale = root.offsetWidth > 0 ? rect.width / root.offsetWidth : 1;\n      return {\n        x: (e.clientX - rect.left) / scale,\n        // y relative to the line's vertical centre\n        y: (e.clientY - rect.top) / scale - root.offsetHeight / 2,\n        reach: rect,\n        scale,\n      };\n    };\n    const onMove = (e: PointerEvent) => {\n      const p = pointer.current;\n      if (e.pointerType === \"touch\" && !p.touch) return;\n      const { x, y, reach, scale } = toLocal(e);\n      const pad = (metrics.current.fontPx || 60) * 1.4 * scale;\n      const inside =\n        e.clientX > reach.left - pad &&\n        e.clientX < reach.right + pad &&\n        e.clientY > reach.top - pad &&\n        e.clientY < reach.bottom + pad;\n      p.x = x;\n      p.y = y;\n      if (inside !== p.active) {\n        p.active = inside;\n      }\n      if (inside) wake();\n    };\n    const onDown = (e: PointerEvent) => {\n      if (e.pointerType !== \"touch\") return;\n      if (!root.contains(e.target as Node)) return;\n      pointer.current.touch = true;\n      onMove(e);\n    };\n    const onUp = (e: PointerEvent) => {\n      if (e.pointerType !== \"touch\") return;\n      pointer.current.touch = false;\n      pointer.current.active = false;\n      wake();\n    };\n    const onLeave = () => {\n      pointer.current.active = false;\n      wake();\n    };\n    window.addEventListener(\"pointermove\", onMove, { passive: true });\n    window.addEventListener(\"pointerdown\", onDown, { passive: true });\n    window.addEventListener(\"pointerup\", onUp, { passive: true });\n    window.addEventListener(\"pointercancel\", onUp, { passive: true });\n    document.documentElement.addEventListener(\"pointerleave\", onLeave);\n    window.addEventListener(\"blur\", onLeave);\n    return () => {\n      window.removeEventListener(\"pointermove\", onMove);\n      window.removeEventListener(\"pointerdown\", onDown);\n      window.removeEventListener(\"pointerup\", onUp);\n      window.removeEventListener(\"pointercancel\", onUp);\n      document.documentElement.removeEventListener(\"pointerleave\", onLeave);\n      window.removeEventListener(\"blur\", onLeave);\n    };\n  }, [frozen, wake]);\n\n  useEffect(() => {\n    if (!frozen) wake();\n  }, [idle, frozen, wake]);\n\n  const rowStyle = {\n    fontFamily,\n    fontSize: 100,\n    letterSpacing: `${tracking}em`,\n    lineHeight: 1,\n    whiteSpace: \"pre\" as const,\n  };\n\n  return (\n    <div\n      ref={rootRef}\n      className={cn(\"relative w-full select-none\", className)}\n      style={{ height: Math.ceil(fontSize * 1.18), touchAction: \"pan-y\" }}\n    >\n      <span className=\"sr-only\">{ariaLabel ?? text}</span>\n      <div\n        ref={lineRef}\n        aria-hidden=\"true\"\n        className=\"absolute inset-0 flex items-center justify-center\"\n        style={{\n          fontFamily,\n          fontSize,\n          letterSpacing: `${tracking}em`,\n          lineHeight: 1,\n          whiteSpace: \"pre\",\n          color: ink,\n          fontKerning: \"none\",\n        }}\n      >\n        {glyphs.map((ch, i) => (\n          <span\n            key={`${i}-${ch}`}\n            className=\"inline-block origin-bottom\"\n            style={{ fontVariationSettings: `\"wght\" ${minWeight}` }}\n          >\n            {ch}\n          </span>\n        ))}\n      </div>\n      <div aria-hidden=\"true\" className=\"pointer-events-none invisible absolute left-0 top-0 h-0 overflow-hidden\">\n        <div ref={minRowRef} className=\"inline-flex\" style={{ ...rowStyle, fontKerning: \"none\" }}>\n          {glyphs.map((ch, i) => (\n            <span key={i} className=\"inline-block\" style={{ fontVariationSettings: `\"wght\" ${minWeight}` }}>\n              {ch}\n            </span>\n          ))}\n        </div>\n        <div ref={maxRowRef} className=\"inline-flex\" style={{ ...rowStyle, fontKerning: \"none\" }}>\n          {glyphs.map((ch, i) => (\n            <span key={i} className=\"inline-block\" style={{ fontVariationSettings: `\"wght\" ${maxWeight}` }}>\n              {ch}\n            </span>\n          ))}\n        </div>\n      </div>\n    </div>\n  );\n}\n\nexport default WeightWave;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/text/weight-wave.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/palette.ts",
+      "content": "export type BjorkTone = \"dark\" | \"light\";\n\n// Canvas, WebGL and SVG attribute colours. DOM code uses the CSS tokens with these as fallbacks.\nexport const BJORK_PALETTE = {\n  dark: {\n    bg: \"#050505\", stage: \"#111111\", surface: \"#121212\", raised: \"#161616\", active: \"#202020\",\n    border: \"#232323\", borderStrong: \"#343434\",\n    text: \"#ededed\", textMedium: \"rgba(237,237,237,0.72)\", textMuted: \"rgba(237,237,237,0.52)\",\n    textSoft: \"rgba(237,237,237,0.36)\", textFaint: \"rgba(237,237,237,0.22)\", hair: \"rgba(237,237,237,0.12)\",\n    accent: \"#ec5c13\", accentInk: \"#ec5c13\", accentFill: \"#b84a12\", accentSoft: \"rgba(236,92,19,0.12)\", accentMuted: \"rgba(236,92,19,0.24)\",\n    accentFg: \"#fff2ea\", success: \"#4cc38a\", warning: \"#f2b544\", error: \"#ff5c4d\",\n  },\n  light: {\n    bg: \"#f7f5ef\", stage: \"#f7f5ef\", surface: \"#fffcf6\", raised: \"#f5efe3\", active: \"#efe7d8\",\n    border: \"#eee6db\", borderStrong: \"#e1d7c8\",\n    text: \"#171717\", textMedium: \"rgba(23,23,23,0.72)\", textMuted: \"rgba(23,23,23,0.52)\",\n    textSoft: \"rgba(23,23,23,0.36)\", textFaint: \"rgba(23,23,23,0.22)\", hair: \"rgba(23,23,23,0.10)\",\n    accent: \"#ec7d43\", accentInk: \"#b4531f\", accentFill: \"#ec7d43\", accentSoft: \"rgba(236,125,67,0.10)\", accentMuted: \"rgba(236,125,67,0.20)\",\n    accentFg: \"#3f2112\", success: \"#1f8a55\", warning: \"#a86b00\", error: \"#c8361f\",\n  },\n} as const;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/palette.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/tone.ts",
+      "content": "\"use client\";\n\nimport { useSyncExternalStore } from \"react\";\nimport { useTheme } from \"next-themes\";\nimport type { BjorkTone } from \"./palette\";\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\n/**\n * Resolves the tone for a component. An explicit `tone` always wins.\n * Otherwise it follows next-themes' resolved theme, but only after mount,\n * so the server render and first client render agree on dark.\n */\nexport function useBjorkTone(tone?: BjorkTone): BjorkTone {\n  const { resolvedTheme } = useTheme();\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  if (tone) return tone;\n  if (!mounted) return \"dark\";\n  return resolvedTheme === \"light\" ? \"light\" : \"dark\";\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/tone.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/loop.ts",
+      "content": "\"use client\";\n\nimport { useCallback, useEffect, useMemo, useRef, type RefObject } from \"react\";\n\nexport interface VisibleLoopOptions {\n  enabled?: boolean;\n  fpsCap?: number;\n  rootMargin?: string;\n}\n\n/**\n * Runs `frame(dt, t)` on requestAnimationFrame while the element is near the viewport,\n * the tab is visible and `enabled` is not false. Return `false` from `frame` to go idle\n * until `wake()` is called. Writes `data-loop` on the element: running, idle or paused.\n */\nexport function useVisibleLoop(\n  ref: RefObject<HTMLElement | null>,\n  frame: (dt: number, t: number) => boolean | void,\n  opts?: VisibleLoopOptions,\n): { wake: () => void } {\n  const enabled = opts?.enabled !== false;\n  const fpsCap = opts?.fpsCap ?? 0;\n  const rootMargin = opts?.rootMargin ?? \"96px\";\n\n  const frameRef = useRef(frame);\n  useEffect(() => {\n    frameRef.current = frame;\n  }, [frame]);\n\n  const wakeRef = useRef<() => void>(() => {});\n  const wake = useCallback(() => wakeRef.current(), []);\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el || typeof window === \"undefined\") return;\n\n    let wants = true; // false once the frame callback returns false\n    let inView = false;\n    let raf = 0;\n    let last = 0;\n    let t = 0;\n    const minFrame = fpsCap > 0 ? 1000 / fpsCap : 0;\n\n    const canRun = () => enabled && inView && document.visibilityState === \"visible\";\n    const stop = () => {\n      if (raf) cancelAnimationFrame(raf);\n      raf = 0;\n    };\n\n    const update = () => {\n      if (!enabled) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      if (!wants) {\n        stop();\n        el.dataset.loop = \"idle\";\n        return;\n      }\n      if (!canRun()) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      el.dataset.loop = \"running\";\n      if (!raf) {\n        last = performance.now();\n        raf = requestAnimationFrame(tick);\n      }\n    };\n\n    const tick = (now: number) => {\n      raf = 0;\n      if (!canRun() || !wants) {\n        update();\n        return;\n      }\n      const elapsed = now - last;\n      if (minFrame && elapsed < minFrame - 0.5) {\n        raf = requestAnimationFrame(tick);\n        return;\n      }\n      last = now;\n      const dt = Math.min(0.05, Math.max(0, elapsed / 1000));\n      t += dt;\n      const keep = frameRef.current(dt, t);\n      if (keep === false) {\n        wants = false;\n        update();\n        return;\n      }\n      raf = requestAnimationFrame(tick);\n    };\n\n    const observer = new IntersectionObserver(\n      ([entry]) => {\n        inView = entry.isIntersecting;\n        update();\n      },\n      { rootMargin },\n    );\n    observer.observe(el);\n\n    const onVisibility = () => update();\n    document.addEventListener(\"visibilitychange\", onVisibility);\n\n    wakeRef.current = () => {\n      wants = true;\n      update();\n    };\n\n    update();\n\n    return () => {\n      stop();\n      observer.disconnect();\n      document.removeEventListener(\"visibilitychange\", onVisibility);\n      wakeRef.current = () => {};\n    };\n  }, [ref, enabled, fpsCap, rootMargin]);\n\n  return useMemo(() => ({ wake }), [wake]);\n}\n\n// matchMedia based check. False on the server.\nexport function isCoarsePointer(): boolean {\n  if (typeof window === \"undefined\" || typeof window.matchMedia !== \"function\") return false;\n  return window.matchMedia(\"(pointer: coarse)\").matches;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/loop.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/spring.ts",
+      "content": "// Pure spring math, no React. Units: stiffness k, damping d (coefficient), mass m, time in seconds.\n\nexport interface SpringConfig {\n  stiffness: number;\n  damping: number;\n  mass: number;\n}\n\nexport interface SpringState {\n  x: number;\n  v: number;\n}\n\n// Damping ratio zeta = d / (2 * sqrt(k * m)).\nexport function dampingRatio(c: SpringConfig): number {\n  return c.damping / (2 * Math.sqrt(c.stiffness * c.mass));\n}\n\n// Exact solution of y'' = -(k/m) y - (d/m) y' for displacement y0 and velocity v0 at time t.\n// Returns displacement and velocity together so stepping can be exact, not integrated.\nfunction solveLinear(t: number, c: SpringConfig, y0: number, v0: number): { y: number; v: number } {\n  const w0 = Math.sqrt(c.stiffness / c.mass);\n  const z = dampingRatio(c);\n\n  if (Math.abs(z - 1) < 1e-9) {\n    // Critically damped.\n    const e = Math.exp(-w0 * t);\n    const b = v0 + w0 * y0;\n    return { y: e * (y0 + b * t), v: e * (b - w0 * (y0 + b * t)) };\n  }\n  if (z < 1) {\n    // Underdamped.\n    const wd = w0 * Math.sqrt(1 - z * z);\n    const a = z * w0;\n    const B = (v0 + a * y0) / wd;\n    const e = Math.exp(-a * t);\n    const cos = Math.cos(wd * t);\n    const sin = Math.sin(wd * t);\n    return {\n      y: e * (y0 * cos + B * sin),\n      v: e * (-a * (y0 * cos + B * sin) + wd * (-y0 * sin + B * cos)),\n    };\n  }\n  // Overdamped.\n  const s = w0 * Math.sqrt(z * z - 1);\n  const r1 = -z * w0 + s;\n  const r2 = -z * w0 - s;\n  const B = (v0 - r1 * y0) / (r2 - r1);\n  const A = y0 - B;\n  const e1 = Math.exp(r1 * t);\n  const e2 = Math.exp(r2 * t);\n  return { y: A * e1 + B * e2, v: A * r1 * e1 + B * r2 * e2 };\n}\n\n// Analytic position at time t for a spring from `from` to `to` with initial velocity v0.\nexport function springAt(t: number, c: SpringConfig, from = 0, to = 1, v0 = 0): number {\n  return to + solveLinear(t, c, from - to, v0).y;\n}\n\n// Overshoot as a fraction of the total travel. Zero when critically or overdamped.\nexport function overshoot(c: SpringConfig): number {\n  const z = dampingRatio(c);\n  if (z >= 1) return 0;\n  return Math.exp((-Math.PI * z) / Math.sqrt(1 - z * z));\n}\n\n// Seconds until the spring stays within epsilon of its target (fraction of travel).\n// Found by scanning backwards from a bound derived from the slowest decay rate.\nexport function settleTime(c: SpringConfig, epsilon = 0.001): number {\n  const w0 = Math.sqrt(c.stiffness / c.mass);\n  const z = dampingRatio(c);\n  const slowest = z < 1 ? z * w0 : (z - Math.sqrt(z * z - 1)) * w0;\n  const tEnd = (Math.log(1 / epsilon) / slowest) * 1.5 + 0.05;\n  const steps = 4000;\n  const dt = tEnd / steps;\n  const band = epsilon;\n  let last = 0;\n  for (let i = 0; i <= steps; i++) {\n    const t = i * dt;\n    if (Math.abs(springAt(t, c, 1, 0, 0)) >= band) last = t;\n  }\n  return last + dt;\n}\n\n// Advances the state by dt towards `target`. Uses the exact solution of the linear spring\n// (no integration), so it tracks springAt to rounding error at any step size and stays stable\n// for stiff configs where a fixed-step integrator drifts.\nexport function stepSpring(s: SpringState, target: number, c: SpringConfig, dt: number): void {\n  if (dt <= 0) return;\n  const r = solveLinear(dt, c, s.x - target, s.v);\n  s.x = target + r.y;\n  s.v = r.v;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/spring.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Text",
+    "registryUrl": "https://ui.isaiahbjork.com/weight-wave.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/weight-wave.json"
+  },
+  "type": "registry:component"
+}
