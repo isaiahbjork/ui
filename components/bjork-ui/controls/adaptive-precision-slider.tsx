@@ -212,8 +212,9 @@ export function AdaptivePrecisionSlider({
     return () => ro.disconnect();
   }, []);
 
-  const emit = (raw: number) => {
-    const out = snapTo(raw, min, max, unit);
+  // `grid` is the step the value lands on. Fine keyboard steps pass a finer grid.
+  const emit = (raw: number, grid = unit) => {
+    const out = snapTo(raw, min, max, grid);
     if (out === outRef.current) return;
     outRef.current = out;
     onValueChange?.(out);
@@ -288,9 +289,9 @@ export function AdaptivePrecisionSlider({
 
   // Follow external value changes (controlled prop, or a reset) without disturbing a live gesture.
   useEffect(() => {
+    if (outRef.current === shown) return;
     outRef.current = shown;
     if (dragRef.current) return;
-    if (snapTo(rawRef.current, min, max, unit) === shown) return;
     rawRef.current = shown;
     moveFrac(fractionOf(shown, min, max), true);
   }, [shown, min, max, unit, moveFrac]);
@@ -391,7 +392,7 @@ export function AdaptivePrecisionSlider({
     e.preventDefault();
     const next = snapTo(target, min, max, snapUnit);
     rawRef.current = next;
-    emit(next);
+    emit(next, snapUnit);
     moveFrac(fractionOf(next, min, max), true);
     scheduleRender();
   };
@@ -515,9 +516,10 @@ export function AdaptivePrecisionSlider({
             left: fracPct,
             background: surface,
             borderColor: borderStrong,
-            boxShadow: shadowToken,
           }}
         >
+          {/* Shadow lives on its own layer, so the focus ring on the thumb is not overridden. */}
+          <span aria-hidden className="absolute inset-0 rounded-full" style={{ boxShadow: shadowToken }} />
           <span
             className="absolute left-1/2 top-1/2 size-[6px] -translate-x-1/2 -translate-y-1/2 rounded-full"
             style={{ background: accent }}
