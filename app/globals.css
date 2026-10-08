@@ -327,6 +327,8 @@
   --bjork-accent-badge: rgba(236, 125, 67, 0.16);
   --bjork-accent-badge-foreground: #8d421d;
   --bjork-accent-foreground: #3f2112;
+  --bjork-accent-fill: #ec7d43;
+  --bjork-accent-fill-hover: #f0935f;
   --bjork-shadow-surface: inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11);
   --bjork-shadow-soft: inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86);
   --bjork-shadow-panel: inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2);
@@ -394,9 +396,11 @@
   --bjork-accent-hover: #f07832;
   --bjork-accent-soft: rgba(236, 92, 19, 0.12);
   --bjork-accent-muted: rgba(236, 92, 19, 0.24);
-  --bjork-accent-badge: #ec5c13;
+  --bjork-accent-badge: #b84a12;
   --bjork-accent-badge-foreground: #fff2ea;
   --bjork-accent-foreground: #fff2ea;
+  --bjork-accent-fill: #b84a12;
+  --bjork-accent-fill-hover: #a84a14;
   --bjork-shadow-surface: inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45);
   --bjork-shadow-soft: inset 0 1px 0 rgba(255, 255, 255, 0.045);
   --bjork-shadow-panel: inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9);
@@ -543,8 +547,8 @@
   color: oklch(100% 0 0);
   text-shadow: 0 1px #9a431d33;
   background:
-    radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.24), transparent),
-    linear-gradient(180deg, #f18a4f 0%, #ec7234 64%, #d95e25 100%);
+    radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.1), transparent),
+    linear-gradient(180deg, #a84614 0%, #9b3f12 64%, #8a370f 100%);
 }
 
 .bjork-layered-button-raised {
@@ -559,8 +563,8 @@
   color: oklch(100% 0 0);
   text-shadow: 0 -1px #00000040;
   background:
-    radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent),
-    linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%);
+    radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.05), transparent),
+    linear-gradient(180deg, #a44010 0%, #a44010 62%, #8c360d 100%);
 }
 
 .dark .bjork-layered-button-accent::after,
@@ -583,7 +587,7 @@
 
 @media (hover: hover) {
   .bjork-layered-button-accent:hover {
-    filter: brightness(1.08) saturate(1.04);
+    filter: brightness(1.03) saturate(1.02);
   }
 
   .bjork-layered-button-raised:hover {

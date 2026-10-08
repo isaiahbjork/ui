@@ -36,7 +36,7 @@ export function BjorkCalendar({
         cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:rounded-[10px]",
         day: "size-8 rounded-[10px] p-0 text-sm font-normal text-[color:var(--bjork-text-medium)] hover:bg-[var(--bjork-accent-soft)] hover:text-[color:var(--bjork-text)] focus:bg-[var(--bjork-accent-soft)]",
         day_selected:
-          "bg-[var(--bjork-accent)] text-[color:var(--bjork-accent-foreground)] hover:bg-[var(--bjork-accent-hover)] hover:text-[color:var(--bjork-accent-foreground)] focus:bg-[var(--bjork-accent-hover)] focus:text-[color:var(--bjork-accent-foreground)]",
+          "bg-[var(--bjork-accent-fill)] text-[color:var(--bjork-accent-foreground)] hover:bg-[var(--bjork-accent-fill-hover)] hover:text-[color:var(--bjork-accent-foreground)] focus:bg-[var(--bjork-accent-fill-hover)] focus:text-[color:var(--bjork-accent-foreground)]",
         day_today: "bg-[var(--bjork-surface-active)] text-[color:var(--bjork-text)]",
         day_outside: "text-[color:var(--bjork-text-faint)] opacity-40",
         day_disabled: "text-[color:var(--bjork-text-faint)] opacity-70",
