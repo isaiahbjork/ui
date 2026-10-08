@@ -247,6 +247,18 @@ const componentRoutes: ComponentGroup[] = [
     ],
   },
   {
+    title: "Blocks",
+    routes: [
+      { name: "Dashboard Shell", path: "/blocks/app-dashboard-shell" },
+      { name: "Sign In", path: "/blocks/app-sign-in" },
+      { name: "Settings Page", path: "/blocks/app-settings" },
+      { name: "Inbox", path: "/blocks/app-inbox" },
+      { name: "AI Chat App", path: "/blocks/app-ai-chat" },
+      // @slot marketing-blocks
+
+    ],
+  },
+  {
     title: "Feedback & Status",
     routes: [
       // @slot morph-loader

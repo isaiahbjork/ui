@@ -27,6 +27,7 @@ type CollectionFilter = "all" | (typeof galleryItems)[number]["collection"];
 
 const galleryCollectionOrder = [
   "UI",
+  "Blocks",
   "Charts",
   "Interactive",
   "AI",
