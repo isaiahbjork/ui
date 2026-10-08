@@ -611,11 +611,13 @@ export function SolarSkyPanel({
           }}
         />
 
+        {/* the strip is opaque enough without blur; keep the dashes out from under it */}
         <svg
           aria-hidden="true"
           className="pointer-events-none absolute left-0 top-0"
           width={width}
           height={height}
+          style={showLabels ? { clipPath: "inset(0 0 48px 0)" } : undefined}
         >
           <SunPath
             dayStart={dayStart}
@@ -667,7 +669,7 @@ export function SolarSkyPanel({
 
         {showLabels && (
           <div
-            className="pointer-events-none absolute inset-x-0 bottom-0 grid h-12 grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 font-mono text-[12px] tabular-nums whitespace-nowrap backdrop-blur-[10px]"
+            className="pointer-events-none absolute inset-x-0 bottom-0 grid h-12 grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 font-mono text-[12px] tabular-nums whitespace-nowrap"
             style={{ background: stripBackground, color: palette.text }}
           >
             <span className="justify-self-start">{polarLabel ?? `↑ ${sunriseText}`}</span>

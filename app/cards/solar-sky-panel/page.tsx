@@ -100,7 +100,7 @@ export function Demo() {
       previewCaptureScaleClassName="w-[1000px] scale-[0.8]"
     >
       <div className="flex w-full min-w-0 flex-col items-center gap-5">
-        <div className="grid w-full max-w-[920px] grid-cols-[repeat(auto-fit,minmax(min(100%,260px),1fr))] gap-4">
+        <div className="flex w-full max-w-[920px] flex-wrap justify-center gap-4">
           {PLACES.map((place) => (
             <SolarSkyPanel
               key={place.timeZone}
@@ -110,7 +110,7 @@ export function Demo() {
               timeZone={place.timeZone}
               date={panelDate(place.timeZone)}
               returnToNow={returnToNow}
-              className="w-full"
+              className="w-full sm:w-[280px]"
             />
           ))}
         </div>
