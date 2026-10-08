@@ -6,6 +6,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  type FocusEvent,
   type ReactNode,
 } from "react";
 import { useReducedMotion } from "framer-motion";
@@ -14,7 +15,7 @@ import { BJORK_PALETTE, type BjorkTone } from "@/components/bjork-ui/_core/palet
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
 import { useVisibleLoop } from "@/components/bjork-ui/_core/loop";
 import { useElementSize } from "@/components/bjork-ui/_core/canvas";
-import { catmullRomToBezier, resamplePath } from "@/components/bjork-ui/_core/path";
+import { resamplePath } from "@/components/bjork-ui/_core/path";
 import { hashString, mulberry32 } from "@/components/bjork-ui/_core/random";
 
 export interface ElasticFrameHandle {
@@ -51,7 +52,7 @@ const GRAB_SIGMA = 18;
 const GRAB_GAIN = 400;
 const PLUCK_SIGMA = 22;
 const POSE_SIGMA = 56;
-const BREATH_IMPULSE = 40;
+const BREATH_IMPULSE = 110;
 const ATTRACT_INTERVAL = 2800;
 const ATTRACT_IDLE = 4000;
 const ATTRACT_STRENGTH = 30;
@@ -74,6 +75,11 @@ interface Outline {
   rest: Float32Array;
   normal: Float32Array;
   spacing: number;
+  // Dense render outline: the simulation runs on `count` points, painting uses `renderCount`.
+  restPath: string;
+  renderCount: number;
+  renderRest: Float32Array;
+  renderNormal: Float32Array;
 }
 
 interface Sim {
@@ -118,6 +124,22 @@ function roundedRectPath(x0: number, y0: number, x1: number, y1: number, r: numb
   ].join(" ");
 }
 
+// Outward unit normals for a closed loop of interleaved points.
+function outwardNormals(points: Float32Array, count: number): Float32Array {
+  const normal = new Float32Array(count * 2);
+  for (let i = 0; i < count; i++) {
+    const prev = (i - 1 + count) % count;
+    const next = (i + 1) % count;
+    const tx = points[next * 2] - points[prev * 2];
+    const ty = points[next * 2 + 1] - points[prev * 2 + 1];
+    const len = Math.hypot(tx, ty) || 1;
+    // Clockwise in screen space, so (ty, -tx) points outward.
+    normal[i * 2] = ty / len;
+    normal[i * 2 + 1] = -tx / len;
+  }
+  return normal;
+}
+
 // Rest outline: equal arc-length samples plus outward unit normals, all in root coordinates.
 function buildOutline(width: number, height: number, radius: number, count: number): Outline | null {
   if (width < 40 || height < 40) return null;
@@ -127,34 +149,47 @@ function buildOutline(width: number, height: number, radius: number, count: numb
   const y1 = height - INSET;
   const r = Math.max(0, Math.min(radius, (x1 - x0) / 2, (y1 - y0) / 2));
   const perimeter = 2 * (x1 - x0 - 2 * r) + 2 * (y1 - y0 - 2 * r) + 2 * Math.PI * r;
+  const restPath = roundedRectPath(x0, y0, x1, y1, r);
 
   // The sampler returns count + 1 points; the last one repeats the first.
-  const sampled = resamplePath(roundedRectPath(x0, y0, x1, y1, r), count + 1);
+  const sampled = resamplePath(restPath, count + 1);
   const rest = new Float32Array(count * 2);
-  const normal = new Float32Array(count * 2);
   for (let i = 0; i < count; i++) {
     rest[i * 2] = sampled[i * 2];
     rest[i * 2 + 1] = sampled[i * 2 + 1];
   }
-  for (let i = 0; i < count; i++) {
-    const prev = (i - 1 + count) % count;
-    const next = (i + 1) % count;
-    const tx = rest[next * 2] - rest[prev * 2];
-    const ty = rest[next * 2 + 1] - rest[prev * 2 + 1];
-    const len = Math.hypot(tx, ty) || 1;
-    // Clockwise in screen space, so (ty, -tx) points outward.
-    normal[i * 2] = ty / len;
-    normal[i * 2 + 1] = -tx / len;
+  const normal = outwardNormals(rest, count);
+
+  // Dense render outline (about 4px apart, at least 4 samples per sim point). Only painting uses it.
+  const renderCount = Math.max(count * 4, Math.ceil(perimeter / 4));
+  const denseSampled = resamplePath(restPath, renderCount + 1);
+  const renderRest = new Float32Array(renderCount * 2);
+  for (let k = 0; k < renderCount; k++) {
+    renderRest[k * 2] = denseSampled[k * 2];
+    renderRest[k * 2 + 1] = denseSampled[k * 2 + 1];
   }
-  return { width, height, count, rest, normal, spacing: perimeter / count };
+  const renderNormal = outwardNormals(renderRest, renderCount);
+
+  return {
+    width,
+    height,
+    count,
+    rest,
+    normal,
+    spacing: perimeter / count,
+    restPath,
+    renderCount,
+    renderRest,
+    renderNormal,
+  };
 }
 
-function createSim(count: number): Sim {
+function createSim(g: Outline): Sim {
   return {
-    o: new Float32Array(count),
-    v: new Float32Array(count),
-    acc: new Float32Array(count),
-    pts: new Float32Array(count * 2),
+    o: new Float32Array(g.count),
+    v: new Float32Array(g.count),
+    acc: new Float32Array(g.count),
+    pts: new Float32Array(g.renderCount * 2),
   };
 }
 
@@ -233,6 +268,8 @@ function mixColor(a: RGB, b: RGB, t: number): string {
 }
 
 // Writes the displaced outline to both paths. Returns max |o|, used for energy and dev checks.
+// Rest state paints the exact rounded rect. Otherwise the dense render outline is offset by a
+// 1-D Catmull-Rom through the simulation samples, so the stroke stays smooth between them.
 function paintSim(
   sim: Sim,
   g: Outline,
@@ -244,13 +281,44 @@ function paintSim(
   const { o, pts } = sim;
   let maxO = 0;
   for (let i = 0; i < g.count; i++) {
-    const off = o[i];
-    const a = Math.abs(off);
+    const a = Math.abs(o[i]);
     if (a > maxO) maxO = a;
-    pts[i * 2] = g.rest[i * 2] + g.normal[i * 2] * off;
-    pts[i * 2 + 1] = g.rest[i * 2 + 1] + g.normal[i * 2 + 1] * off;
   }
-  const d = catmullRomToBezier(pts, true);
+  let d: string;
+  if (maxO < 0.01) {
+    d = g.restPath;
+  } else {
+    const n = g.count;
+    const m = g.renderCount;
+    const ratio = n / m;
+    for (let k = 0; k < m; k++) {
+      const s = k * ratio;
+      const i1 = Math.floor(s);
+      const t = s - i1;
+      const i0 = (i1 - 1 + n) % n;
+      const i2 = (i1 + 1) % n;
+      const i3 = (i1 + 2) % n;
+      const o0 = o[i0];
+      const o1 = o[i1];
+      const o2 = o[i2];
+      const o3 = o[i3];
+      const off =
+        0.5 *
+        (2 * o1 +
+          (-o0 + o2) * t +
+          (2 * o0 - 5 * o1 + 4 * o2 - o3) * t * t +
+          (-o0 + 3 * o1 - 3 * o2 + o3) * t * t * t);
+      pts[k * 2] = g.renderRest[k * 2] + g.renderNormal[k * 2] * off;
+      pts[k * 2 + 1] = g.renderRest[k * 2 + 1] + g.renderNormal[k * 2 + 1] * off;
+    }
+    const parts: string[] = new Array(m);
+    for (let k = 0; k < m; k++) {
+      const x = pts[k * 2].toFixed(2);
+      const y = pts[k * 2 + 1].toFixed(2);
+      parts[k] = k === 0 ? `M${x} ${y}` : `L${x} ${y}`;
+    }
+    d = `${parts.join(" ")} Z`;
+  }
   const energy = Math.min(1, maxO / maxStretch);
   if (main) {
     main.setAttribute("d", d);
@@ -372,7 +440,7 @@ export const ElasticFrame = forwardRef<ElasticFrameHandle, ElasticFrameProps>(fu
   useEffect(() => {
     reduceRef.current = reduce;
     outlineRef.current = outline;
-    const sim = outline ? createSim(outline.count) : null;
+    const sim = outline ? createSim(outline) : null;
     simRef.current = sim;
     grabRef.current = null;
     measureRef.current?.();
@@ -508,7 +576,9 @@ export const ElasticFrame = forwardRef<ElasticFrameHandle, ElasticFrameProps>(fu
     return () => window.clearInterval(id);
   }, [attract]);
 
-  const onFocus = () => {
+  // Breathe only for keyboard focus. A mouse click on a child should not ripple the frame.
+  const onFocus = (e: FocusEvent<HTMLDivElement>) => {
+    if (!(e.target as Element).matches?.(":focus-visible")) return;
     lastInputRef.current = performance.now();
     if (reduceRef.current) return;
     const sim = simRef.current;

@@ -20,7 +20,7 @@ function PlateCard({ tone }: { tone: BjorkTone }) {
   const p = BJORK_PALETTE[tone];
   return (
     <figure
-      className="w-[340px] max-w-full overflow-hidden rounded-[12px] border"
+      className="w-[340px] max-w-full overflow-hidden rounded-[8px] border"
       style={{ background: p.surface, borderColor: p.border }}
     >
       <div className="relative h-[200px] w-full">
@@ -38,7 +38,7 @@ function PlateCard({ tone }: { tone: BjorkTone }) {
         <button
           type="button"
           aria-label="View Untitled 07"
-          className="shrink-0 rounded-[8px] border px-2.5 py-1 font-mono text-[12px] transition active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[#ec5c13] focus-visible:outline-none"
+          className="shrink-0 rounded-[8px] border px-2.5 py-1 font-mono text-[12px] transition active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:outline-none"
           style={{ borderColor: p.borderStrong, color: p.textMedium, background: p.raised }}
         >
           View
@@ -69,7 +69,7 @@ export default function ElasticFramePage() {
         <ElasticFrame
           tone={tone}
           debugState={{ at: 0.28, amount: 22 }}
-          className="h-[360px] w-[560px]"
+          className="h-[460px] w-[720px]"
         >
           <PlateCard tone={tone} />
         </ElasticFrame>
