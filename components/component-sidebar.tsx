@@ -211,7 +211,7 @@ const componentRoutes: ComponentGroup[] = [
 
       { name: "Click Wheel", path: "/controls/click-wheel" },
 
-      // @slot velocity-ink
+      { name: "Velocity Ink", path: "/controls/velocity-ink" },
 
     ],
   },

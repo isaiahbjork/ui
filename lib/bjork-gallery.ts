@@ -1019,7 +1019,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork97 velocity-ink
+  {
+    id: "bjork97",
+    slug: "velocity-ink",
+    title: "Velocity ink",
+    route: "/controls/velocity-ink",
+    sourcePath: "components/bjork-ui/controls/velocity-ink.tsx",
+    tier: "copy",
+    collection: "Controls",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   {
     id: "bjork98",
