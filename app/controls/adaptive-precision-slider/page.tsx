@@ -1,0 +1,118 @@
+"use client";
+
+import { useState } from "react";
+import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { AdaptivePrecisionSlider } from "@/components/bjork-ui/controls/adaptive-precision-slider";
+import { BjorkButton } from "@/components/bjork-ui/primitives/button";
+import { BjorkButtonGroup } from "@/components/bjork-ui/primitives/button-group";
+import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
+import { getGalleryItem } from "@/lib/bjork-gallery";
+
+const item = getGalleryItem("adaptive-precision-slider");
+
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function formatEv(v: number) {
+  return `${v >= 0 ? "+" : ""}${v.toFixed(2)} EV`;
+}
+
+function formatMeters(v: number) {
+  return `${v.toFixed(2)} m`;
+}
+
+// 25 frames a second. Values sit on a 0.04s grid, so frames are whole numbers.
+function formatTimecode(v: number) {
+  const whole = Math.floor(v);
+  const frames = Math.round((v - whole) * 25) % 25;
+  return `${pad(Math.floor(whole / 60))}:${pad(whole % 60)}.${pad(frames)}`;
+}
+
+export default function Page() {
+  const isPreview = usePreviewMode();
+  const attractParam = usePreviewSearchParam("attract") === "1";
+  const [falloff, setFalloff] = useState(48);
+  const [showGain, setShowGain] = useState(true);
+
+  return (
+    <SimpleComponentDemoPage
+      item={item}
+      description="Drift away from the track to fine-tune. Precision comes from the body, not from a modifier key."
+      usageCode={`<AdaptivePrecisionSlider
+  label="Exposure"
+  defaultValue={0}
+  min={-2}
+  max={2}
+  step={0.01}
+  format={(v) => \`\${v >= 0 ? "+" : ""}\${v.toFixed(2)} EV\`}
+  precisionFalloff={48}
+  onValueChange={(v) => setExposure(v)}
+/>`}
+      previewScaleClassName="w-[340px]"
+      previewCaptureScaleClassName="w-[640px] scale-[1.2]"
+    >
+      <div className="flex w-[min(520px,calc(100vw-56px))] min-w-0 flex-col gap-[28px]">
+        <AdaptivePrecisionSlider
+          label="Exposure"
+          value={isPreview ? 0.35 : undefined}
+          defaultValue={0}
+          debugGain={isPreview ? 0.25 : undefined}
+          min={-2}
+          max={2}
+          step={0.01}
+          format={formatEv}
+          precisionFalloff={falloff}
+          showGain={showGain}
+          attract={attractParam}
+        />
+        <AdaptivePrecisionSlider
+          label="Focus distance"
+          defaultValue={2.4}
+          min={0.3}
+          max={10}
+          step={0.01}
+          format={formatMeters}
+          precisionFalloff={falloff}
+          showGain={showGain}
+        />
+        <AdaptivePrecisionSlider
+          label="Timecode"
+          defaultValue={0}
+          min={0}
+          max={600}
+          step={0.04}
+          format={formatTimecode}
+          precisionFalloff={falloff}
+          showGain={showGain}
+        />
+        <p className="text-[12px] text-[color:var(--bjork-text-soft,rgba(237,237,237,0.36))]">
+          Drag, then drift away from the track to fine-tune.
+        </p>
+        {!isPreview && (
+          <div className="flex flex-wrap items-center gap-3">
+            <BjorkButtonGroup aria-label="Precision falloff">
+              {[24, 48, 96].map((px) => (
+                <BjorkButton
+                  key={px}
+                  size="sm"
+                  variant={falloff === px ? "secondary" : "ghost"}
+                  aria-pressed={falloff === px}
+                  onClick={() => setFalloff(px)}
+                  className="tabular-nums"
+                >
+                  {px}px
+                </BjorkButton>
+              ))}
+            </BjorkButtonGroup>
+            <label className="flex items-center gap-2 font-mono text-[12px] text-[color:var(--bjork-text-medium,rgba(237,237,237,0.72))]">
+              <BjorkSwitch checked={showGain} onCheckedChange={setShowGain} />
+              Gain chip
+            </label>
+          </div>
+        )}
+      </div>
+    </SimpleComponentDemoPage>
+  );
+}
