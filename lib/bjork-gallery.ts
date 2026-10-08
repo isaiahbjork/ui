@@ -1086,6 +1086,31 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
+  {
+    id: "bjork116",
+    slug: "aperture-dive",
+    title: "Aperture dive",
+    route: "/heroes/aperture-dive",
+    sourcePath: "components/bjork-ui/heroes/aperture-dive.tsx",
+    tier: "copy",
+    collection: "Heroes",
+    preview: "video",
+    accent: "#ffe9cc",
+    isNew: true,
+  },
+  {
+    id: "bjork117",
+    slug: "scene-states",
+    title: "Scene states",
+    route: "/interactive/scene-states",
+    sourcePath: "components/bjork-ui/interactive/scene-states-demo.tsx",
+    tier: "copy",
+    collection: "Interactive",
+    preview: "video",
+    accent: "#7cc4ff",
+    isNew: true,
+  },
+
 ];
 
 export function getGalleryItem(slug: string) {
