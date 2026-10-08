@@ -984,7 +984,18 @@ export const galleryItems: GalleryItem[] = [
 
   // @slot bjork95 adaptive-precision-slider
 
-  // @slot bjork96 click-wheel
+  {
+    id: "bjork96",
+    slug: "click-wheel",
+    title: "Click wheel",
+    route: "/controls/click-wheel",
+    sourcePath: "components/bjork-ui/controls/click-wheel.tsx",
+    tier: "copy",
+    collection: "Controls",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork97 velocity-ink
 
