@@ -499,9 +499,10 @@ class LatticeEngine {
 
     const pal = BJORK_PALETTE[tone];
     const R = size * 0.42;
-    // Optical: the front dots read as heavier, so the sphere sits 1% of size low.
+    // Blur test (alpha-weighted ink centroid, all five states): the tilted lattice already sits at 0.500 of
+    // the canvas height, so there is no vertical nudge. The +1% drop the plan suggested left it 1% low.
     const cx = size / 2;
-    const cy = size / 2 + size * 0.01;
+    const cy = size / 2;
     const base = size / 120;
     const cT = Math.cos(tilt * DEG);
     const sT = Math.sin(tilt * DEG);
@@ -843,7 +844,8 @@ export function LatticeOrb({
           {caption}
         </span>
       )}
-      <LiveRegion message={caption} />
+      {/* Attract is decorative: announce the real state only, never the demo cycle. */}
+      <LiveRegion message={attractOn ? (label ?? STATE_LABEL[state]) : caption} />
     </div>
   );
 }

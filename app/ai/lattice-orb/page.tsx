@@ -36,17 +36,17 @@ const SMALL_ORBS: { value: OrbState; label: string }[] = [
   { value: "error", label: "Error" },
 ];
 
-// Plain buttons with the house tokens. BjorkButton's tabindex differs between server and reduced-motion client renders.
+// Compact pressed-state buttons for the demo.
 function OrbButton({
   pressed,
   primary = false,
-  disabled = false,
+  muted = false,
   onClick,
   children,
 }: {
   pressed?: boolean;
   primary?: boolean;
-  disabled?: boolean;
+  muted?: boolean;
   onClick: () => void;
   children: ReactNode;
 }) {
@@ -54,10 +54,10 @@ function OrbButton({
     <button
       type="button"
       aria-pressed={pressed}
-      disabled={disabled}
+      aria-disabled={muted || undefined}
       onClick={onClick}
       className={cn(
-        "inline-flex h-8 items-center justify-center rounded-[10px] border px-3 font-mono text-[12px] tracking-[-0.01em] outline-none transition-[background-color,border-color,color] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-35",
+        "inline-flex h-8 items-center justify-center rounded-[10px] border px-3 font-mono text-[12px] tracking-[-0.01em] outline-none transition-[background-color,border-color,color] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-35 aria-disabled:opacity-35",
         pressed || primary
           ? "border-[color:var(--bjork-border-strong,#343434)] bg-[color:var(--bjork-surface-active,#202020)] text-[color:var(--bjork-text,#ededed)]"
           : "border-transparent bg-transparent text-[color:var(--bjork-text-medium,rgba(237,237,237,0.72))] hover:text-[color:var(--bjork-text,#ededed)]",
@@ -91,7 +91,7 @@ export default function Page() {
         <OrbButton primary onClick={() => setHits((prev) => [...prev, hitForIndex(prev.length)])}>
           Add hit
         </OrbButton>
-        <OrbButton disabled={hits.length === 0} onClick={() => setHits([])}>
+        <OrbButton muted={hits.length === 0} onClick={() => setHits([])}>
           Clear hits
         </OrbButton>
       </div>
