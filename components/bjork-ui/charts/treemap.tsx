@@ -401,7 +401,8 @@ export function Treemap({
       // Names are proportional, so a long one truncates with an ellipsis instead of leaving the tile blank.
       const nameFits = roomW >= Math.min(name.length * 6.6, L.group ? 64 : 52) && L.r.h >= (L.group ? 16 : 22);
       const valFits = !L.group && val.length * 6.6 <= roomW && L.r.h >= 40;
-      const groupVal = L.group && (name.length + val.length + 2) * 6.4 <= roomW;
+      // Group names are uppercase and tracked (~9px a glyph at 11px); the value is mono (6.6px) after an 8px gap.
+      const groupVal = L.group && name.length * 9 + 12 + val.length * 6.6 <= roomW;
       const textKey = `${L.id}|${nameFits}|${valFits}|${groupVal}|${val}|${L.strong}|${L.group}`;
       if (s.labelKey[k] !== textKey) {
         s.labelKey[k] = textKey;
@@ -419,7 +420,8 @@ export function Treemap({
     const tip = tipRef.current;
     const ht = s.hover ? s.tiles.get(s.hover) : null;
     if (tip?.el && ht) {
-      const pos = placeTooltip(ht.r.x + ht.r.w / 2, ht.r.y + Math.min(ht.r.h / 2, 30), tip.size.w, tip.size.h, w, h, 10);
+      // Anchored on the tile centre: on a big tile the card sits inside it instead of over its neighbours.
+      const pos = placeTooltip(ht.r.x + ht.r.w / 2, ht.r.y + ht.r.h / 2, tip.size.w, tip.size.h, w, h, 10);
       tip.el.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
     }
 
@@ -689,7 +691,7 @@ export function Treemap({
             className="group/t pointer-events-none absolute left-0 top-0 flex flex-col gap-[5px] overflow-hidden opacity-0 data-[group=1]:flex-row data-[group=1]:items-baseline data-[group=1]:gap-2"
           >
             <span className="truncate font-bjork-alpha text-[12px] font-medium leading-[14px] text-[color:var(--bjork-text)] group-data-[group=1]/t:text-[11px] group-data-[group=1]/t:uppercase group-data-[group=1]/t:tracking-[0.06em] group-data-[group=1]/t:text-[color:var(--bjork-text-muted)] group-data-[strong=1]/t:text-[color:var(--bjork-accent-foreground)]" />
-            <span className="truncate font-mono text-[11px] leading-none tabular-nums text-[color:var(--bjork-text-medium)] [text-box:trim-both_cap_alphabetic] group-data-[strong=1]/t:text-[color:var(--bjork-accent-foreground)]" />
+            <span className="truncate font-mono text-[11px] leading-none tabular-nums text-[color:var(--bjork-text-medium)] group-data-[group=1]/t:shrink-0 [text-box:trim-both_cap_alphabetic] group-data-[strong=1]/t:text-[color:var(--bjork-accent-foreground)]" />
           </div>
         ))}
         <HoverTooltip ref={tipRef} onMeasure={wake} />

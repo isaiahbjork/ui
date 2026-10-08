@@ -65,7 +65,7 @@ export default function Page() {
     >
       {isPreview ? (
         <div className="w-[720px]">
-          <Treemap data={DATA} height={420} activeId="0-1" ariaLabel="Portfolio by sector" />
+          <Treemap data={DATA} height={420} activeId="0-4" ariaLabel="Portfolio by sector" />
         </div>
       ) : (
         <DemoColumn width={860}>
