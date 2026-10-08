@@ -35,10 +35,12 @@ export interface PlaneTypeProps {
 }
 
 const MAX_LINES = 6;
-const LINE_HEIGHT = 0.82; // em
-// Cap height of the display face in em, used so the stack's box matches its visible caps.
-const CAP_HEIGHT = 0.7; // em
+// Cap height of the display face in em (Bjork Grotesk Display 700, H/M/I/E/T). Measured by blur test.
+const CAP_HEIGHT = 0.71; // em
+// Perspective distance in px. Planes are counter-scaled against it so they sit flat at rest.
+const PERSPECTIVE = 900;
 const OUTLINE_STROKE = "1.5px";
+const subscribeNoop = () => () => {};
 const DEFAULT_SPRING = { stiffness: 150, damping: 20, mass: 1 };
 const ATTRACT_IDLE_MS = 4000;
 const ATTRACT_AMPLITUDE = 0.6;
@@ -104,6 +106,7 @@ interface PlaneProps {
   skew: number;
   overlap: number;
   opticalEm: number;
+  originEm: number;
   reduce: boolean;
   shift: MotionValue<number>;
   paint: Paint;
@@ -111,19 +114,20 @@ interface PlaneProps {
 }
 
 // Each plane's transform is built once per instance. Every constant it closes over is part of the key in PlaneType.
-function Plane({ text, index, count, depth, skew, overlap, opticalEm, reduce, shift, paint, align }: PlaneProps) {
+function Plane({ text, index, count, depth, skew, overlap, opticalEm, originEm, reduce, shift, paint, align }: PlaneProps) {
   const mid = (count - 1) / 2;
   const dx = index - mid;
   const z = dx * depth;
+  const k = (PERSPECTIVE - z) / PERSPECTIVE;
   const rotation = reduce ? 0 : (index % 2 ? 1 : -1) * skew;
-  const y = index * (1 - overlap) * LINE_HEIGHT;
+  const y = index * (CAP_HEIGHT - overlap);
   const transform = useTransform(
     shift,
     (v: number) =>
-      `translateX(calc(${opticalEm}em + ${(v * dx).toFixed(3)}px)) translateY(${y}em) translateZ(${z}px) rotateZ(${rotation}deg)`,
+      `translateX(calc(${opticalEm * k}em + ${(v * dx * k).toFixed(3)}px)) translateY(${y * k}em) translateZ(${z}px) scale(${k}) rotateZ(${rotation}deg)`,
   );
 
-  const justify = align === "center" ? "justify-self-center" : align === "right" ? "justify-self-end" : "justify-self-start";
+  const textAlign = align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left";
   const style: CSSProperties = paint.outline
     ? { color: "transparent", WebkitTextStroke: `${OUTLINE_STROKE} ${paint.color}`, mixBlendMode: paint.blend }
     : { color: paint.color, WebkitTextStroke: "0", mixBlendMode: paint.blend };
@@ -132,10 +136,10 @@ function Plane({ text, index, count, depth, skew, overlap, opticalEm, reduce, sh
     <motion.span
       aria-hidden="true"
       className={cn(
-        "pointer-events-none block w-max self-start whitespace-nowrap font-bjork-display font-bold leading-[0.82] tracking-[-0.04em] [grid-area:1/1] [text-box:trim-both_cap_alphabetic]",
-        justify,
+        "pointer-events-none block w-full self-start whitespace-nowrap font-bjork-display font-bold leading-[0.82] tracking-[-0.04em] [grid-area:1/1] [text-box:trim-both_cap_alphabetic]",
+        textAlign,
       )}
-      style={{ ...style, transform }}
+      style={{ ...style, transform, transformOrigin: `50% ${originEm}em` }}
     >
       {text || " "}
     </motion.span>
@@ -168,7 +172,10 @@ export function PlaneType({
 }: PlaneTypeProps) {
   const tone = useBjorkTone(toneProp);
   const palette = BJORK_PALETTE[tone];
-  const reduce = useReducedMotion() === true;
+  // Server and first client render both report "not reduced", so reduced motion only applies after hydration.
+  const hydrated = useSyncExternalStore(subscribeNoop, () => true, () => false);
+  const prefersReduced = useReducedMotion();
+  const reduce = hydrated && prefersReduced === true;
   const rootRef = useRef<HTMLDivElement>(null);
   const shown = lines.slice(0, MAX_LINES);
   const count = shown.length;
@@ -319,7 +326,8 @@ export function PlaneType({
 
   const cssVars = { "--bjork-text": palette.text, "--bjork-accent": palette.accent } as CSSProperties;
   const justifyRow = align === "center" ? "justify-center" : align === "right" ? "justify-end" : "justify-start";
-  const totalEm = count > 0 ? (count - 1) * (1 - overlap) * LINE_HEIGHT + CAP_HEIGHT : 0;
+  const totalEm = count > 0 ? (count - 1) * (CAP_HEIGHT - overlap) + CAP_HEIGHT : 0;
+  const originEm = totalEm / 2;
   const Tag = as;
 
   return (
@@ -328,7 +336,7 @@ export function PlaneType({
       className={cn("relative w-full select-none", className)}
       style={{
         ...cssVars,
-        perspective: "900px",
+        perspective: `${PERSPECTIVE}px`,
         isolation: "isolate",
         fontSize: size,
         backgroundColor: knockout ? palette.stage : undefined,
@@ -341,15 +349,15 @@ export function PlaneType({
         className={cn("flex w-full", justifyRow)}
         style={{ rotateX: rotXs, rotateY: rotYs, transformStyle: "preserve-3d" }}
       >
-        <Tag className="m-0 w-max max-w-full font-bjork-display" style={{ transformStyle: "preserve-3d" }}>
+        <Tag className="m-0 w-full font-bjork-display" style={{ transformStyle: "preserve-3d" }}>
           <VisuallyHidden>{shown.join(" ")}</VisuallyHidden>
-          <span aria-hidden="true" className="grid w-max" style={{ transformStyle: "preserve-3d" }}>
+          <span aria-hidden="true" className="grid w-full" style={{ transformStyle: "preserve-3d" }}>
             <span aria-hidden="true" className="invisible [grid-area:1/1]" style={{ height: `${totalEm}em` }} />
             {shown.map((line, index) => {
               const opticalEm = opticalAlign ? opticalOffset(line, align) : 0;
               return (
                 <Plane
-                  key={`${index}|${count}|${depth}|${skew}|${overlap}|${opticalEm}|${reduce ? 1 : 0}`}
+                  key={`${index}|${count}|${depth}|${skew}|${overlap}|${opticalEm}|${originEm}|${reduce ? 1 : 0}`}
                   text={line}
                   index={index}
                   count={count}
@@ -357,6 +365,7 @@ export function PlaneType({
                   skew={skew}
                   overlap={overlap}
                   opticalEm={opticalEm}
+                  originEm={originEm}
                   reduce={reduce}
                   shift={shiftS}
                   paint={paintFor(index, variant, knockout, tone)}
