@@ -156,6 +156,21 @@ export const strokeIcons: Record<string, StrokeIconDef> = {
   },
 };
 
+// Optical nudges, in the icon's own frame (the group rotation carries them with the icon).
+// Measured with the blur test (OPTICAL-ALIGNMENT R1 / checklist 1 and 4): arrows carry their
+// visual weight toward the head, so they move back toward the tail; the check's weight sits low.
+const OPTICAL_NUDGE = new Map<StrokeIconDef, [number, number]>([
+  [strokeIcons["arrow-right"], [-1.6, 0]], // arrow-right: weight +1.63 units right of centre
+  [strokeIcons["arrow-down"], [-1.6, 0]],
+  [strokeIcons["arrow-left"], [-1.6, 0]],
+  [strokeIcons["arrow-up"], [-1.6, 0]],
+  [strokeIcons.check, [0, -0.9]], // check: weight +0.94 units below centre
+]);
+
+function nudgeOf(def: StrokeIconDef): [number, number] {
+  return OPTICAL_NUDGE.get(def) ?? [0, 0];
+}
+
 function isSeg(v: unknown): v is Seg {
   return Array.isArray(v) && v.length === 4 && v.every((n) => typeof n === "number" && Number.isFinite(n));
 }
@@ -269,7 +284,8 @@ function shortestDelta(from: number, to: number): number {
   return ((((to - from) % 360) + 540) % 360) - 180;
 }
 
-const fmt = (v: number) => String(Math.round(v * 1000) / 1000);
+// Attributes are written to 2 decimals (0.005 of a 24-unit box). Finer precision only adds settle time.
+const fmt = (v: number) => String(Math.round(v * 100) / 100);
 const COORDS = ["x1", "y1", "x2", "y2"] as const;
 
 interface MorphEls {
@@ -289,6 +305,9 @@ class Morph {
   private curScale = 1;
   private fromScale = 1;
   private toScale = 1;
+  private curNudge: [number, number];
+  private fromNudge: [number, number];
+  private toNudge: [number, number];
   private slotLine = [0, 1, 2]; // settled: element s shows canonical line slotLine[s]
   private targetLine = [0, 1, 2];
   private visibleTo = [true, true, true];
@@ -306,6 +325,7 @@ class Morph {
     this.from.set(this.to);
     this.curAngle = this.fromAngle = this.toAngle = def.rotation ?? 0;
     this.curScale = this.fromScale = this.toScale = def.strokeScale ?? 1;
+    this.curNudge = this.fromNudge = this.toNudge = nudgeOf(def);
   }
 
   bind(els: MorphEls) {
@@ -359,9 +379,11 @@ class Morph {
 
     this.fromAngle = this.curAngle;
     this.fromScale = this.curScale;
+    this.fromNudge = [this.curNudge[0], this.curNudge[1]];
     this.from.set(this.cur);
     this.toAngle = this.curAngle + shortestDelta(this.curAngle, next.rotation ?? 0);
     this.toScale = next.strokeScale ?? 1;
+    this.toNudge = nudgeOf(next);
 
     if (reduce) {
       this.settle();
@@ -386,7 +408,7 @@ class Morph {
   step(dt: number): boolean {
     if (!this.active) return false;
     stepSpring(this.spring, 1, this.cfg, dt);
-    if (Math.abs(this.spring.x - 1) < 1e-4 && Math.abs(this.spring.v) < 1e-3) {
+    if (Math.abs(this.spring.x - 1) < 5e-4 && Math.abs(this.spring.v) < 5e-3) {
       this.settle();
       return false;
     }
@@ -407,6 +429,8 @@ class Morph {
     this.curAngle = this.toAngle;
     this.fromScale = this.toScale;
     this.curScale = this.toScale;
+    this.fromNudge = [this.toNudge[0], this.toNudge[1]];
+    this.curNudge = [this.toNudge[0], this.toNudge[1]];
     this.active = false;
     this.spring.x = 1;
     this.spring.v = 0;
@@ -431,7 +455,10 @@ class Morph {
     }
     this.curAngle = this.fromAngle + (this.toAngle - this.fromAngle) * p;
     this.curScale = this.fromScale + (this.toScale - this.fromScale) * p;
-    const transform = `rotate(${fmt(this.curAngle)} 12 12)`;
+    const nx = this.fromNudge[0] + (this.toNudge[0] - this.fromNudge[0]) * p;
+    const ny = this.fromNudge[1] + (this.toNudge[1] - this.fromNudge[1]) * p;
+    this.curNudge = [nx, ny];
+    const transform = `rotate(${fmt(this.curAngle)} 12 12) translate(${fmt(nx)} ${fmt(ny)})`;
     if (this.written[12] !== transform) {
       els.group.setAttribute("transform", transform);
       this.written[12] = transform;
@@ -465,7 +492,7 @@ export function StrokeMorphIcon({
     return {
       segs: eff,
       visible,
-      transform: `rotate(${def.rotation ?? 0} 12 12)`,
+      transform: `rotate(${def.rotation ?? 0} 12 12) translate(${nudgeOf(def).map(fmt).join(" ")})`,
       strokeWidth: fmt(strokeWidth * (def.strokeScale ?? 1)),
     };
   });
