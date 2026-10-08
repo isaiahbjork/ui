@@ -49,7 +49,7 @@ export default function Page() {
     >
       {isPreview ? (
         <div className="w-[660px]">
-          <DumbbellChart rows={ROWS} labels={["2020", "2025"]} formatValue={money} formatGap={gap} rowHeight={36} activeId="sec" ariaLabel="Median salary by role" />
+          <DumbbellChart rows={ROWS} labels={["2020", "2025"]} formatValue={money} formatGap={gap} rowHeight={36} activeId="ml" ariaLabel="Median salary by role" />
         </div>
       ) : (
         <DemoColumn width={720}>
