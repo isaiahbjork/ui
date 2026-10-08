@@ -34,8 +34,6 @@ const PREVIEW_HISTORY = seedHistory(3, T0, 60000);
 
 const THRESHOLD = { value: 250, label: "SLO 250ms" };
 const formatDemoValue = (v: number) => `${Math.round(v)} ms`;
-const ORIGIN = T0 - 60000; // elapsed seconds from the start of the first window
-const formatDemoTime = (t: number) => `${((t - ORIGIN) / 1000).toFixed(1)} s`;
 
 // The stream lives in its own component, so the 4Hz updates re-render only the chart, not the page shell.
 function LiveDemo({
@@ -89,7 +87,6 @@ function LiveDemo({
       onPausedChange={onPausedChange}
       threshold={THRESHOLD}
       formatValue={formatDemoValue}
-      formatTime={formatDemoTime}
       scrub
       ariaLabel="p95 latency"
     />

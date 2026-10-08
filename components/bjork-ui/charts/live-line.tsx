@@ -491,7 +491,7 @@ export function LiveLine({
       const el = thresholdRef.current;
       if (thr && thrY !== null) {
         el.style.opacity = "1";
-        el.style.transform = `translate3d(0, ${thrY.toFixed(2)}px, 0) translateY(calc(-100% - 4px))`;
+        el.style.transform = `translate3d(0, ${thrY.toFixed(2)}px, 0) translateY(calc(-100% - 8px))`;
       } else {
         el.style.opacity = "0";
       }
@@ -909,6 +909,7 @@ export function LiveLine({
 
   const cssVars = {
     "--bjork-accent": pal.accent,
+    "--bjork-accent-fill": pal.accentFill,
     "--bjork-accent-foreground": pal.accentFg,
     "--bjork-text": pal.text,
     "--bjork-text-medium": pal.textMedium,
@@ -993,7 +994,7 @@ export function LiveLine({
         <span
           ref={badgeRef}
           aria-hidden="true"
-          className="pointer-events-none absolute right-0 top-0 inline-flex h-[22px] items-center rounded-[11px] bg-[color:var(--bjork-accent)] px-2 font-mono text-[12px] leading-none tabular-nums text-[color:var(--bjork-accent-foreground)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+          className="pointer-events-none absolute right-0 top-0 inline-flex h-[22px] items-center rounded-[11px] bg-[color:var(--bjork-accent-fill)] px-2 font-mono text-[12px] leading-none tabular-nums text-[color:var(--bjork-accent-foreground)] opacity-0 [text-box:trim-both_cap_alphabetic]"
         />
 
         <div
