@@ -186,6 +186,10 @@ export function BjorkCommandPalette({
   );
 
   React.useEffect(() => {
+    // A controlled palette leaves the shortcut to its owner (GlobalCommandPalette).
+    // Two listeners both toggling the same state cancel each other out.
+    if (controlledOpen !== undefined) return;
+
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
         event.preventDefault();
@@ -195,7 +199,31 @@ export function BjorkCommandPalette({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [open, setOpen]);
+  }, [controlledOpen, open, setOpen]);
+
+  // The palette has no DialogTrigger, so Radix has nothing to return focus to.
+  // Remember the last element focused outside the dialog and hand focus back to it.
+  const returnFocusRef = React.useRef<HTMLElement | null>(null);
+
+  React.useEffect(() => {
+    const trackFocus = (event: FocusEvent) => {
+      const target = event.target;
+      if (target instanceof HTMLElement && !target.closest('[data-slot="dialog-content"]')) {
+        returnFocusRef.current = target;
+      }
+    };
+
+    document.addEventListener("focusin", trackFocus);
+    return () => document.removeEventListener("focusin", trackFocus);
+  }, []);
+
+  const restoreFocus = React.useCallback((event: Event) => {
+    const target = returnFocusRef.current;
+    if (!target?.isConnected) return;
+
+    event.preventDefault();
+    target.focus({ preventScroll: true });
+  }, []);
 
   React.useEffect(() => {
     if (!open) return;
@@ -226,7 +254,9 @@ export function BjorkCommandPalette({
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="top-[18vh] max-h-[min(650px,calc(100vh-4rem))] !max-w-3xl translate-y-0 overflow-hidden border-none bg-transparent p-2 shadow-none duration-150 data-[state=open]:slide-in-from-top-4 data-[state=closed]:slide-out-to-top-4 [&_[data-slot=dialog-close]]:hidden">
+        <DialogContent
+          onCloseAutoFocus={restoreFocus}
+          className="top-[18vh] max-h-[min(650px,calc(100vh-4rem))] !max-w-3xl translate-y-0 overflow-hidden border-none bg-transparent p-2 shadow-none duration-150 data-[state=open]:slide-in-from-top-4 data-[state=closed]:slide-out-to-top-4 [&_[data-slot=dialog-close]]:hidden">
           <DialogHeader className="sr-only">
             <DialogTitle>Command palette</DialogTitle>
             <DialogDescription>Search pages, primitives, components, and actions.</DialogDescription>
