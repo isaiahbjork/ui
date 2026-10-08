@@ -59,6 +59,9 @@ const RESUME_DELAY = 1;
 const REDUCED_FADE = 0.3;
 const REDUCED_OPACITY = 0.15;
 const ATTRACT_IDLE_MS = 4000;
+// Release time r = RELEASE_SPAN * order + RELEASE_JITTER * rand (plan 3.18).
+const RELEASE_SPAN = 0.6;
+const RELEASE_JITTER = 0.15;
 
 const subscribeNoop = () => () => {};
 const getMounted = () => true;
@@ -73,6 +76,7 @@ interface Particles {
   rel: Float32Array;
   ph: Float32Array;
   acc: Uint8Array;
+  ord: Float32Array;
 }
 
 interface Scene {
@@ -83,6 +87,16 @@ interface Scene {
   height: number;
   wx: number;
   wy: number;
+  /** Release-order mapping, in content-box px: order = (x*wx + y*wy - minP) / span. */
+  minP: number;
+  span: number;
+  /** Content-box origin inside the heading's border box, and the border-box size (the mask's space). */
+  offX: number;
+  offY: number;
+  boxW: number;
+  boxH: number;
+  /** Heading ink colour, read once per build instead of every frame. */
+  ink: string;
 }
 
 interface Sim {
@@ -202,14 +216,36 @@ function paint(live: Live, sim: Sim, p: Snapshot) {
 
   if (p.reduce) {
     heading.style.opacity = String(1 - (1 - REDUCED_OPACITY) * T);
-    canvas.style.visibility = "hidden";
+    heading.style.maskImage = "";
+    heading.style.webkitMaskImage = "";
+    canvas.style.display = "none";
     return;
   }
 
   const showCanvas = !!scene && (T > 0 || p.debug);
-  heading.style.opacity = showCanvas ? "0" : "1";
-  canvas.style.visibility = showCanvas ? "visible" : "hidden";
-  if (!showCanvas || !scene) return;
+  canvas.style.display = showCanvas ? "block" : "none";
+  if (!showCanvas || !scene) {
+    heading.style.opacity = "1";
+    heading.style.maskImage = "";
+    heading.style.webkitMaskImage = "";
+    return;
+  }
+  // Release front: no particle with order above `edge` has left home yet, so the real glyphs stay visible there.
+  const edge = p.debug ? Infinity : T / RELEASE_SPAN;
+  if (p.debug) {
+    heading.style.opacity = "0";
+  } else {
+    heading.style.opacity = "1";
+    const { wx: gx, wy: gy, boxW, boxH } = scene;
+    const angle = (Math.atan2(gx, -gy) * 180) / Math.PI;
+    const len = Math.abs(boxW * gx) + Math.abs(boxH * gy);
+    const start = (boxW / 2) * gx + (boxH / 2) * gy - len / 2;
+    const front = scene.minP + edge * scene.span + scene.offX * gx + scene.offY * gy;
+    const pct = ((front - start) / len) * 100;
+    const mask = `linear-gradient(${angle.toFixed(2)}deg, transparent ${pct.toFixed(2)}%, #000 ${(pct + 1.5).toFixed(2)}%)`;
+    heading.style.maskImage = mask;
+    heading.style.webkitMaskImage = mask;
+  }
 
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
@@ -220,8 +256,7 @@ function paint(live: Live, sim: Sim, p: Snapshot) {
   const px = -wy;
   const py = wx;
 
-  const computed = getComputedStyle(heading).color;
-  const colText = computed && computed !== "rgba(0, 0, 0, 0)" ? computed : BJORK_PALETTE[p.tone].text;
+  const colText = scene.ink || BJORK_PALETTE[p.tone].text;
   const colAccent = BJORK_PALETTE[p.tone].accent;
 
   ctx.setTransform(live.dpr, 0, 0, live.dpr, 0, 0);
@@ -233,6 +268,7 @@ function paint(live: Live, sim: Sim, p: Snapshot) {
       if (P.acc[i] !== pass) continue;
       let u = (T - P.rel[i]) / FLIGHT;
       u = u < 0 ? 0 : u > 1 ? 1 : u;
+      if (u === 0 && P.ord[i] > edge) continue; // still home, under the visible glyphs
       const e = 1 - (1 - u) * (1 - u) * (1 - u);
       const wob = Math.sin(u * Math.PI * 2 + P.ph[i]) * PERP_WOBBLE * u;
       const x = P.hx[i] + (P.dx[i] - P.hx[i]) * e + px * wob;
@@ -354,10 +390,11 @@ async function buildScene(o: BuildOptions): Promise<Scene | null> {
   const raster = await rasterize(heading, cs, cw, ch);
   if (!raster) return null;
 
-  // Sampling step grows by 1.5 until the ink count fits under the cap.
+  // Sampling step grows by 1.5 until the ink count is within 2x the cap; the seeded subsample below trims the rest,
+  // so medium headlines keep a full cap of dust instead of a much sparser coarse grid.
   let step = STEP_CSS;
   let xy = scan(raster, step);
-  for (let i = 0; i < 8 && xy.length / 2 > o.cap; i++) {
+  for (let i = 0; i < 8 && xy.length / 2 > o.cap * 2; i++) {
     step *= 1.5;
     xy = scan(raster, step);
   }
@@ -409,6 +446,7 @@ async function buildScene(o: BuildOptions): Promise<Scene | null> {
   const rel = new Float32Array(count);
   const ph = new Float32Array(count);
   const acc = new Uint8Array(count);
+  const ord = new Float32Array(count);
 
   for (let i = 0; i < count; i++) {
     const x = xy[i * 2];
@@ -421,7 +459,8 @@ async function buildScene(o: BuildOptions): Promise<Scene | null> {
     const rD = rng();
     const rE = rng();
     const rF = rng();
-    rel[i] = 0.6 * order + 0.15 * rA;
+    rel[i] = RELEASE_SPAN * order + RELEASE_JITTER * rA;
+    ord[i] = order;
     const dist = 120 + 140 * rB;
     const perpOff = (rC - 0.5) * 60;
     const upOff = -20 * rD;
@@ -435,7 +474,7 @@ async function buildScene(o: BuildOptions): Promise<Scene | null> {
   }
 
   return {
-    particles: { n: count, hx, hy, dx, dy, rel, ph, acc },
+    particles: { n: count, hx, hy, dx, dy, rel, ph, acc, ord },
     // Canvas origin sits at the content box origin, minus the margins.
     left: heading.offsetLeft + borderL + padL - mL,
     top: heading.offsetTop + borderT + padT - mT,
@@ -443,6 +482,13 @@ async function buildScene(o: BuildOptions): Promise<Scene | null> {
     height: ch + mT + mB,
     wx,
     wy,
+    minP,
+    span,
+    offX: borderL + padL,
+    offY: borderT + padT,
+    boxW: heading.offsetWidth,
+    boxH: heading.offsetHeight,
+    ink: cs.color && cs.color !== "rgba(0, 0, 0, 0)" ? cs.color : "",
   };
 }
 
@@ -558,12 +604,16 @@ export function ScatterRewind({
     }
     const sim = simRef.current;
     if (lastTextRef.current !== p.text) {
+      // Only a real text change resets T. The first registration must keep a manual `progress` set on mount.
+      const changed = lastTextRef.current !== null;
       lastTextRef.current = p.text;
-      sim.t = 0;
-      sim.target = 0;
-      sim.timer = null;
-      sim.next = null;
-      sim.started = false;
+      if (changed) {
+        sim.t = 0;
+        sim.target = 0;
+        sim.timer = null;
+        sim.next = null;
+        sim.started = false;
+      }
     }
 
     let cancelled = false;
@@ -604,7 +654,7 @@ export function ScatterRewind({
     return () => {
       cancelled = true;
     };
-  }, [text, as, className, maxParticles, seed, windAngle, spill, accentRatio, isClick, hasText, sizeTick, wake]);
+  }, [text, as, className, maxParticles, seed, windAngle, spill, accentRatio, isClick, hasText, sizeTick, resolvedTone, wake]);
 
   // Re-samples when the heading box changes size, since its wrap and ink change with it.
   useEffect(() => {
@@ -695,6 +745,8 @@ export function ScatterRewind({
       <Tag
         ref={headingRef as RefObject<HTMLHeadingElement & HTMLParagraphElement>}
         className={cn("m-0 text-[color:var(--bjork-text,#ededed)]", className)}
+        // explicit tone wins for canvas tiles; otherwise the page token
+        style={tone ? { color: BJORK_PALETTE[resolvedTone].text } : undefined}
       >
         {isClick ? (
           <button
@@ -711,7 +763,7 @@ export function ScatterRewind({
       <canvas
         ref={canvasRef}
         aria-hidden="true"
-        className="pointer-events-none invisible absolute left-0 top-0"
+        className="pointer-events-none hidden absolute left-0 top-0"
       />
     </div>
   );

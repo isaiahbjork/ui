@@ -109,19 +109,19 @@ export default function ScatterRewindPage() {
       usageCode={usageSnippet}
       controls={
         <>
+          {/* Three triggers fit the options row; dragging Progress switches to manual (scrub) mode. */}
           <ShellSegmented
             label="Trigger"
             value={trigger}
             options={[
-              { value: "inView", label: "In view" },
+              { value: "inView", label: "View" },
               { value: "hover", label: "Hover" },
               { value: "click", label: "Click" },
-              { value: "manual", label: "Manual" },
             ]}
             onChange={(v) => setTrigger(v as ScatterRewindTrigger)}
           />
           <ShellRange
-            label="Progress"
+            label="Scrub"
             value={progress}
             min={0}
             max={1}
