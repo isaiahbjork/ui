@@ -354,7 +354,7 @@ export function WaterfallChart({
       key: `${b.id}|${pal.text}`,
       title: b.label,
       rows: [
-        { key: "v", label: b.kind === "ghost" ? "Would be" : "Total", value: formatValue(b.value), color: b.kind === "end" ? pal.accent : undefined },
+        { key: "v", label: b.kind === "ghost" ? "Would be" : "Total", value: formatValue(b.value), color: b.kind === "end" ? (b.value >= 0 ? pal.accent : pal.error) : undefined },
         ...(b.kind === "ghost" && net ? [{ key: "d", label: "Difference", value: formatSigned(b.value - net.value, formatValue), strong: false }] : []),
       ],
     };
@@ -456,7 +456,7 @@ export function WaterfallChart({
             aria-hidden="true"
             className={cn(
               "pointer-events-none absolute left-0 top-0 whitespace-nowrap font-mono text-[11px] leading-none tabular-nums opacity-0 [text-box:trim-both_cap_alphabetic]",
-              b.kind === "end" ? "text-[color:var(--bjork-accent-ink)]" : b.kind === "ghost" ? "text-[color:var(--bjork-text-muted)]" : "text-[color:var(--bjork-text)]",
+              b.kind === "end" ? (b.value >= 0 ? "text-[color:var(--bjork-accent-ink)]" : "text-[color:var(--bjork-error)]") : b.kind === "ghost" ? "text-[color:var(--bjork-text-muted)]" : "text-[color:var(--bjork-text)]",
             )}
           >
             {fmtBar(b)}

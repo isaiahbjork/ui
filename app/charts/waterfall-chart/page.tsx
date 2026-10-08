@@ -9,7 +9,8 @@ import { getGalleryItem } from "@/lib/bjork-gallery";
 import { ControlRow, DemoColumn, OptionGroup, ToggleButton } from "../_demo/controls";
 
 const item = getGalleryItem("waterfall-chart");
-const money = (v: number) => `$${formatCompact(v, 1)}`;
+// The sign goes before the currency: −$3.4K, never $−3.4K.
+const money = (v: number) => `${v < 0 ? "−" : ""}$${formatCompact(Math.abs(v), 1)}`;
 
 const SCENARIOS: Record<"good" | "bad", { start: { label: string; value: number }; steps: WaterfallStep[]; ghost: { label: string; value: number } }> = {
   good: {
@@ -56,7 +57,7 @@ export default function Page() {
     { id: "rebate", label: "Rebates", value: 1200 },
   ]}
   ghost={{ label: "Uncapped", value: 13900 }}
-  formatValue={(v) => \`$\${(v / 1000).toFixed(1)}K\`}
+  formatValue={(v) => \`\${v < 0 ? "−" : ""}$\${(Math.abs(v) / 1000).toFixed(1)}K\`}
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[720px] scale-[1.12]"
