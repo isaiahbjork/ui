@@ -207,24 +207,20 @@ variants={{
 Sophisticated text reveals and morphing:
 
 ```typescript
-// Letter-by-letter reveal
+// Per-letter reveal: never start from scale(0) (see §6)
 {text.split("").map((letter, index) => (
   <motion.span
     key={index}
-    initial={{ scale: 0, opacity: 0 }}
-    animate={{ scale: 1, opacity: 1 }}
-    transition={{
-      delay: index * 0.08,
-      type: "spring",
-      damping: 8,
-      stiffness: 200,
-      mass: 0.8,
-    }}
+    initial={{ opacity: 0, y: "0.25em", filter: "blur(4px)" }}
+    animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+    transition={{ delay: index * 0.03, type: "spring", stiffness: 400, damping: 28, mass: 0.6 }}
   >
     {letter}
   </motion.span>
 ))}
 ```
+
+Never start from `scale(0)` (see §6). Use per-letter entrances sparingly; they are an overused pattern.
 
 ### 9. **Easing & Timing**
 Use sophisticated easing curves:
