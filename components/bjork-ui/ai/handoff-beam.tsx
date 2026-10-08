@@ -162,6 +162,7 @@ interface Engine {
   now: number; // loop clock, seconds
   inputAt: number; // loop clock of the last pointer or key input, -Infinity if none
   attractT: number;
+  sweepT: number; // seconds spent thinking, so the sweep starts centred on gather
   voiceListen: () => [number, number, number];
   voiceSpeak: () => [number, number, number];
   analyserNode: AnalyserNode | null;
@@ -202,6 +203,7 @@ function createEngine(phase: BeamPhase): Engine {
     now: 0,
     inputAt: Number.NEGATIVE_INFINITY,
     attractT: 0,
+    sweepT: 0,
     voiceListen: createSimulatedVoice(11),
     voiceSpeak: createSimulatedVoice(29),
     analyserNode: null,
@@ -450,9 +452,10 @@ export function HandoffBeam({
     }
 
     // Sweep: a narrower highlight that travels across the gathered lobe. Only while thinking, never under reduced motion.
+    if (phaseNow === "thinking" && !L.reduce) e.sweepT += dt;
     if (!L.reduce && g > 0.01 && e.tints[0]) {
-      const sx = L.gatherOffset + SWEEP_SPAN * Math.sin((2 * Math.PI * t) / SWEEP_PERIOD);
-      const sw = 0.16 * cssW;
+      const sx = L.gatherOffset + SWEEP_SPAN * Math.sin((2 * Math.PI * e.sweepT) / SWEEP_PERIOD);
+      const sw = 0.1 * cssW;
       const sh = bandHeight(L.heldLevel) * cssH;
       ctx.globalAlpha = 0.5 * g * L.palette.alpha * L.intensity;
       ctx.drawImage(e.tints[0], sx * cssW - sw / 2, cssH - sh, sw, sh);
