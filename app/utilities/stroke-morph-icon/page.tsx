@@ -1,0 +1,194 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { BjorkButton } from "@/components/bjork-ui/primitives/button";
+import { BjorkButtonGroup } from "@/components/bjork-ui/primitives/button-group";
+import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
+import {
+  StrokeMorphIcon,
+  strokeIcons,
+  type StrokeIconName,
+} from "@/components/bjork-ui/utilities/stroke-morph-icon";
+import { getGalleryItem } from "@/lib/bjork-gallery";
+
+const item = getGalleryItem("stroke-morph-icon");
+
+const ALL_NAMES = Object.keys(strokeIcons) as StrokeIconName[];
+
+// Each cell toggles between its names on click. The arrow cell cycles through all four.
+const CELLS: StrokeIconName[][] = [
+  ["menu", "close"],
+  ["play", "pause"],
+  ["chevron-down", "chevron-up"],
+  ["plus", "minus"],
+  ["arrow-right", "arrow-down", "arrow-left", "arrow-up"],
+  ["dot", "check"],
+  ["busy", "check"],
+  ["equal", "close"],
+];
+
+const STROKE_WIDTHS = [1.25, 2, 2.75];
+const SPRINGS = {
+  standard: { stiffness: 380, damping: 30, mass: 0.7 },
+  snappy: { stiffness: 400, damping: 25, mass: 1 },
+  soft: { stiffness: 200, damping: 25, mass: 1.2 },
+} as const;
+type SpringPreset = keyof typeof SPRINGS;
+
+// Preview-only attract loop. The hero holds `close` for the first 3s so the 2.6s capture is posed.
+const ATTRACT: StrokeIconName[] = [
+  "menu",
+  "close",
+  "plus",
+  "minus",
+  "check",
+  "play",
+  "pause",
+  "arrow-right",
+  "arrow-down",
+  "busy",
+];
+
+function randomNameOtherThan(current: StrokeIconName): StrokeIconName {
+  const pool = ALL_NAMES.filter((name) => name !== current);
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function Demo() {
+  const isPreview = usePreviewMode();
+  const [heroName, setHeroName] = useState<StrokeIconName>("close");
+  const [cellStep, setCellStep] = useState<number[]>(() => CELLS.map(() => 0));
+  const [strokeWidth, setStrokeWidth] = useState(2);
+  const [springPreset, setSpringPreset] = useState<SpringPreset>("standard");
+
+  useEffect(() => {
+    if (!isPreview) return;
+    let index = 0;
+    let timer = 0;
+    const tick = () => {
+      setHeroName(ATTRACT[index % ATTRACT.length]);
+      index += 1;
+      timer = window.setTimeout(tick, 900);
+    };
+    timer = window.setTimeout(tick, 3000);
+    return () => window.clearTimeout(timer);
+  }, [isPreview]);
+
+  const spring = SPRINGS[springPreset];
+
+  const stepCell = (cell: number) => {
+    setCellStep((steps) =>
+      steps.map((step, i) => (i === cell ? (step + 1) % CELLS[cell].length : step)),
+    );
+  };
+
+  return (
+    <div className="flex w-full flex-col items-center gap-7">
+      <div className="flex flex-col items-center gap-5">
+        <StrokeMorphIcon
+          name={heroName}
+          size={96}
+          strokeWidth={strokeWidth}
+          spring={spring}
+          label={heroName}
+        />
+        {!isPreview && (
+          <div className="flex items-center gap-2">
+            <label className="sr-only" htmlFor="stroke-morph-hero-name">
+              Morph the hero icon to
+            </label>
+            <select
+              id="stroke-morph-hero-name"
+              value={heroName}
+              onChange={(event) => setHeroName(event.target.value)}
+              className="h-9 rounded-[12px] border border-[var(--bjork-border,#232323)] bg-[var(--bjork-surface,#121212)] px-3 font-mono text-[13px] outline-none focus-visible:ring-2 focus-visible:ring-[#ec5c13]/45"
+            >
+              {ALL_NAMES.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+            <BjorkButton variant="secondary" size="sm" onClick={() => setHeroName((n) => randomNameOtherThan(n))}>
+              Random
+            </BjorkButton>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-4 gap-3">
+        {CELLS.map((names, cell) => {
+          const current = names[cellStep[cell]];
+          const next = names[(cellStep[cell] + 1) % names.length];
+          return (
+            <button
+              key={cell}
+              type="button"
+              aria-label={`Morph ${current} to ${next}`}
+              onClick={() => stepCell(cell)}
+              className="flex size-[72px] cursor-pointer items-center justify-center rounded-[14px] border border-[var(--bjork-border,#232323)] bg-[var(--bjork-surface,#121212)] outline-none transition-[border-color] duration-150 ease-out hover:border-[var(--bjork-border-strong,#343434)] focus-visible:ring-2 focus-visible:ring-[#ec5c13]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bjork-ring-offset,#050505)] active:scale-[0.97]"
+            >
+              <StrokeMorphIcon name={current} size={28} strokeWidth={strokeWidth} spring={spring} />
+            </button>
+          );
+        })}
+      </div>
+
+      {!isPreview && (
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <BjorkButtonGroup role="group" aria-label="Stroke width">
+            {STROKE_WIDTHS.map((width) => (
+              <BjorkButton
+                key={width}
+                aria-pressed={strokeWidth === width}
+                variant={strokeWidth === width ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setStrokeWidth(width)}
+              >
+                {width}
+              </BjorkButton>
+            ))}
+          </BjorkButtonGroup>
+          <BjorkButtonGroup role="group" aria-label="Spring preset">
+            {(Object.keys(SPRINGS) as SpringPreset[]).map((preset) => (
+              <BjorkButton
+                key={preset}
+                aria-pressed={springPreset === preset}
+                variant={springPreset === preset ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setSpringPreset(preset)}
+              >
+                {preset}
+              </BjorkButton>
+            ))}
+          </BjorkButtonGroup>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <SimpleComponentDemoPage
+      item={item}
+      description="An icon set where every glyph is three lines, so any icon can become any other as one object."
+      dependencies={["framer-motion", "clsx", "tailwind-merge"]}
+      usageCode={`import { StrokeMorphIcon } from "@/components/bjork-ui/utilities/stroke-morph-icon";
+
+export function Demo() {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <button type="button" aria-label={open ? "Close menu" : "Open menu"} onClick={() => setOpen(!open)}>
+      <StrokeMorphIcon name={open ? "close" : "menu"} />
+    </button>
+  );
+}`}
+      previewScaleClassName="w-[760px] scale-[0.8]"
+    >
+      <Demo />
+    </SimpleComponentDemoPage>
+  );
+}
