@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import { BJORK_PALETTE, type BjorkTone } from "@/components/bjork-ui/_core/palette";
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
+import { useVisibleLoop } from "@/components/bjork-ui/_core/loop";
 
 export interface MinimapMark {
   at: number;
@@ -84,6 +85,7 @@ const LABEL_FADE_MS = 120;
 const MUTATION_DEBOUNCE_MS = 150;
 const ATTRACT_SPEED = 40;
 const ATTRACT_PAUSE_MS = 1000;
+const ATTRACT_IDLE_RESUME_MS = 4000;
 
 const WINDOW_FILL = { dark: "rgba(237,237,237,0.04)", light: "rgba(23,23,23,0.04)" } as const;
 // bjorkMenu surface and shadow, from the menu tokens in app/globals.css.
@@ -230,7 +232,10 @@ export function MinimapScrollbar({
   const pillYRef = useRef<number | null>(null);
   const lensYRef = useRef<number | null>(null);
   const flashTimerRef = useRef(0);
-  const stopAttractRef = useRef<(() => void) | null>(null);
+  const attractStateRef = useRef({ started: false, pos: 0, dir: 1 as 1 | -1, hold: 0, wrote: 0 });
+  const attractUserRef = useRef(false);
+  const attractIdleTimerRef = useRef(0);
+  const rectRef = useRef<DOMRect | null>(null);
   // The scroll container, read from the target prop after each commit. Callbacks use this ref, not the prop.
   const containerRef = useRef<HTMLElement | null>(null);
   useLayoutEffect(() => {
@@ -318,6 +323,7 @@ export function MinimapScrollbar({
     const track = trackRef.current;
     if (!t) return;
     if (track) trackHRef.current = track.clientHeight;
+    rectRef.current = null;
     const next = readDomMarks(t, hasMarksProp ? null : selector ?? DEFAULT_SELECTOR, showBlocks);
     setDom((prev) =>
       sameMarks(prev.headings, next.headings) && sameMarks(prev.blocks, next.blocks) ? prev : next,
@@ -401,71 +407,91 @@ export function MinimapScrollbar({
     };
   }, [contentIdBase, measure, scheduleSync]);
 
-  // Attract: ping-pong the target at a fixed speed until the user takes over.
+  // Attract: ping-pong the target at a fixed speed. useVisibleLoop pauses it offscreen.
+  // User input holds it still; it resumes after ATTRACT_IDLE_RESUME_MS without input.
+  const attractOn = attract && !reducedMotion;
+  const attractWakeRef = useRef<() => void>(() => {});
+
+  const noteAttractInput = useCallback(() => {
+    if (!attractOn) return;
+    attractUserRef.current = true;
+    window.clearTimeout(attractIdleTimerRef.current);
+    attractIdleTimerRef.current = window.setTimeout(() => {
+      const el = containerRef.current;
+      if (el) {
+        attractStateRef.current = {
+          started: true,
+          pos: el.scrollTop,
+          dir: attractStateRef.current.dir,
+          hold: 0,
+          wrote: el.scrollTop,
+        };
+      }
+      attractUserRef.current = false;
+      attractWakeRef.current();
+    }, ATTRACT_IDLE_RESUME_MS);
+  }, [attractOn]);
+
+  const attractLoop = useVisibleLoop(
+    trackRef,
+    (dt) => {
+      const el = containerRef.current;
+      if (!el || attractUserRef.current) return false;
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      if (maxScroll <= 0) return false;
+      const s = attractStateRef.current;
+      if (!s.started) {
+        s.started = true;
+        s.pos = s.wrote = el.scrollTop;
+      } else if (Math.abs(el.scrollTop - s.wrote) > 1.5) {
+        // Moved by something other than attract (native scrollbar, keys, touch).
+        noteAttractInput();
+        return false;
+      }
+      if (s.hold > 0) {
+        s.hold -= dt;
+      } else {
+        s.pos += s.dir * ATTRACT_SPEED * dt;
+        if (s.pos >= maxScroll) {
+          s.pos = maxScroll;
+          s.dir = -1;
+          s.hold = ATTRACT_PAUSE_MS / 1000;
+        } else if (s.pos <= 0) {
+          s.pos = 0;
+          s.dir = 1;
+          s.hold = ATTRACT_PAUSE_MS / 1000;
+        }
+        s.wrote = s.pos;
+        el.scrollTop = s.pos;
+      }
+      return true;
+    },
+    { enabled: attractOn },
+  );
+
+  useEffect(() => {
+    attractWakeRef.current = attractLoop.wake;
+  }, [attractLoop.wake]);
+
   useEffect(() => {
     const t = containerRef.current;
-    if (!attract || reducedMotion || !t) return;
-    let raf = 0;
-    let running = true;
-    let dir: 1 | -1 = 1;
-    let pos = t.scrollTop;
-    let wrote = pos;
-    let pausedUntil = 0;
-    let last = 0;
-
-    const stop = () => {
-      running = false;
-      cancelAnimationFrame(raf);
-    };
-
-    const step = (now: number) => {
-      if (!running) return;
-      if (!last) last = now;
-      const dt = Math.min(now - last, 64);
-      last = now;
-      if (Math.abs(t.scrollTop - wrote) > 1.5) {
-        stop();
-        return;
-      }
-      const maxScroll = t.scrollHeight - t.clientHeight;
-      if (maxScroll <= 0) {
-        stop();
-        return;
-      }
-      if (now >= pausedUntil) {
-        pos += (dir * ATTRACT_SPEED * dt) / 1000;
-        if (pos >= maxScroll) {
-          pos = maxScroll;
-          dir = -1;
-          pausedUntil = now + ATTRACT_PAUSE_MS;
-        } else if (pos <= 0) {
-          pos = 0;
-          dir = 1;
-          pausedUntil = now + ATTRACT_PAUSE_MS;
-        }
-        wrote = pos;
-        t.scrollTop = pos;
-      }
-      raf = requestAnimationFrame(step);
-    };
-
-    stopAttractRef.current = stop;
-    raf = requestAnimationFrame(step);
-    const onUser = () => stop();
+    if (!attractOn || !t) return;
+    const onUser = () => noteAttractInput();
     t.addEventListener("wheel", onUser, { passive: true });
     t.addEventListener("touchstart", onUser, { passive: true });
     t.addEventListener("pointerdown", onUser);
     return () => {
-      stop();
-      stopAttractRef.current = null;
       t.removeEventListener("wheel", onUser);
       t.removeEventListener("touchstart", onUser);
       t.removeEventListener("pointerdown", onUser);
     };
-  }, [attract, reducedMotion]);
+  }, [attractOn, noteAttractInput]);
 
   useEffect(() => {
-    return () => window.clearTimeout(flashTimerRef.current);
+    return () => {
+      window.clearTimeout(flashTimerRef.current);
+      window.clearTimeout(attractIdleTimerRef.current);
+    };
   }, []);
 
   const pointAt = (y: number, withLens: boolean) => {
@@ -505,8 +531,9 @@ export function MinimapScrollbar({
     const t = containerRef.current;
     const track = trackRef.current;
     if (!t || !track || event.button !== 0) return;
-    stopAttractRef.current?.();
+    noteAttractInput();
     const rect = track.getBoundingClientRect();
+    rectRef.current = rect;
     const trackH = rect.height || trackHRef.current || 1;
     const y = clamp(event.clientY - rect.top, 0, trackH);
     const maxScroll = Math.max(0, t.scrollHeight - t.clientHeight);
@@ -539,7 +566,8 @@ export function MinimapScrollbar({
     const t = containerRef.current;
     const track = trackRef.current;
     if (!t || !track) return;
-    const rect = track.getBoundingClientRect();
+    // Uses the rect cached on enter or down, so pointer moves do no layout reads.
+    const rect = rectRef.current ?? (rectRef.current = track.getBoundingClientRect());
     const y = clamp(event.clientY - rect.top, 0, rect.height);
     const drag = dragRef.current;
     if (drag && drag.id === event.pointerId) {
@@ -562,15 +590,20 @@ export function MinimapScrollbar({
     if (event.pointerType !== "mouse") clearHover();
   };
 
+  const onPointerEnter = (event: ReactPointerEvent<HTMLDivElement>) => {
+    rectRef.current = event.currentTarget.getBoundingClientRect();
+  };
+
   const onPointerLeave = () => {
     if (dragRef.current) return;
+    rectRef.current = null;
     clearHover();
   };
 
   const onKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const t = containerRef.current;
     if (!t) return;
-    stopAttractRef.current?.();
+    noteAttractInput();
     const scrollH = Math.max(t.scrollHeight, 1);
     const maxScroll = Math.max(0, t.scrollHeight - t.clientHeight);
     const current = t.scrollTop;
@@ -635,13 +668,14 @@ export function MinimapScrollbar({
         aria-valuemax={100}
         aria-valuenow={0}
         onPointerDown={onPointerDown}
+        onPointerEnter={onPointerEnter}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerEnd}
         onPointerCancel={onPointerEnd}
         onPointerLeave={onPointerLeave}
         onKeyDown={onKeyDown}
         className={cn(
-          "absolute inset-y-3 z-10 cursor-pointer touch-none select-none rounded-[3px] outline-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2",
+          "absolute inset-y-3 z-10 cursor-pointer touch-none select-none rounded-[3px] outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)]",
           side === "right" ? "right-2" : "left-2",
           className,
         )}

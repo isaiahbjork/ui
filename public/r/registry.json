@@ -14389,6 +14389,11 @@
           "path": "components/bjork-ui/_core/tone.ts",
           "type": "registry:component",
           "target": "@components/bjork-ui/_core/tone.ts"
+        },
+        {
+          "path": "components/bjork-ui/_core/loop.ts",
+          "type": "registry:component",
+          "target": "@components/bjork-ui/_core/loop.ts"
         }
       ],
       "meta": {
