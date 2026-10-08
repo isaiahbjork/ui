@@ -1084,7 +1084,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork102 solar-sky-panel
+  {
+    id: "bjork102",
+    slug: "solar-sky-panel",
+    title: "Solar sky panel",
+    route: "/cards/solar-sky-panel",
+    sourcePath: "components/bjork-ui/cards/solar-sky-panel.tsx",
+    tier: "copy",
+    collection: "Cards",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   {
     id: "bjork103",

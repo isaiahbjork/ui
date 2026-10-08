@@ -103,7 +103,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Profile Hover Card", path: "/cards/profile-hover-card" },
       { name: "Project Cards", path: "/cards/project-cards" },
       { name: "Video Upload Card", path: "/cards/video-upload-card" },
-      // @slot solar-sky-panel
+      { name: "Solar Sky Panel", path: "/cards/solar-sky-panel" },
 
     ],
   },
