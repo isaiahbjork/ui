@@ -1267,6 +1267,18 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork135",
+    slug: "correlation-matrix",
+    title: "Correlation matrix",
+    route: "/charts/correlation-matrix",
+    sourcePath: "components/bjork-ui/charts/correlation-matrix.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {

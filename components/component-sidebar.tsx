@@ -113,6 +113,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Animated Radial Chart", path: "/charts/animated-radial-chart" },
       { name: "Beeswarm", path: "/charts/beeswarm" },
       { name: "Candlestick Chart", path: "/charts/candlestick-chart" },
+      { name: "Correlation Matrix", path: "/charts/correlation-matrix" },
       { name: "Distribution Plot", path: "/charts/distribution-plot" },
       { name: "Dumbbell Chart", path: "/charts/dumbbell-chart" },
       { name: "Forecast Fan", path: "/charts/forecast-fan" },
