@@ -828,8 +828,7 @@ export function CandlestickChart({
         <div
           ref={readoutRef}
           aria-hidden="true"
-          className="pointer-events-none absolute left-2 top-1 flex h-5 items-center gap-3 overflow-hidden whitespace-nowrap font-mono text-[11px] leading-none tabular-nums text-[color:var(--bjork-text-soft)]"
-          style={{ right: GUTTER }}
+          className="pointer-events-none absolute left-2 right-2 top-1 flex h-5 items-center gap-3 overflow-hidden whitespace-nowrap font-mono text-[11px] leading-none tabular-nums text-[color:var(--bjork-text-soft)] @max-[420px]:gap-2"
         >
           <span data-v className="text-[color:var(--bjork-text-medium)] @max-[460px]:hidden" />
           <span>
