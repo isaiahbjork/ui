@@ -137,6 +137,16 @@ const componentRoutes: ComponentGroup[] = [
     routes: [
       { name: "Reveal Text", path: "/heroes/reveal-text" },
       { name: "Plane Type", path: "/text/plane-type" },
+      { name: "Glyph Morph", path: "/text/glyph-morph" },
+      { name: "Weight Wave", path: "/text/weight-wave" },
+      { name: "Decode Text", path: "/text/decode-text" },
+      { name: "Magnetic Letters", path: "/text/magnetic-letters" },
+      { name: "Slice Shift", path: "/text/slice-shift" },
+      { name: "Stroke Draw Type", path: "/text/stroke-draw-type" },
+      { name: "Ink Bleed Text", path: "/text/ink-bleed-text" },
+      { name: "Liquid Text", path: "/text/liquid-text" },
+      { name: "Chromatic Text", path: "/text/chromatic-text" },
+      // @slot plane-type
 
       // @slot scatter-rewind
 
@@ -201,6 +211,19 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Resizable Table", path: "/tables/resizable-table" },
       { name: "Server Management Table", path: "/tables/server-management" },
       { name: "Flap Ledger", path: "/tables/flap-ledger" },
+      { name: "Sortable Table", path: "/tables/sortable-table" },
+      { name: "Pricing Table", path: "/tables/pricing-table" },
+      { name: "Invoice Table", path: "/tables/invoice-table" },
+      { name: "Leaderboard", path: "/tables/leaderboard-table" },
+      { name: "Changelog Table", path: "/tables/changelog-table" },
+      { name: "API Reference Table", path: "/tables/api-reference-table" },
+      { name: "File Tree Table", path: "/tables/file-tree-table" },
+      { name: "Timetable", path: "/tables/timetable" },
+      { name: "Shortcuts Table", path: "/tables/shortcuts-table" },
+      { name: "Spec Sheet", path: "/tables/spec-sheet" },
+      { name: "Transactions Table", path: "/tables/transactions-table" },
+      { name: "Spreadsheet Grid", path: "/tables/spreadsheet-grid" },
+      { name: "Permissions Matrix", path: "/tables/permissions-matrix" },
 
     ],
   },

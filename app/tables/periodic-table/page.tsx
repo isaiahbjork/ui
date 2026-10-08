@@ -21,6 +21,7 @@ export default function PeriodicTableDemo() {
       item={item}
       description="A full periodic table with spring-physics hover cards that blur in from below each element."
       previewScaleClassName="w-[1090px] scale-[0.62]"
+      previewCaptureScaleClassName="w-[1090px] scale-[0.78]"
       previewInnerClassName="bg-[#f7f5ef] dark:bg-[#111]"
     >
       <PeriodicTable
