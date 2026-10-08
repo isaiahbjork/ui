@@ -1031,7 +1031,18 @@ export const galleryItems: GalleryItem[] = [
 
   // @slot bjork102 solar-sky-panel
 
-  // @slot bjork103 agent-trace
+  {
+    id: "bjork103",
+    slug: "agent-trace",
+    title: "Agent trace",
+    route: "/ai/agent-trace",
+    sourcePath: "components/bjork-ui/ai/agent-trace.tsx",
+    tier: "copy",
+    collection: "AI",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork104 handoff-beam
 
