@@ -998,7 +998,18 @@ export const galleryItems: GalleryItem[] = [
 
   // @slot bjork109 morph-loader
 
-  // @slot bjork110 stroke-morph-icon
+  {
+    id: "bjork110",
+    slug: "stroke-morph-icon",
+    title: "Stroke-morph icon",
+    route: "/utilities/stroke-morph-icon",
+    sourcePath: "components/bjork-ui/utilities/stroke-morph-icon.tsx",
+    tier: "copy",
+    collection: "Utilities",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork111 scatter-rewind
 
