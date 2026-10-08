@@ -1071,7 +1071,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork101 route-trace
+  {
+    id: "bjork101",
+    slug: "route-trace",
+    title: "Route trace",
+    route: "/charts/route-trace",
+    sourcePath: "components/bjork-ui/charts/route-trace.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   // @slot bjork102 solar-sky-panel
 
