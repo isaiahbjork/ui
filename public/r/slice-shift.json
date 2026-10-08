@@ -1,0 +1,225 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "slice-shift",
+  "title": "Slice shift",
+  "description": "Slice shift is a production-ready text component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/text/slice-shift.tsx",
+      "content": "\"use client\";\n\nimport {\n  useCallback,\n  useEffect,\n  useLayoutEffect,\n  useMemo,\n  useRef,\n  useState,\n  useSyncExternalStore,\n  type CSSProperties,\n} from \"react\";\nimport { useReducedMotion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { BJORK_PALETTE, type BjorkTone } from \"../_core/palette\";\nimport { useBjorkTone } from \"../_core/tone\";\nimport { useVisibleLoop } from \"../_core/loop\";\nimport { LiveRegion } from \"../_core/a11y\";\nimport { cubicBezier } from \"../_core/motion\";\nimport { mulberry32, hashString } from \"../_core/random\";\nimport { stepSpring, type SpringConfig } from \"../_core/spring\";\n\nexport type SliceShiftTrigger = \"hover\" | \"scroll\" | \"loop\";\n\nexport interface SliceShiftProps {\n  /** Headline for the shear effect. Ignored when `words` has two or more entries. */\n  text?: string;\n  /** Two or more words switch the component into the venetian-blind word swap. */\n  words?: string[];\n  /**\n   * What drives the shear. hover: pointer velocity. scroll: page scroll velocity. loop: a pulse every `interval`.\n   * In word mode, loop cycles words on `interval`, hover advances on pointer enter, scroll cycles and shears on scroll.\n   */\n  trigger?: SliceShiftTrigger;\n  /** Number of horizontal strips, 2 to 16. */\n  slices?: number;\n  /** Largest sideways offset of a strip, in em. */\n  maxOffset?: number;\n  /** Delay between neighbouring strips, in seconds. */\n  stagger?: number;\n  stiffness?: number;\n  damping?: number;\n  mass?: number;\n  /** Loop pulse or word interval, in ms. */\n  interval?: number;\n  /** Duration of one strip's word swap travel, in ms. */\n  duration?: number;\n  /** Largest font size in px. The type shrinks to fit narrower containers. */\n  fontSize?: number;\n  fontWeight?: number;\n  fontFamily?: string;\n  /** Tracking in em. */\n  letterSpacing?: number;\n  align?: \"left\" | \"center\";\n  /** Shows accent hairlines at the cut lines while strips are out of registration. */\n  hairlines?: boolean;\n  tone?: BjorkTone;\n  color?: string;\n  accentColor?: string;\n  /** False stops the loop and word cycling. Hover and scroll still respond. */\n  autoplay?: boolean;\n  /** Renders a still frame at this shear amount (0 to 1), or this far through a word swap. For previews. */\n  freezeAt?: number;\n  /** Announces word changes politely. */\n  announce?: boolean;\n  seed?: number;\n  ariaLabel?: string;\n  className?: string;\n}\n\nconst subscribeNoop = () => () => {};\nconst getTrue = () => true;\nconst getFalse = () => false;\nconst DEFAULT_FONT = \"var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif\";\n// Geist in a line-height 1 box: cap top near 0.15em, baseline near 0.86em. Cuts land inside that band.\nconst CAP_TOP = 0.15;\nconst BASELINE = 0.86;\nconst OVERHANG = 0.45;\nconst easeOut = cubicBezier(0.55, 0, 0.75, 0.2);\nconst easeIn = cubicBezier(0.22, 1.2, 0.36, 1);\n\nconst clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));\n\ninterface StripNodes {\n  layer: HTMLDivElement | null;\n  strips: (HTMLDivElement | null)[];\n}\n\nexport function SliceShift({\n  text = \"Registration\",\n  words,\n  trigger,\n  slices = 7,\n  maxOffset = 0.22,\n  stagger = 0.032,\n  stiffness = 320,\n  damping = 13,\n  mass = 1,\n  interval = 2600,\n  duration = 860,\n  fontSize = 128,\n  fontWeight = 640,\n  fontFamily = DEFAULT_FONT,\n  letterSpacing = -0.045,\n  align = \"center\",\n  hairlines = true,\n  tone,\n  color,\n  accentColor,\n  autoplay = true,\n  freezeAt,\n  announce = false,\n  seed,\n  ariaLabel,\n  className,\n}: SliceShiftProps) {\n  const resolvedTone = useBjorkTone(tone);\n  const palette = BJORK_PALETTE[resolvedTone];\n  const ink = color ?? palette.text;\n  const accent = accentColor ?? palette.accent;\n  // Gate on mount so the server render and hydration agree; the preference applies right after.\n  const mounted = useSyncExternalStore(subscribeNoop, getTrue, getFalse);\n  const reduced = (useReducedMotion() ?? false) && mounted;\n\n  const list = useMemo(() => (words && words.length > 1 ? words : [words?.[0] ?? text]), [words, text]);\n  const wordMode = list.length > 1;\n  const mode: SliceShiftTrigger = trigger ?? (wordMode ? \"loop\" : \"hover\");\n  const n = clamp(Math.round(slices), 2, 16);\n  const frozen = freezeAt !== undefined && !reduced;\n  const animated = !reduced && !frozen;\n\n  const [idx, setIdx] = useState(0);\n  const [incoming, setIncoming] = useState<number | null>(() => (frozen && wordMode ? 1 : null));\n  const [fitPx, setFitPx] = useState(fontSize);\n\n  const rootRef = useRef<HTMLDivElement>(null);\n  const boxRef = useRef<HTMLDivElement>(null);\n  const sizerRef = useRef<HTMLDivElement>(null);\n  const restRef = useRef<HTMLDivElement>(null);\n  const layerA = useRef<StripNodes>({ layer: null, strips: [] });\n  const layerB = useRef<StripNodes>({ layer: null, strips: [] });\n  const hairRefs = useRef<(HTMLDivElement | null)[]>([]);\n\n  // Per-strip amplitude jitter so the shear reads as cut paper, not a sine wave.\n  const amps = useMemo(() => {\n    const rand = mulberry32(seed ?? hashString(list.join(\"|\")));\n    return Array.from({ length: n }, () => 0.72 + rand() * 0.28);\n  }, [n, seed, list]);\n\n  const sim = useRef({\n    x: new Float64Array(16),\n    v: new Float64Array(16),\n    e: 0,\n    origin: 0,\n    hist: [] as { t: number; e: number }[],\n    t: 0,\n    lastY: 0,\n    pulse: 0,\n    sign: 1,\n    wordT: 0,\n    swap: \"idle\" as \"idle\" | \"pending\" | \"run\" | \"commit\",\n    swapStart: 0,\n    lastPointerX: null as number | null,\n  });\n  const cache = useRef(new WeakMap<HTMLElement, Record<string, string>>());\n  const write = useCallback((el: HTMLElement | null, prop: \"transform\" | \"opacity\" | \"visibility\", value: string) => {\n    if (!el) return;\n    let entry = cache.current.get(el);\n    if (!entry) {\n      entry = {};\n      cache.current.set(el, entry);\n    }\n    if (entry[prop] === value) return;\n    entry[prop] = value;\n    el.style[prop] = value;\n  }, []);\n\n  // Fit the widest word to the container.\n  useLayoutEffect(() => {\n    const root = rootRef.current;\n    const sizer = sizerRef.current;\n    if (!root || !sizer) return;\n    let raf = 0;\n    const measure = () => {\n      const avail = root.clientWidth;\n      const current = parseFloat(getComputedStyle(sizer).fontSize) || fontSize;\n      const w = sizer.offsetWidth;\n      if (!avail || !w) return;\n      const perPx = w / current;\n      // Shrink-wrapped parents report the content width back, which resolves to the current size, so this never feeds back.\n      const next = Math.max(10, Math.min(fontSize, avail / perPx));\n      setFitPx((prev) => (Math.abs(prev - next) < 0.25 ? prev : next));\n    };\n    measure();\n    const ro = new ResizeObserver(() => {\n      cancelAnimationFrame(raf);\n      raf = requestAnimationFrame(measure);\n    });\n    ro.observe(root);\n    let alive = true;\n    document.fonts?.ready.then(() => alive && measure());\n    return () => {\n      alive = false;\n      cancelAnimationFrame(raf);\n      ro.disconnect();\n    };\n  }, [fontSize, list, fontFamily, fontWeight, letterSpacing]);\n\n  const cfg = useMemo<SpringConfig>(() => ({ stiffness, damping, mass }), [stiffness, damping, mass]);\n  const maxPx = maxOffset * fitPx;\n  // The blind cascade reads better a little slower than the shear ripple.\n  const swapStagger = Math.max(stagger * 2, 0.05);\n  const swapTotal = duration / 1000 + (n - 1) * swapStagger;\n\n  // Writes one frame of strip positions. `shear` holds per-strip shear in px; `swapAt` is seconds into a word swap or null.\n  const paint = useCallback(\n    (shear: ArrayLike<number>, swapAt: number | null, holdIncoming: boolean) => {\n      const travel = fitPx * 0.7;\n      const offA: number[] = [];\n      const offB: number[] = [];\n      const opsA: number[] = [];\n      const opsB: number[] = [];\n      let moving = false;\n      for (let i = 0; i < n; i++) {\n        const dir = i % 2 === 0 ? 1 : -1;\n        let a = shear[i];\n        let b = shear[i];\n        let opA = 1;\n        let opB = 0;\n        if (holdIncoming) {\n          opA = 0;\n          opB = 1;\n        } else if (swapAt !== null) {\n          const local = clamp((swapAt - i * swapStagger) / (duration / 1000), 0, 1);\n          const outP = clamp(local / 0.5, 0, 1);\n          const inP = clamp((local - 0.4) / 0.6, 0, 1);\n          a += dir * travel * easeOut(outP);\n          b += -dir * travel * (1 - easeIn(inP));\n          opA = 1 - outP * outP;\n          opB = Math.min(1, inP * 1.6);\n        }\n        offA.push(a);\n        offB.push(b);\n        opsA.push(opA);\n        opsB.push(opB);\n        if (Math.abs(a) > 0.04 || swapAt !== null || holdIncoming) moving = true;\n        write(layerA.current.strips[i], \"transform\", `translate3d(${a.toFixed(2)}px,0,0)`);\n        write(layerA.current.strips[i], \"opacity\", opA.toFixed(3));\n        write(layerB.current.strips[i], \"transform\", `translate3d(${b.toFixed(2)}px,0,0)`);\n        write(layerB.current.strips[i], \"opacity\", opB.toFixed(3));\n      }\n      write(restRef.current, \"opacity\", moving ? \"0\" : \"1\");\n      write(layerA.current.layer, \"visibility\", moving ? \"visible\" : \"hidden\");\n      write(layerB.current.layer, \"visibility\", swapAt !== null || holdIncoming ? \"visible\" : \"hidden\");\n      const ref = Math.max(1, maxPx * 0.3);\n      for (let k = 0; k < n - 1; k++) {\n        const el = hairRefs.current[k];\n        if (!el) continue;\n        let d = Math.abs(offA[k] - offA[k + 1]);\n        if (swapAt !== null) {\n          d = Math.max(\n            Math.abs(offA[k] - offA[k + 1]) * Math.min(opsA[k], opsA[k + 1]),\n            Math.abs(offB[k] - offB[k + 1]) * Math.min(opsB[k], opsB[k + 1]),\n          ) * 0.5;\n        }\n        const op = holdIncoming ? 0 : clamp(d / ref, 0, 1);\n        write(el, \"opacity\", op.toFixed(3));\n        write(el, \"transform\", `translateY(-0.5px) scaleX(${(0.35 + 0.65 * op).toFixed(3)})`);\n      }\n    },\n    [n, fitPx, maxPx, swapStagger, duration, write],\n  );\n\n  // History of the drive signal, read with a per-strip delay so the shear ripples away from its origin.\n  const sampleHist = (t: number) => {\n    const h = sim.current.hist;\n    for (let i = h.length - 1; i >= 0; i--) if (h[i].t <= t) return h[i].e;\n    return h.length ? h[0].e : 0;\n  };\n\n  const frame = useCallback(\n    (dt: number, t: number) => {\n      const s = sim.current;\n      s.t = t;\n      if (mode === \"scroll\") {\n        const y = window.scrollY;\n        const vel = dt > 0 ? (y - s.lastY) / dt : 0;\n        s.lastY = y;\n        const target = clamp(vel / 2400, -1.4, 1.4);\n        s.e += (target - s.e) * (1 - Math.exp(-dt * 14));\n        if (Math.abs(vel) > 40) s.origin = vel > 0 ? 0 : n - 1;\n      } else {\n        s.e *= Math.exp(-dt * 7.5);\n      }\n      if (!wordMode && mode === \"loop\" && autoplay) {\n        s.pulse += dt;\n        if (s.pulse >= interval / 1000) {\n          s.pulse = 0;\n          s.e = 1.15 * s.sign;\n          s.origin = s.sign > 0 ? 0 : n - 1;\n          s.sign *= -1;\n        }\n      }\n      s.hist.push({ t, e: s.e });\n      const keepFrom = t - (n * stagger + 0.2);\n      while (s.hist.length > 2 && s.hist[1].t < keepFrom) s.hist.shift();\n\n      let energy = Math.abs(s.e);\n      for (let i = 0; i < n; i++) {\n        const delay = Math.abs(i - s.origin) * stagger;\n        const e = sampleHist(t - delay);\n        const dir = i % 2 === 0 ? 1 : -1;\n        const target = maxPx * amps[i] * dir * Math.tanh(e * 1.25);\n        const st = { x: s.x[i], v: s.v[i] };\n        stepSpring(st, target, cfg, dt);\n        s.x[i] = st.x;\n        s.v[i] = st.v;\n        energy += Math.abs(st.x) + Math.abs(st.v) * 0.02;\n      }\n\n      if (wordMode) {\n        if (s.swap === \"idle\" && autoplay && mode !== \"hover\") {\n          s.wordT += dt;\n          if (s.wordT >= interval / 1000) {\n            s.wordT = 0;\n            s.swap = \"pending\";\n            setIncoming((cur) => (cur === null ? (idx + 1) % list.length : cur));\n          }\n        }\n        if (s.swap === \"run\") {\n          const at = t - s.swapStart;\n          if (at >= swapTotal) {\n            s.swap = \"commit\";\n            const next = incoming ?? (idx + 1) % list.length;\n            setIdx(next);\n            setIncoming(null);\n            paint(s.x, null, true);\n          } else {\n            paint(s.x, at, false);\n          }\n          return true;\n        }\n        if (s.swap === \"commit\" || s.swap === \"pending\") {\n          paint(s.x, null, s.swap === \"commit\");\n          return true;\n        }\n      }\n\n      paint(s.x, null, false);\n      const busy = energy > 0.02 || mode === \"scroll\" || (mode === \"loop\" && autoplay) || (wordMode && autoplay && mode !== \"hover\");\n      return busy;\n    },\n    [mode, n, stagger, maxPx, amps, cfg, wordMode, autoplay, interval, list.length, idx, incoming, swapTotal, paint],\n  );\n\n  const { wake } = useVisibleLoop(rootRef, frame, { enabled: animated });\n\n  // A swap starts once the incoming word has been committed to the DOM.\n  useLayoutEffect(() => {\n    const s = sim.current;\n    if (incoming !== null && animated) {\n      s.swap = \"run\";\n      s.swapStart = s.t;\n      wake();\n    }\n  }, [incoming, animated, wake]);\n\n  useLayoutEffect(() => {\n    const s = sim.current;\n    if (s.swap === \"commit\") {\n      s.swap = \"idle\";\n      s.wordT = 0;\n      paint(s.x, null, false);\n      wake();\n    }\n  }, [idx, paint, wake]);\n\n  // Still frame for previews and the reduced-motion path.\n  useLayoutEffect(() => {\n    if (animated) return;\n    if (reduced) {\n      paint(new Float64Array(n), null, false);\n      return;\n    }\n    const f = clamp(freezeAt ?? 0, 0, 1);\n    if (wordMode) {\n      const shear = Array.from({ length: n }, (_, i) => maxPx * 0.25 * amps[i] * (i % 2 ? -1 : 1));\n      paint(shear, f * swapTotal, false);\n      return;\n    }\n    // A ripple caught mid-flight: strips near the origin have already overshot back.\n    const shear = Array.from({ length: n }, (_, i) => {\n      const dir = i % 2 === 0 ? 1 : -1;\n      const phase = Math.cos(i * 0.42 - 0.2) * Math.exp(-i * 0.05);\n      return maxPx * amps[i] * dir * f * phase;\n    });\n    paint(shear, null, false);\n  }, [animated, reduced, freezeAt, wordMode, n, maxPx, amps, swapTotal, paint, incoming]);\n\n  // Inputs.\n  useEffect(() => {\n    if (!animated) return;\n    const root = rootRef.current;\n    if (!root) return;\n    const s = sim.current;\n    if (mode === \"scroll\") {\n      s.lastY = window.scrollY;\n      const onScroll = () => wake();\n      window.addEventListener(\"scroll\", onScroll, { passive: true });\n      return () => window.removeEventListener(\"scroll\", onScroll);\n    }\n    if (mode !== \"hover\") return;\n    const stripAt = (clientY: number) => {\n      const box = boxRef.current?.getBoundingClientRect();\n      if (!box || !box.height) return 0;\n      const y = (clientY - box.top) / box.height;\n      return clamp(Math.floor(((y - CAP_TOP) / (BASELINE - CAP_TOP)) * n), 0, n - 1);\n    };\n    const onEnter = (e: PointerEvent) => {\n      s.lastPointerX = e.clientX;\n      const box = root.getBoundingClientRect();\n      const fromLeft = e.clientX < box.left + box.width / 2;\n      s.origin = stripAt(e.clientY);\n      s.e = clamp(s.e + (fromLeft ? 0.55 : -0.55), -1.5, 1.5);\n      if (wordMode && s.swap === \"idle\") {\n        s.swap = \"pending\";\n        setIncoming((cur) => (cur === null ? (idx + 1) % list.length : cur));\n      }\n      wake();\n    };\n    const onMove = (e: PointerEvent) => {\n      const last = s.lastPointerX ?? e.clientX;\n      s.lastPointerX = e.clientX;\n      const dx = e.clientX - last;\n      s.e = clamp(s.e + dx / (fitPx * 1.8), -1.5, 1.5);\n      s.origin = stripAt(e.clientY);\n      wake();\n    };\n    const onLeave = () => {\n      s.lastPointerX = null;\n    };\n    root.addEventListener(\"pointerenter\", onEnter);\n    root.addEventListener(\"pointermove\", onMove);\n    root.addEventListener(\"pointerleave\", onLeave);\n    return () => {\n      root.removeEventListener(\"pointerenter\", onEnter);\n      root.removeEventListener(\"pointermove\", onMove);\n      root.removeEventListener(\"pointerleave\", onLeave);\n    };\n  }, [animated, mode, n, fitPx, wordMode, idx, list.length, wake]);\n\n  // Reduced motion: words still cycle, as a plain swap.\n  useEffect(() => {\n    if (!reduced || !wordMode || !autoplay) return;\n    const id = window.setInterval(() => setIdx((i) => (i + 1) % list.length), interval);\n    return () => window.clearInterval(id);\n  }, [reduced, wordMode, autoplay, interval, list.length]);\n\n  const current = list[idx % list.length];\n  const next = incoming !== null ? list[incoming % list.length] : null;\n  const span = BASELINE - CAP_TOP;\n  const textStyle: CSSProperties = {\n    whiteSpace: \"pre\",\n    letterSpacing: `${letterSpacing}em`,\n  };\n  const justify = align === \"center\" ? \"center\" : \"flex-start\";\n\n  const renderLayer = (word: string | null, nodes: typeof layerA, hidden: boolean) => (\n    <div\n      ref={(el) => {\n        nodes.current.layer = el;\n      }}\n      className=\"pointer-events-none absolute inset-0\"\n      style={{ visibility: hidden ? \"hidden\" : undefined }}\n    >\n      {Array.from({ length: n }, (_, i) => {\n        const top = i === 0 ? -OVERHANG : CAP_TOP + (i * span) / n;\n        const bottom = i === n - 1 ? 1 + OVERHANG : CAP_TOP + ((i + 1) * span) / n;\n        return (\n          <div\n            key={i}\n            ref={(el) => {\n              nodes.current.strips[i] = el;\n            }}\n            className=\"absolute inset-0 flex\"\n            style={{\n              justifyContent: justify,\n              clipPath: `inset(${top.toFixed(4)}em -${OVERHANG}em ${(1 - bottom).toFixed(4)}em -${OVERHANG}em)`,\n              willChange: animated ? \"transform\" : undefined,\n            }}\n          >\n            <span style={textStyle}>{word ?? \"\"}</span>\n          </div>\n        );\n      })}\n    </div>\n  );\n\n  return (\n    <div\n      ref={rootRef}\n      className={cn(\"relative block w-full select-none\", className)}\n      style={{ textAlign: align, color: ink }}\n      aria-label={ariaLabel}\n      role={ariaLabel ? \"group\" : undefined}\n    >\n      <span className=\"sr-only\">{wordMode ? current : list[0]}</span>\n      {announce && wordMode ? <LiveRegion message={current} /> : null}\n      <div\n        ref={boxRef}\n        aria-hidden=\"true\"\n        className=\"relative inline-block align-top\"\n        style={{\n          fontSize: fitPx,\n          fontFamily,\n          fontWeight,\n          lineHeight: 1,\n          fontKerning: \"normal\",\n        }}\n      >\n        <div ref={sizerRef} className=\"grid\" style={{ visibility: \"hidden\", paddingInline: \"0.04em\" }}>\n          {list.map((w, i) => (\n            <span key={i} style={{ ...textStyle, gridArea: \"1 / 1\", justifySelf: justify === \"center\" ? \"center\" : \"start\" }}>\n              {w}\n            </span>\n          ))}\n        </div>\n        <div ref={restRef} className=\"absolute inset-0 flex\" style={{ justifyContent: justify }}>\n          <span style={textStyle}>{current}</span>\n        </div>\n        {!reduced ? (\n          <>\n            {renderLayer(current, layerA, true)}\n            {renderLayer(next, layerB, true)}\n            {hairlines\n              ? Array.from({ length: n - 1 }, (_, k) => (\n                  <div\n                    key={k}\n                    ref={(el) => {\n                      hairRefs.current[k] = el;\n                    }}\n                    className=\"pointer-events-none absolute\"\n                    style={{\n                      left: \"-0.12em\",\n                      right: \"-0.12em\",\n                      top: `${(CAP_TOP + ((k + 1) * span) / n).toFixed(4)}em`,\n                      height: 1,\n                      opacity: 0,\n                      background: `linear-gradient(90deg, transparent, ${accent} 18%, ${accent} 82%, transparent)`,\n                      transformOrigin: \"50% 50%\",\n                    }}\n                  />\n                ))\n              : null}\n          </>\n        ) : null}\n      </div>\n    </div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/text/slice-shift.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/palette.ts",
+      "content": "export type BjorkTone = \"dark\" | \"light\";\n\n// Canvas, WebGL and SVG attribute colours. DOM code uses the CSS tokens with these as fallbacks.\nexport const BJORK_PALETTE = {\n  dark: {\n    bg: \"#050505\", stage: \"#111111\", surface: \"#121212\", raised: \"#161616\", active: \"#202020\",\n    border: \"#232323\", borderStrong: \"#343434\",\n    text: \"#ededed\", textMedium: \"rgba(237,237,237,0.72)\", textMuted: \"rgba(237,237,237,0.52)\",\n    textSoft: \"rgba(237,237,237,0.36)\", textFaint: \"rgba(237,237,237,0.22)\", hair: \"rgba(237,237,237,0.12)\",\n    accent: \"#ec5c13\", accentInk: \"#ec5c13\", accentFill: \"#b84a12\", accentSoft: \"rgba(236,92,19,0.12)\", accentMuted: \"rgba(236,92,19,0.24)\",\n    accentFg: \"#fff2ea\", success: \"#4cc38a\", warning: \"#f2b544\", error: \"#ff5c4d\",\n  },\n  light: {\n    bg: \"#f7f5ef\", stage: \"#f7f5ef\", surface: \"#fffcf6\", raised: \"#f5efe3\", active: \"#efe7d8\",\n    border: \"#eee6db\", borderStrong: \"#e1d7c8\",\n    text: \"#171717\", textMedium: \"rgba(23,23,23,0.72)\", textMuted: \"rgba(23,23,23,0.52)\",\n    textSoft: \"rgba(23,23,23,0.36)\", textFaint: \"rgba(23,23,23,0.22)\", hair: \"rgba(23,23,23,0.10)\",\n    accent: \"#ec7d43\", accentInk: \"#b4531f\", accentFill: \"#ec7d43\", accentSoft: \"rgba(236,125,67,0.10)\", accentMuted: \"rgba(236,125,67,0.20)\",\n    accentFg: \"#3f2112\", success: \"#1f8a55\", warning: \"#a86b00\", error: \"#c8361f\",\n  },\n} as const;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/palette.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/tone.ts",
+      "content": "\"use client\";\n\nimport { useSyncExternalStore } from \"react\";\nimport { useTheme } from \"next-themes\";\nimport type { BjorkTone } from \"./palette\";\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\n/**\n * Resolves the tone for a component. An explicit `tone` always wins.\n * Otherwise it follows next-themes' resolved theme, but only after mount,\n * so the server render and first client render agree on dark.\n */\nexport function useBjorkTone(tone?: BjorkTone): BjorkTone {\n  const { resolvedTheme } = useTheme();\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  if (tone) return tone;\n  if (!mounted) return \"dark\";\n  return resolvedTheme === \"light\" ? \"light\" : \"dark\";\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/tone.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/loop.ts",
+      "content": "\"use client\";\n\nimport { useCallback, useEffect, useMemo, useRef, type RefObject } from \"react\";\n\nexport interface VisibleLoopOptions {\n  enabled?: boolean;\n  fpsCap?: number;\n  rootMargin?: string;\n}\n\n/**\n * Runs `frame(dt, t)` on requestAnimationFrame while the element is near the viewport,\n * the tab is visible and `enabled` is not false. Return `false` from `frame` to go idle\n * until `wake()` is called. Writes `data-loop` on the element: running, idle or paused.\n */\nexport function useVisibleLoop(\n  ref: RefObject<HTMLElement | null>,\n  frame: (dt: number, t: number) => boolean | void,\n  opts?: VisibleLoopOptions,\n): { wake: () => void } {\n  const enabled = opts?.enabled !== false;\n  const fpsCap = opts?.fpsCap ?? 0;\n  const rootMargin = opts?.rootMargin ?? \"96px\";\n\n  const frameRef = useRef(frame);\n  useEffect(() => {\n    frameRef.current = frame;\n  }, [frame]);\n\n  const wakeRef = useRef<() => void>(() => {});\n  const wake = useCallback(() => wakeRef.current(), []);\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el || typeof window === \"undefined\") return;\n\n    let wants = true; // false once the frame callback returns false\n    let inView = false;\n    let raf = 0;\n    let last = 0;\n    let t = 0;\n    const minFrame = fpsCap > 0 ? 1000 / fpsCap : 0;\n\n    const canRun = () => enabled && inView && document.visibilityState === \"visible\";\n    const stop = () => {\n      if (raf) cancelAnimationFrame(raf);\n      raf = 0;\n    };\n\n    const update = () => {\n      if (!enabled) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      if (!wants) {\n        stop();\n        el.dataset.loop = \"idle\";\n        return;\n      }\n      if (!canRun()) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      el.dataset.loop = \"running\";\n      if (!raf) {\n        last = performance.now();\n        raf = requestAnimationFrame(tick);\n      }\n    };\n\n    const tick = (now: number) => {\n      raf = 0;\n      if (!canRun() || !wants) {\n        update();\n        return;\n      }\n      const elapsed = now - last;\n      if (minFrame && elapsed < minFrame - 0.5) {\n        raf = requestAnimationFrame(tick);\n        return;\n      }\n      last = now;\n      const dt = Math.min(0.05, Math.max(0, elapsed / 1000));\n      t += dt;\n      const keep = frameRef.current(dt, t);\n      if (keep === false) {\n        wants = false;\n        update();\n        return;\n      }\n      raf = requestAnimationFrame(tick);\n    };\n\n    const observer = new IntersectionObserver(\n      ([entry]) => {\n        inView = entry.isIntersecting;\n        update();\n      },\n      { rootMargin },\n    );\n    observer.observe(el);\n\n    const onVisibility = () => update();\n    document.addEventListener(\"visibilitychange\", onVisibility);\n\n    wakeRef.current = () => {\n      wants = true;\n      update();\n    };\n\n    update();\n\n    return () => {\n      stop();\n      observer.disconnect();\n      document.removeEventListener(\"visibilitychange\", onVisibility);\n      wakeRef.current = () => {};\n    };\n  }, [ref, enabled, fpsCap, rootMargin]);\n\n  return useMemo(() => ({ wake }), [wake]);\n}\n\n// matchMedia based check. False on the server.\nexport function isCoarsePointer(): boolean {\n  if (typeof window === \"undefined\" || typeof window.matchMedia !== \"function\") return false;\n  return window.matchMedia(\"(pointer: coarse)\").matches;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/loop.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/a11y.tsx",
+      "content": "import type { ReactNode } from \"react\";\n\n// Text for assistive tech only.\nexport function VisuallyHidden({ children }: { children: ReactNode }) {\n  return <span className=\"sr-only\">{children}</span>;\n}\n\n// Announces `message` when it changes. Same text re-rendered does not re-announce.\nexport function LiveRegion({\n  message,\n  politeness = \"polite\",\n}: {\n  message: string;\n  politeness?: \"polite\" | \"assertive\";\n}) {\n  return (\n    <span role=\"status\" aria-live={politeness} aria-atomic=\"true\" className=\"sr-only\">\n      {message}\n    </span>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/a11y.tsx"
+    },
+    {
+      "path": "components/bjork-ui/_core/motion.ts",
+      "content": "// Shared springs, easings and durations. Components import these instead of inventing values.\n\nexport const springs = {\n  press: { type: \"spring\", stiffness: 500, damping: 30, mass: 0.6 },\n  snappy: { type: \"spring\", stiffness: 400, damping: 25, mass: 1 },\n  standard: { type: \"spring\", stiffness: 300, damping: 30, mass: 0.8 },\n  soft: { type: \"spring\", stiffness: 200, damping: 25, mass: 1.2 },\n  settle: { type: \"spring\", stiffness: 380, damping: 30, mass: 0.8 },\n  blurIn: { type: \"spring\", stiffness: 400, damping: 28, mass: 0.6 },\n} as const;\n\nexport const ease = {\n  out: [0.23, 1, 0.32, 1],\n  inOut: [0.77, 0, 0.175, 1],\n  drawer: [0.32, 0.72, 0, 1],\n} as const;\n\nexport const easeCss = {\n  out: \"cubic-bezier(0.23,1,0.32,1)\",\n  inOut: \"cubic-bezier(0.77,0,0.175,1)\",\n  drawer: \"cubic-bezier(0.32,0.72,0,1)\",\n} as const;\n\nexport const durations = { press: 140, tooltip: 160, menu: 200, panel: 280 } as const; // ms\n\n// Cubic bezier easing for canvas and rAF code. Returns progress y for input x in [0, 1].\nexport function cubicBezier(x1: number, y1: number, x2: number, y2: number): (t: number) => number {\n  const cx = 3 * x1;\n  const bx = 3 * (x2 - x1) - cx;\n  const ax = 1 - cx - bx;\n  const cy = 3 * y1;\n  const by = 3 * (y2 - y1) - cy;\n  const ay = 1 - cy - by;\n  const sampleX = (s: number) => ((ax * s + bx) * s + cx) * s;\n  const sampleY = (s: number) => ((ay * s + by) * s + cy) * s;\n  const sampleDX = (s: number) => (3 * ax * s + 2 * bx) * s + cx;\n\n  const solveX = (x: number) => {\n    let s = x;\n    for (let i = 0; i < 8; i++) {\n      const err = sampleX(s) - x;\n      if (Math.abs(err) < 1e-6) return s;\n      const d = sampleDX(s);\n      if (Math.abs(d) < 1e-6) break;\n      s -= err / d;\n    }\n    let lo = 0;\n    let hi = 1;\n    s = x;\n    while (lo < hi) {\n      const v = sampleX(s);\n      if (Math.abs(v - x) < 1e-6) return s;\n      if (x > v) lo = s;\n      else hi = s;\n      s = (lo + hi) / 2;\n      if (hi - lo < 1e-7) break;\n    }\n    return s;\n  };\n\n  return (t: number) => {\n    if (t <= 0) return 0;\n    if (t >= 1) return 1;\n    return sampleY(solveX(t));\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/motion.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/random.ts",
+      "content": "// Seeded randomness and noise. Deterministic for a given seed, so previews and tests repeat.\n\n// Small fast PRNG. Returns floats in [0, 1).\nexport function mulberry32(seed: number): () => number {\n  let a = seed >>> 0;\n  return () => {\n    a = (a + 0x6d2b79f5) >>> 0;\n    let t = a;\n    t = Math.imul(t ^ (t >>> 15), t | 1);\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;\n  };\n}\n\n// FNV-1a 32-bit.\nexport function hashString(s: string): number {\n  let h = 0x811c9dc5;\n  for (let i = 0; i < s.length; i++) {\n    h ^= s.charCodeAt(i);\n    h = Math.imul(h, 0x01000193);\n  }\n  return h >>> 0;\n}\n\n// Integer lattice hash to [-1, 1].\nfunction latticeHash(seed: number, x: number, y = 0): number {\n  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(seed | 0, 2246822519);\n  h = Math.imul(h ^ (h >>> 13), 1274126177);\n  h ^= h >>> 16;\n  return ((h >>> 0) / 4294967295) * 2 - 1;\n}\n\nfunction smooth(t: number): number {\n  return t * t * (3 - 2 * t);\n}\n\nexport function valueNoise1D(seed: number): (x: number) => number {\n  return (x: number) => {\n    const i = Math.floor(x);\n    const f = x - i;\n    const a = latticeHash(seed, i);\n    const b = latticeHash(seed, i + 1);\n    return a + (b - a) * smooth(f);\n  };\n}\n\nexport function fbm1D(seed: number, octaves = 3): (x: number) => number {\n  const layers = Array.from({ length: octaves }, (_, o) => valueNoise1D(seed + o * 101));\n  let norm = 0;\n  for (let o = 0; o < octaves; o++) norm += 0.5 ** o;\n  return (x: number) => {\n    let sum = 0;\n    let amp = 1;\n    let freq = 1;\n    for (let o = 0; o < octaves; o++) {\n      sum += amp * layers[o](x * freq);\n      amp *= 0.5;\n      freq *= 2;\n    }\n    return sum / norm;\n  };\n}\n\nexport function valueNoise2D(seed: number): (x: number, y: number) => number {\n  return (x: number, y: number) => {\n    const xi = Math.floor(x);\n    const yi = Math.floor(y);\n    const fx = smooth(x - xi);\n    const fy = smooth(y - yi);\n    const a = latticeHash(seed, xi, yi);\n    const b = latticeHash(seed, xi + 1, yi);\n    const c = latticeHash(seed, xi, yi + 1);\n    const d = latticeHash(seed, xi + 1, yi + 1);\n    const top = a + (b - a) * fx;\n    const bottom = c + (d - c) * fx;\n    return top + (bottom - top) * fy;\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/random.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/spring.ts",
+      "content": "// Pure spring math, no React. Units: stiffness k, damping d (coefficient), mass m, time in seconds.\n\nexport interface SpringConfig {\n  stiffness: number;\n  damping: number;\n  mass: number;\n}\n\nexport interface SpringState {\n  x: number;\n  v: number;\n}\n\n// Damping ratio zeta = d / (2 * sqrt(k * m)).\nexport function dampingRatio(c: SpringConfig): number {\n  return c.damping / (2 * Math.sqrt(c.stiffness * c.mass));\n}\n\n// Exact solution of y'' = -(k/m) y - (d/m) y' for displacement y0 and velocity v0 at time t.\n// Returns displacement and velocity together so stepping can be exact, not integrated.\nfunction solveLinear(t: number, c: SpringConfig, y0: number, v0: number): { y: number; v: number } {\n  const w0 = Math.sqrt(c.stiffness / c.mass);\n  const z = dampingRatio(c);\n\n  if (Math.abs(z - 1) < 1e-9) {\n    // Critically damped.\n    const e = Math.exp(-w0 * t);\n    const b = v0 + w0 * y0;\n    return { y: e * (y0 + b * t), v: e * (b - w0 * (y0 + b * t)) };\n  }\n  if (z < 1) {\n    // Underdamped.\n    const wd = w0 * Math.sqrt(1 - z * z);\n    const a = z * w0;\n    const B = (v0 + a * y0) / wd;\n    const e = Math.exp(-a * t);\n    const cos = Math.cos(wd * t);\n    const sin = Math.sin(wd * t);\n    return {\n      y: e * (y0 * cos + B * sin),\n      v: e * (-a * (y0 * cos + B * sin) + wd * (-y0 * sin + B * cos)),\n    };\n  }\n  // Overdamped.\n  const s = w0 * Math.sqrt(z * z - 1);\n  const r1 = -z * w0 + s;\n  const r2 = -z * w0 - s;\n  const B = (v0 - r1 * y0) / (r2 - r1);\n  const A = y0 - B;\n  const e1 = Math.exp(r1 * t);\n  const e2 = Math.exp(r2 * t);\n  return { y: A * e1 + B * e2, v: A * r1 * e1 + B * r2 * e2 };\n}\n\n// Analytic position at time t for a spring from `from` to `to` with initial velocity v0.\nexport function springAt(t: number, c: SpringConfig, from = 0, to = 1, v0 = 0): number {\n  return to + solveLinear(t, c, from - to, v0).y;\n}\n\n// Overshoot as a fraction of the total travel. Zero when critically or overdamped.\nexport function overshoot(c: SpringConfig): number {\n  const z = dampingRatio(c);\n  if (z >= 1) return 0;\n  return Math.exp((-Math.PI * z) / Math.sqrt(1 - z * z));\n}\n\n// Seconds until the spring stays within epsilon of its target (fraction of travel).\n// Found by scanning backwards from a bound derived from the slowest decay rate.\nexport function settleTime(c: SpringConfig, epsilon = 0.001): number {\n  const w0 = Math.sqrt(c.stiffness / c.mass);\n  const z = dampingRatio(c);\n  const slowest = z < 1 ? z * w0 : (z - Math.sqrt(z * z - 1)) * w0;\n  const tEnd = (Math.log(1 / epsilon) / slowest) * 1.5 + 0.05;\n  const steps = 4000;\n  const dt = tEnd / steps;\n  const band = epsilon;\n  let last = 0;\n  for (let i = 0; i <= steps; i++) {\n    const t = i * dt;\n    if (Math.abs(springAt(t, c, 1, 0, 0)) >= band) last = t;\n  }\n  return last + dt;\n}\n\n// Advances the state by dt towards `target`. Uses the exact solution of the linear spring\n// (no integration), so it tracks springAt to rounding error at any step size and stays stable\n// for stiff configs where a fixed-step integrator drifts.\nexport function stepSpring(s: SpringState, target: number, c: SpringConfig, dt: number): void {\n  if (dt <= 0) return;\n  const r = solveLinear(dt, c, s.x - target, s.v);\n  s.x = target + r.y;\n  s.v = r.v;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/spring.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Text",
+    "registryUrl": "https://ui.isaiahbjork.com/slice-shift.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/slice-shift.json"
+  },
+  "type": "registry:component"
+}

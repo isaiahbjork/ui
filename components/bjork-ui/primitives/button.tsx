@@ -8,7 +8,7 @@ import type { HapticInput, TriggerOptions } from "web-haptics";
 import { cn } from "@/lib/utils";
 
 const bjorkButtonVariants = cva(
-  "inline-flex shrink-0 transform-gpu items-center justify-center gap-2 whitespace-nowrap rounded-[13px] text-sm font-medium tracking-[-0.01em] outline-none backdrop-blur-md transition-[background-color,border-color,color,box-shadow,opacity] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-[#ec5c13]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bjork-ring-offset)] disabled:pointer-events-none disabled:opacity-35 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex shrink-0 transform-gpu items-center justify-center gap-2 whitespace-nowrap rounded-[13px] text-sm font-medium tracking-[-0.01em] outline-none backdrop-blur-md transition-[background-color,border-color,color,box-shadow,opacity] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)]/45 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bjork-ring-offset)] disabled:pointer-events-none disabled:opacity-35 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -58,6 +58,7 @@ export function BjorkButton({
   hapticPattern = "light",
   hapticOptions,
   onPointerDown,
+  tabIndex,
   ...props
 }: BjorkButtonProps) {
   const shouldReduceMotion = useReducedMotion();
@@ -83,6 +84,7 @@ export function BjorkButton({
       whileHover={disabled || shouldReduceMotion ? undefined : { scale: 1.05 }}
       whileTap={disabled || shouldReduceMotion ? undefined : { scale: 0.95 }}
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      tabIndex={tabIndex ?? 0}
       {...props}
     />
   );

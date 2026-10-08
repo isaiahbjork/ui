@@ -1,0 +1,207 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "plane-type",
+  "title": "Plane type",
+  "description": "Plane type is a production-ready text component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/text/plane-type.tsx",
+      "content": "\"use client\";\n\nimport { useEffect, useMemo, useRef, useSyncExternalStore, type CSSProperties, type PointerEvent } from \"react\";\nimport { motion, useMotionValue, useReducedMotion, useSpring, useTransform, type MotionValue } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { BJORK_PALETTE, type BjorkTone } from \"@/components/bjork-ui/_core/palette\";\nimport { useBjorkTone } from \"@/components/bjork-ui/_core/tone\";\nimport { VisuallyHidden } from \"@/components/bjork-ui/_core/a11y\";\nimport { isCoarsePointer, useVisibleLoop } from \"@/components/bjork-ui/_core/loop\";\n\nexport type PlaneTypeVariant = \"solid\" | \"mixed\" | \"outline\";\nexport type PlaneTypePointerSource = \"self\" | \"window\" | \"scroll\" | \"none\";\nexport type PlaneTypeAlign = \"left\" | \"center\" | \"right\";\n\nexport interface PlaneTypeProps {\n  lines: string[];\n  as?: \"h1\" | \"h2\" | \"h3\";\n  size?: string;\n  depth?: number;\n  tilt?: number;\n  slide?: number;\n  overlap?: number;\n  skew?: number;\n  variant?: PlaneTypeVariant;\n  knockout?: boolean;\n  pointerSource?: PlaneTypePointerSource;\n  align?: PlaneTypeAlign;\n  opticalAlign?: boolean;\n  spring?: { stiffness: number; damping: number; mass: number };\n  /** Fixed normalised pointer position, for deterministic previews. Overrides pointer input. */\n  pose?: { x: number; y: number };\n  tone?: BjorkTone;\n  attract?: boolean;\n  className?: string;\n}\n\nconst MAX_LINES = 6;\n// Cap height of the display face in em (Bjork Grotesk Display 700, H/M/I/E/T). Measured by blur test.\nconst CAP_HEIGHT = 0.71; // em\n// Perspective distance in px. Planes are counter-scaled against it so they sit flat at rest.\nconst PERSPECTIVE = 900;\nconst OUTLINE_STROKE = \"1.5px\";\nconst subscribeNoop = () => () => {};\nconst DEFAULT_SPRING = { stiffness: 150, damping: 20, mass: 1 };\nconst ATTRACT_IDLE_MS = 4000;\nconst ATTRACT_AMPLITUDE = 0.6;\nconst ATTRACT_PERIOD_X = 7;\nconst ATTRACT_PERIOD_Y = 11;\n\n// Optical left-edge offsets, in em. The right edge mirrors these values.\nconst OPTICAL_EM: Record<string, number> = {\n  O: -0.04,\n  Q: -0.04,\n  C: -0.03,\n  G: -0.03,\n  S: -0.02,\n  A: -0.02,\n  V: -0.02,\n  W: -0.02,\n  T: -0.02,\n  Y: -0.02,\n};\n\nfunction opticalOffset(line: string, align: PlaneTypeAlign): number {\n  if (align === \"center\") return 0;\n  const trimmed = line.trim();\n  if (!trimmed) return 0;\n  const edge = align === \"right\" ? trimmed.charAt(trimmed.length - 1) : trimmed.charAt(0);\n  const value = OPTICAL_EM[edge.toUpperCase()] ?? 0;\n  return align === \"right\" ? -value : value;\n}\n\nfunction clamp(v: number) {\n  return Math.max(-1, Math.min(1, v));\n}\n\nfunction subscribeCoarse(onChange: () => void) {\n  const query = window.matchMedia(\"(pointer: coarse)\");\n  query.addEventListener(\"change\", onChange);\n  return () => query.removeEventListener(\"change\", onChange);\n}\n\ninterface Paint {\n  color: string;\n  outline: boolean;\n  blend: \"normal\" | \"difference\" | \"multiply\";\n}\n\nfunction paintFor(index: number, variant: PlaneTypeVariant, knockout: boolean, tone: BjorkTone): Paint {\n  const kind =\n    variant === \"outline\" ? \"outline\" : variant === \"solid\" ? \"solid\" : ([\"solid\", \"accent\", \"outline\"] as const)[index % 3];\n  const text = \"var(--bjork-text)\";\n  const accent = \"var(--bjork-accent)\";\n  if (knockout) {\n    const color = tone === \"dark\" ? text : index % 2 === 0 ? text : accent;\n    return { color, outline: kind === \"outline\", blend: tone === \"dark\" ? \"difference\" : \"multiply\" };\n  }\n  return { color: kind === \"accent\" ? accent : text, outline: kind === \"outline\", blend: \"normal\" };\n}\n\ninterface PlaneProps {\n  text: string;\n  index: number;\n  count: number;\n  depth: number;\n  skew: number;\n  overlap: number;\n  opticalEm: number;\n  originEm: number;\n  reduce: boolean;\n  shift: MotionValue<number>;\n  paint: Paint;\n  align: PlaneTypeAlign;\n}\n\n// Each plane's transform is built once per instance. Every constant it closes over is part of the key in PlaneType.\nfunction Plane({ text, index, count, depth, skew, overlap, opticalEm, originEm, reduce, shift, paint, align }: PlaneProps) {\n  const mid = (count - 1) / 2;\n  const dx = index - mid;\n  const z = dx * depth;\n  const k = (PERSPECTIVE - z) / PERSPECTIVE;\n  const rotation = reduce ? 0 : (index % 2 ? 1 : -1) * skew;\n  const y = index * (CAP_HEIGHT - overlap);\n  const transform = useTransform(\n    shift,\n    (v: number) =>\n      `translateX(calc(${opticalEm * k}em + ${(v * dx * k).toFixed(3)}px)) translateY(${y * k}em) translateZ(${z}px) scale(${k}) rotateZ(${rotation}deg)`,\n  );\n\n  const textAlign = align === \"center\" ? \"text-center\" : align === \"right\" ? \"text-right\" : \"text-left\";\n  const style: CSSProperties = paint.outline\n    ? { color: \"transparent\", WebkitTextStroke: `${OUTLINE_STROKE} ${paint.color}`, mixBlendMode: paint.blend }\n    : { color: paint.color, WebkitTextStroke: \"0\", mixBlendMode: paint.blend };\n\n  return (\n    <motion.span\n      aria-hidden=\"true\"\n      className={cn(\n        \"pointer-events-none block w-full self-start whitespace-nowrap font-bjork-display font-bold leading-[0.82] tracking-[-0.04em] [grid-area:1/1] [text-box:trim-both_cap_alphabetic]\",\n        textAlign,\n      )}\n      style={{ ...style, transform, transformOrigin: `50% ${originEm}em` }}\n    >\n      {text || \" \"}\n    </motion.span>\n  );\n}\n\n/**\n * Display type set as overlapping planes in 3D space. The whole stack tilts with the pointer,\n * and each plane slides against the others, so the lines pass each other as you move.\n */\nexport function PlaneType({\n  lines,\n  as = \"h2\",\n  size = \"clamp(48px, 9vw, 128px)\",\n  depth = 48,\n  tilt = 8,\n  slide = 6,\n  overlap = 0.18,\n  skew = 0,\n  variant = \"mixed\",\n  knockout = false,\n  pointerSource = \"self\",\n  align = \"left\",\n  opticalAlign = true,\n  spring = DEFAULT_SPRING,\n  pose,\n  tone: toneProp,\n  attract = false,\n  className,\n}: PlaneTypeProps) {\n  const tone = useBjorkTone(toneProp);\n  const palette = BJORK_PALETTE[tone];\n  // Server and first client render both report \"not reduced\", so reduced motion only applies after hydration.\n  const hydrated = useSyncExternalStore(subscribeNoop, () => true, () => false);\n  const prefersReduced = useReducedMotion();\n  const reduce = hydrated && prefersReduced === true;\n  const rootRef = useRef<HTMLDivElement>(null);\n  const shown = lines.slice(0, MAX_LINES);\n  const count = shown.length;\n  const coarse = useSyncExternalStore(subscribeCoarse, isCoarsePointer, () => false);\n  // Touch devices cannot hover, so \"self\" falls back to \"scroll\".\n  const source: PlaneTypePointerSource = pointerSource === \"self\" && coarse ? \"scroll\" : pointerSource;\n\n  const hasPose = pose !== undefined;\n  const poseX = pose?.x ?? 0;\n  const poseY = pose?.y ?? 0;\n\n  // Raw targets are already in rendered units: degrees for the tilt, px for the slide.\n  const rotX = useMotionValue(hasPose && !reduce ? -poseY * tilt : 0);\n  const rotY = useMotionValue(hasPose && !reduce ? poseX * tilt : 0);\n  const shift = useMotionValue(hasPose && !reduce ? poseX * slide : 0);\n\n  const springConfig = useMemo(\n    () => ({ stiffness: spring.stiffness, damping: spring.damping, mass: spring.mass }),\n    [spring.stiffness, spring.damping, spring.mass],\n  );\n  const rotXs = useSpring(rotX, springConfig);\n  const rotYs = useSpring(rotY, springConfig);\n  const shiftS = useSpring(shift, springConfig);\n\n  const aim = (nx: number, ny: number) => {\n    if (reduce) {\n      rotX.set(0);\n      rotY.set(0);\n      shift.set(0);\n      return;\n    }\n    const x = clamp(nx);\n    const y = clamp(ny);\n    rotX.set(-y * tilt);\n    rotY.set(x * tilt);\n    shift.set(x * slide);\n  };\n  const aimRef = useRef(aim);\n  useEffect(() => {\n    aimRef.current = aim;\n  });\n\n  // Pose and reduced motion both replace the pointer's target.\n  useEffect(() => {\n    if (reduce) aimRef.current(0, 0);\n    else if (hasPose) aimRef.current(poseX, poseY);\n  }, [reduce, hasPose, poseX, poseY]);\n\n  const lastInput = useRef(Number.NEGATIVE_INFINITY);\n  const rect = useRef<DOMRect | null>(null);\n\n  const onPointerEnter = () => {\n    if (source !== \"self\") return;\n    rect.current = rootRef.current?.getBoundingClientRect() ?? null;\n  };\n\n  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {\n    if (source !== \"self\") return;\n    lastInput.current = performance.now();\n    const r = rect.current ?? rootRef.current?.getBoundingClientRect();\n    if (!r || r.width === 0 || r.height === 0) return;\n    rect.current = r;\n    aim(((event.clientX - r.left) / r.width) * 2 - 1, ((event.clientY - r.top) / r.height) * 2 - 1);\n  };\n\n  const onPointerLeave = () => {\n    if (source !== \"self\") return;\n    rect.current = null;\n    aim(0, 0);\n  };\n\n  // Window and scroll sources only listen while the component is on screen.\n  useEffect(() => {\n    if (source !== \"window\" && source !== \"scroll\") return;\n    const el = rootRef.current;\n    if (!el) return;\n\n    const onWindowMove = (event: globalThis.PointerEvent) => {\n      lastInput.current = performance.now();\n      aimRef.current((event.clientX / window.innerWidth) * 2 - 1, (event.clientY / window.innerHeight) * 2 - 1);\n    };\n    const onWindowOut = (event: globalThis.PointerEvent) => {\n      if (!event.relatedTarget) aimRef.current(0, 0);\n    };\n    const onScroll = () => {\n      lastInput.current = performance.now();\n      const r = el.getBoundingClientRect();\n      const half = window.innerHeight / 2;\n      const centre = r.top + r.height / 2;\n      aimRef.current(0, (half - centre) / half);\n    };\n\n    let attached = false;\n    const attach = () => {\n      if (attached) return;\n      attached = true;\n      if (source === \"window\") {\n        window.addEventListener(\"pointermove\", onWindowMove, { passive: true });\n        window.addEventListener(\"pointerout\", onWindowOut, { passive: true });\n      } else {\n        window.addEventListener(\"scroll\", onScroll, { passive: true });\n        window.addEventListener(\"resize\", onScroll, { passive: true });\n        onScroll();\n      }\n    };\n    const detach = () => {\n      if (!attached) return;\n      attached = false;\n      window.removeEventListener(\"pointermove\", onWindowMove);\n      window.removeEventListener(\"pointerout\", onWindowOut);\n      window.removeEventListener(\"scroll\", onScroll);\n      window.removeEventListener(\"resize\", onScroll);\n    };\n\n    const observer = new IntersectionObserver(([entry]) => {\n      if (entry?.isIntersecting) attach();\n      else detach();\n    });\n    observer.observe(el);\n    return () => {\n      observer.disconnect();\n      detach();\n    };\n  }, [source]);\n\n  // Idle drift: a Lissajous path feeds the springs. Any input inside the component pauses it for 4s.\n  const attractOn = attract && !reduce && !hasPose && source !== \"none\";\n  const attractT = useRef(0);\n  useVisibleLoop(\n    rootRef,\n    (dt) => {\n      if (performance.now() - lastInput.current < ATTRACT_IDLE_MS) return;\n      attractT.current += dt;\n      const t = attractT.current;\n      aimRef.current(\n        ATTRACT_AMPLITUDE * Math.sin((2 * Math.PI * t) / ATTRACT_PERIOD_X),\n        ATTRACT_AMPLITUDE * Math.sin((2 * Math.PI * t) / ATTRACT_PERIOD_Y),\n      );\n    },\n    { enabled: attractOn },\n  );\n\n  useEffect(() => {\n    if (count > 0 && lines.length > MAX_LINES) {\n      console.warn(`PlaneType renders up to ${MAX_LINES} lines; ${lines.length} were given.`);\n    }\n  }, [lines.length, count]);\n\n  const cssVars = { \"--bjork-text\": palette.text, \"--bjork-accent\": palette.accent } as CSSProperties;\n  const justifyRow = align === \"center\" ? \"justify-center\" : align === \"right\" ? \"justify-end\" : \"justify-start\";\n  const totalEm = count > 0 ? (count - 1) * (CAP_HEIGHT - overlap) + CAP_HEIGHT : 0;\n  const originEm = totalEm / 2;\n  const Tag = as;\n\n  return (\n    <div\n      ref={rootRef}\n      className={cn(\"relative w-full select-none\", className)}\n      style={{\n        ...cssVars,\n        perspective: `${PERSPECTIVE}px`,\n        isolation: \"isolate\",\n        fontSize: size,\n        backgroundColor: knockout ? palette.stage : undefined,\n      }}\n      onPointerEnter={onPointerEnter}\n      onPointerMove={onPointerMove}\n      onPointerLeave={onPointerLeave}\n    >\n      <motion.div\n        className={cn(\"flex w-full\", justifyRow)}\n        style={{ rotateX: rotXs, rotateY: rotYs, transformStyle: \"preserve-3d\" }}\n      >\n        <Tag className=\"m-0 w-full font-bjork-display\" style={{ transformStyle: \"preserve-3d\" }}>\n          <VisuallyHidden>{shown.join(\" \")}</VisuallyHidden>\n          <span aria-hidden=\"true\" className=\"grid w-full\" style={{ transformStyle: \"preserve-3d\" }}>\n            <span aria-hidden=\"true\" className=\"invisible [grid-area:1/1]\" style={{ height: `${totalEm}em` }} />\n            {shown.map((line, index) => {\n              const opticalEm = opticalAlign ? opticalOffset(line, align) : 0;\n              return (\n                <Plane\n                  key={`${index}|${count}|${depth}|${skew}|${overlap}|${opticalEm}|${originEm}|${reduce ? 1 : 0}`}\n                  text={line}\n                  index={index}\n                  count={count}\n                  depth={depth}\n                  skew={skew}\n                  overlap={overlap}\n                  opticalEm={opticalEm}\n                  originEm={originEm}\n                  reduce={reduce}\n                  shift={shiftS}\n                  paint={paintFor(index, variant, knockout, tone)}\n                  align={align}\n                />\n              );\n            })}\n          </span>\n        </Tag>\n      </motion.div>\n    </div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/text/plane-type.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/palette.ts",
+      "content": "export type BjorkTone = \"dark\" | \"light\";\n\n// Canvas, WebGL and SVG attribute colours. DOM code uses the CSS tokens with these as fallbacks.\nexport const BJORK_PALETTE = {\n  dark: {\n    bg: \"#050505\", stage: \"#111111\", surface: \"#121212\", raised: \"#161616\", active: \"#202020\",\n    border: \"#232323\", borderStrong: \"#343434\",\n    text: \"#ededed\", textMedium: \"rgba(237,237,237,0.72)\", textMuted: \"rgba(237,237,237,0.52)\",\n    textSoft: \"rgba(237,237,237,0.36)\", textFaint: \"rgba(237,237,237,0.22)\", hair: \"rgba(237,237,237,0.12)\",\n    accent: \"#ec5c13\", accentInk: \"#ec5c13\", accentFill: \"#b84a12\", accentSoft: \"rgba(236,92,19,0.12)\", accentMuted: \"rgba(236,92,19,0.24)\",\n    accentFg: \"#fff2ea\", success: \"#4cc38a\", warning: \"#f2b544\", error: \"#ff5c4d\",\n  },\n  light: {\n    bg: \"#f7f5ef\", stage: \"#f7f5ef\", surface: \"#fffcf6\", raised: \"#f5efe3\", active: \"#efe7d8\",\n    border: \"#eee6db\", borderStrong: \"#e1d7c8\",\n    text: \"#171717\", textMedium: \"rgba(23,23,23,0.72)\", textMuted: \"rgba(23,23,23,0.52)\",\n    textSoft: \"rgba(23,23,23,0.36)\", textFaint: \"rgba(23,23,23,0.22)\", hair: \"rgba(23,23,23,0.10)\",\n    accent: \"#ec7d43\", accentInk: \"#b4531f\", accentFill: \"#ec7d43\", accentSoft: \"rgba(236,125,67,0.10)\", accentMuted: \"rgba(236,125,67,0.20)\",\n    accentFg: \"#3f2112\", success: \"#1f8a55\", warning: \"#a86b00\", error: \"#c8361f\",\n  },\n} as const;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/palette.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/tone.ts",
+      "content": "\"use client\";\n\nimport { useSyncExternalStore } from \"react\";\nimport { useTheme } from \"next-themes\";\nimport type { BjorkTone } from \"./palette\";\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\n/**\n * Resolves the tone for a component. An explicit `tone` always wins.\n * Otherwise it follows next-themes' resolved theme, but only after mount,\n * so the server render and first client render agree on dark.\n */\nexport function useBjorkTone(tone?: BjorkTone): BjorkTone {\n  const { resolvedTheme } = useTheme();\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  if (tone) return tone;\n  if (!mounted) return \"dark\";\n  return resolvedTheme === \"light\" ? \"light\" : \"dark\";\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/tone.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/a11y.tsx",
+      "content": "import type { ReactNode } from \"react\";\n\n// Text for assistive tech only.\nexport function VisuallyHidden({ children }: { children: ReactNode }) {\n  return <span className=\"sr-only\">{children}</span>;\n}\n\n// Announces `message` when it changes. Same text re-rendered does not re-announce.\nexport function LiveRegion({\n  message,\n  politeness = \"polite\",\n}: {\n  message: string;\n  politeness?: \"polite\" | \"assertive\";\n}) {\n  return (\n    <span role=\"status\" aria-live={politeness} aria-atomic=\"true\" className=\"sr-only\">\n      {message}\n    </span>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/a11y.tsx"
+    },
+    {
+      "path": "components/bjork-ui/_core/loop.ts",
+      "content": "\"use client\";\n\nimport { useCallback, useEffect, useMemo, useRef, type RefObject } from \"react\";\n\nexport interface VisibleLoopOptions {\n  enabled?: boolean;\n  fpsCap?: number;\n  rootMargin?: string;\n}\n\n/**\n * Runs `frame(dt, t)` on requestAnimationFrame while the element is near the viewport,\n * the tab is visible and `enabled` is not false. Return `false` from `frame` to go idle\n * until `wake()` is called. Writes `data-loop` on the element: running, idle or paused.\n */\nexport function useVisibleLoop(\n  ref: RefObject<HTMLElement | null>,\n  frame: (dt: number, t: number) => boolean | void,\n  opts?: VisibleLoopOptions,\n): { wake: () => void } {\n  const enabled = opts?.enabled !== false;\n  const fpsCap = opts?.fpsCap ?? 0;\n  const rootMargin = opts?.rootMargin ?? \"96px\";\n\n  const frameRef = useRef(frame);\n  useEffect(() => {\n    frameRef.current = frame;\n  }, [frame]);\n\n  const wakeRef = useRef<() => void>(() => {});\n  const wake = useCallback(() => wakeRef.current(), []);\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el || typeof window === \"undefined\") return;\n\n    let wants = true; // false once the frame callback returns false\n    let inView = false;\n    let raf = 0;\n    let last = 0;\n    let t = 0;\n    const minFrame = fpsCap > 0 ? 1000 / fpsCap : 0;\n\n    const canRun = () => enabled && inView && document.visibilityState === \"visible\";\n    const stop = () => {\n      if (raf) cancelAnimationFrame(raf);\n      raf = 0;\n    };\n\n    const update = () => {\n      if (!enabled) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      if (!wants) {\n        stop();\n        el.dataset.loop = \"idle\";\n        return;\n      }\n      if (!canRun()) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      el.dataset.loop = \"running\";\n      if (!raf) {\n        last = performance.now();\n        raf = requestAnimationFrame(tick);\n      }\n    };\n\n    const tick = (now: number) => {\n      raf = 0;\n      if (!canRun() || !wants) {\n        update();\n        return;\n      }\n      const elapsed = now - last;\n      if (minFrame && elapsed < minFrame - 0.5) {\n        raf = requestAnimationFrame(tick);\n        return;\n      }\n      last = now;\n      const dt = Math.min(0.05, Math.max(0, elapsed / 1000));\n      t += dt;\n      const keep = frameRef.current(dt, t);\n      if (keep === false) {\n        wants = false;\n        update();\n        return;\n      }\n      raf = requestAnimationFrame(tick);\n    };\n\n    const observer = new IntersectionObserver(\n      ([entry]) => {\n        inView = entry.isIntersecting;\n        update();\n      },\n      { rootMargin },\n    );\n    observer.observe(el);\n\n    const onVisibility = () => update();\n    document.addEventListener(\"visibilitychange\", onVisibility);\n\n    wakeRef.current = () => {\n      wants = true;\n      update();\n    };\n\n    update();\n\n    return () => {\n      stop();\n      observer.disconnect();\n      document.removeEventListener(\"visibilitychange\", onVisibility);\n      wakeRef.current = () => {};\n    };\n  }, [ref, enabled, fpsCap, rootMargin]);\n\n  return useMemo(() => ({ wake }), [wake]);\n}\n\n// matchMedia based check. False on the server.\nexport function isCoarsePointer(): boolean {\n  if (typeof window === \"undefined\" || typeof window.matchMedia !== \"function\") return false;\n  return window.matchMedia(\"(pointer: coarse)\").matches;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/loop.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Text",
+    "registryUrl": "https://ui.isaiahbjork.com/plane-type.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/plane-type.json"
+  },
+  "type": "registry:component"
+}

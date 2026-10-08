@@ -1,0 +1,201 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "adaptive-precision-slider",
+  "title": "Adaptive precision slider",
+  "description": "Adaptive precision slider is a production-ready controls component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/controls/adaptive-precision-slider.tsx",
+      "content": "\"use client\";\n\nimport { useCallback, useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from \"react\";\nimport {\n  animate,\n  motion,\n  useMotionValue,\n  useReducedMotion,\n  useTransform,\n  type AnimationPlaybackControls,\n} from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { BJORK_PALETTE, type BjorkTone } from \"@/components/bjork-ui/_core/palette\";\nimport { useBjorkTone } from \"@/components/bjork-ui/_core/tone\";\nimport { isCoarsePointer, useVisibleLoop } from \"@/components/bjork-ui/_core/loop\";\n\nexport interface AdaptivePrecisionSliderProps {\n  label: string;\n  value?: number;\n  defaultValue?: number;\n  onValueChange?: (v: number) => void;\n  onValueCommit?: (v: number) => void;\n  min?: number;\n  max?: number;\n  step?: number;\n  precisionFalloff?: number;\n  minGain?: number;\n  showGain?: boolean;\n  fineStep?: boolean;\n  touchPrecision?: boolean;\n  format?: (v: number) => string;\n  marks?: { value: number; label?: string }[];\n  disabled?: boolean;\n  tone?: BjorkTone;\n  attract?: boolean;\n  /** Demo only. Forces the gain used for the band and the chip, so a preview can be posed mid-drag. */\n  debugGain?: number;\n  className?: string;\n}\n\nconst GAIN_CHIP_BELOW = 0.95;\nconst DRIFT_DEAD_ZONE = 12; // px between the track centre and the start of the drift falloff\nconst TOUCH_FALLOFF = 64;\nconst MIN_TICK_PX = 4;\nconst BAND_REACH_PX = 80; // half of the widest band window, so every visible tick is computed\nconst TICK_COUNT = 51; // 0% to 100% every 2%, so the 50% tick is exact\nconst TICK_MAJOR_EVERY = 5; // every 10%\nconst KEY_SPRING = { type: \"spring\", stiffness: 700, damping: 45, mass: 0.4 } as const;\nconst ATTRACT_CYCLE_S = 4;\nconst ATTRACT_IDLE_MS = 4000;\nconst ATTRACT_DRIFT_PX = 72; // centre distance at the drift's end, so d = 60 after the dead zone\nconst BAND_MASK = \"linear-gradient(90deg, transparent, #000 20%, #000 80%, transparent)\";\n\ntype UiState = { raw: number; out: number; gain: number; dragging: boolean };\n\ninterface DragState {\n  pointerId: number;\n  lastX: number;\n  centerY: number;\n  width: number;\n  gainOn: boolean;\n  falloff: number;\n}\n\n// Token with a palette fallback, so the component keeps its tone outside the site.\nfunction tok(name: string, fallback: string) {\n  return `var(--bjork-${name}, ${fallback})`;\n}\n\nfunction clamp(v: number, lo: number, hi: number) {\n  return Math.min(hi, Math.max(lo, v));\n}\n\nfunction decimalsOf(n: number) {\n  const s = String(n);\n  const i = s.indexOf(\".\");\n  return i === -1 ? 0 : s.length - i - 1;\n}\n\nfunction fractionOf(v: number, min: number, max: number) {\n  return max > min ? clamp((v - min) / (max - min), 0, 1) : 0;\n}\n\n// Clamp to [min, max], round to the step grid, and always allow max, even when the step does not divide the range.\nfunction snapTo(raw: number, min: number, max: number, unit: number) {\n  const c = clamp(raw, min, max);\n  if (!(unit > 0)) return c;\n  let r = min + Math.round((c - min) / unit) * unit;\n  if (c >= max - unit / 2) r = max;\n  r = clamp(r, min, max);\n  return Number(r.toFixed(Math.min(10, Math.max(decimalsOf(unit), decimalsOf(min)))));\n}\n\n// g = minGain + (1 - minGain) * 2^(-d / falloff), where d is the distance past the dead zone.\nfunction gainAt(distancePx: number, minGain: number, falloff: number) {\n  const d = Math.max(0, distancePx - DRIFT_DEAD_ZONE);\n  return minGain + (1 - minGain) * 2 ** (-d / falloff);\n}\n\n// Stride through 1, 2, 5, 10, 20, 50, ... until a tick is at least MIN_TICK_PX apart.\nfunction tickStride(spacingPx: number) {\n  const seq = [1, 2, 5];\n  let k = 1;\n  for (let i = 1; spacingPx * k < MIN_TICK_PX && i < 60; i++) {\n    k = seq[i % 3] * 10 ** Math.floor(i / 3);\n  }\n  return k;\n}\n\ninterface BandTick {\n  m: number;\n  px: number;\n  major: boolean;\n}\n\nfunction bandTicks(base: number, min: number, max: number, unit: number, gain: number, pxPerUnit: number): BandTick[] {\n  const k = tickStride((pxPerUnit * unit) / gain);\n  const grid = unit * k;\n  const reach = (BAND_REACH_PX * gain) / pxPerUnit;\n  const lastIndex = Math.floor((max - min) / grid + 1e-9);\n  const first = Math.max(0, Math.ceil((base - reach - min) / grid));\n  const last = Math.min(lastIndex, Math.floor((base + reach - min) / grid));\n  const ticks: BandTick[] = [];\n  for (let m = first; m <= last; m++) {\n    const v = min + m * grid;\n    ticks.push({ m, px: ((v - base) * pxPerUnit) / gain, major: m % 10 === 0 });\n  }\n  return ticks;\n}\n\n// Idle demo pose by cycle time: sweep right on the track, drift away to 72px, small moves, return, rest.\nfunction attractPose(p: number) {\n  const ease = (u: number) => 1 - (1 - u) ** 3;\n  if (p < 0.9) return { x: 0.35 * ease(p / 0.9), dist: 0, drag: true };\n  if (p < 1.3) return { x: 0.35, dist: ATTRACT_DRIFT_PX * ease((p - 0.9) / 0.4), drag: true };\n  if (p < 1.9) return { x: 0.35 + 0.06 * Math.sin(((p - 1.3) / 0.6) * Math.PI * 2), dist: ATTRACT_DRIFT_PX, drag: true };\n  if (p < 2.4) {\n    const e = ease((p - 1.9) / 0.5);\n    return { x: 0.35 * (1 - e), dist: ATTRACT_DRIFT_PX * (1 - e), drag: true };\n  }\n  return { x: 0, dist: 0, drag: false };\n}\n\nfunction sameUi(a: UiState, b: UiState) {\n  return a.raw === b.raw && a.out === b.out && a.gain === b.gain && a.dragging === b.dragging;\n}\n\n/**\n * A slider that gets finer the further the pointer drifts from the track.\n * Drag the thumb for a relative move, press the track to jump, then drift away to fine-tune.\n * Arrow keys step, Shift steps by ten, Alt steps by a tenth when `fineStep` is on.\n */\nexport function AdaptivePrecisionSlider({\n  label,\n  value,\n  defaultValue,\n  onValueChange,\n  onValueCommit,\n  min = 0,\n  max = 100,\n  step = 0.1,\n  precisionFalloff = 48,\n  minGain = 0.05,\n  showGain = true,\n  fineStep = true,\n  touchPrecision = false,\n  format,\n  marks,\n  disabled = false,\n  tone,\n  attract = false,\n  debugGain,\n  className,\n}: AdaptivePrecisionSliderProps) {\n  const resolvedTone = useBjorkTone(tone);\n  const p = BJORK_PALETTE[resolvedTone];\n  const reduced = !!useReducedMotion();\n  const controlled = value !== undefined;\n  const span = max - min;\n  const unit = step > 0 ? step : span / 1000;\n  const decimals = Math.max(decimalsOf(unit), decimalsOf(min));\n  const fmt = format ?? ((v: number) => v.toFixed(decimals));\n  const initial = snapTo(value ?? defaultValue ?? min, min, max, unit);\n\n  const rootRef = useRef<HTMLDivElement>(null);\n  const trackRef = useRef<HTMLDivElement>(null);\n  const thumbRef = useRef<HTMLDivElement>(null);\n  // Live state for pointer and rAF code. Render reads `ui` only.\n  const rawRef = useRef(initial);\n  const outRef = useRef(initial);\n  const gainRef = useRef(1);\n  const activeRef = useRef(false);\n  const dragRef = useRef<DragState | null>(null);\n  const controlsRef = useRef<AnimationPlaybackControls | null>(null);\n  const rafRef = useRef(0);\n  const pausedRef = useRef(false);\n  const resumeTimerRef = useRef<number | null>(null);\n  const phaseRef = useRef(0);\n  const baseRef = useRef(initial);\n\n  const frac = useMotionValue(fractionOf(initial, min, max));\n  const [trackW, setTrackW] = useState(0);\n  // Position by transform, not layout. Thumb and band move with x, and the fill scales.\n  const trackWMV = useMotionValue(0);\n  const thumbX = useTransform([frac, trackWMV], ([f, w]: number[]) => f * w);\n  const [ui, setUi] = useState<UiState>({ raw: initial, out: initial, gain: 1, dragging: false });\n  const shown = value !== undefined && !ui.dragging ? snapTo(value, min, max, unit) : ui.out;\n\n  useEffect(() => {\n    const el = trackRef.current;\n    if (!el) return;\n    const ro = new ResizeObserver(([entry]) => {\n      setTrackW(entry.contentRect.width);\n      trackWMV.set(entry.contentRect.width);\n    });\n    ro.observe(el);\n    return () => ro.disconnect();\n  }, [trackWMV]);\n\n  // `grid` is the step the value lands on. Fine keyboard steps pass a finer grid.\n  const emit = (raw: number, grid = unit) => {\n    const out = snapTo(raw, min, max, grid);\n    if (out === outRef.current) return;\n    outRef.current = out;\n    onValueChange?.(out);\n  };\n\n  const moveFrac = useCallback(\n    (to: number, spring: boolean) => {\n      controlsRef.current?.stop();\n      controlsRef.current = null;\n      if (spring && !reduced) controlsRef.current = animate(frac, to, KEY_SPRING);\n      else frac.set(to);\n    },\n    [frac, reduced],\n  );\n\n  const scheduleRender = useCallback(() => {\n    if (rafRef.current) return;\n    rafRef.current = requestAnimationFrame(() => {\n      rafRef.current = 0;\n      const next: UiState = {\n        raw: rawRef.current,\n        out: outRef.current,\n        gain: gainRef.current,\n        dragging: activeRef.current,\n      };\n      setUi((prev) => (sameUi(prev, next) ? prev : next));\n    });\n  }, []);\n\n  // Idle demo. Uncontrolled only, because it writes the value itself.\n  const attractOn = attract && !reduced && !controlled;\n  const loop = useVisibleLoop(\n    rootRef,\n    (dt) => {\n      if (pausedRef.current) return false;\n      phaseRef.current = (phaseRef.current + dt) % ATTRACT_CYCLE_S;\n      const pose = attractPose(phaseRef.current);\n      const raw = clamp(baseRef.current + pose.x * span, min, max);\n      rawRef.current = raw;\n      activeRef.current = pose.drag;\n      gainRef.current = pose.dist > 0 ? gainAt(pose.dist, minGain, precisionFalloff) : 1;\n      moveFrac(fractionOf(raw, min, max), false);\n      emit(raw);\n      scheduleRender();\n      return true;\n    },\n    { enabled: attractOn },\n  );\n\n  const noteInput = () => {\n    pausedRef.current = true;\n    if (resumeTimerRef.current !== null) {\n      window.clearTimeout(resumeTimerRef.current);\n      resumeTimerRef.current = null;\n    }\n  };\n\n  const scheduleResume = () => {\n    if (!pausedRef.current || dragRef.current) return;\n    if (resumeTimerRef.current !== null) window.clearTimeout(resumeTimerRef.current);\n    resumeTimerRef.current = window.setTimeout(() => {\n      resumeTimerRef.current = null;\n      if (dragRef.current) return;\n      pausedRef.current = false;\n      phaseRef.current = 0;\n      baseRef.current = rawRef.current;\n      activeRef.current = false;\n      scheduleRender();\n      loop.wake();\n    }, ATTRACT_IDLE_MS);\n  };\n\n  // Follow the controlled value only. Reacting to `shown` wrote stale values back during attract and drags.\n  useEffect(() => {\n    if (value === undefined) return;\n    const v = snapTo(value, min, max, unit);\n    if (dragRef.current || v === outRef.current) return;\n    outRef.current = v;\n    rawRef.current = v;\n    moveFrac(fractionOf(v, min, max), true);\n  }, [value, min, max, unit, moveFrac]);\n\n  useEffect(() => {\n    return () => {\n      if (rafRef.current) cancelAnimationFrame(rafRef.current);\n      if (resumeTimerRef.current !== null) window.clearTimeout(resumeTimerRef.current);\n      controlsRef.current?.stop();\n    };\n  }, []);\n\n  const endDrag = (pointerId: number) => {\n    const drag = dragRef.current;\n    if (!drag || drag.pointerId !== pointerId) return;\n    dragRef.current = null;\n    activeRef.current = false;\n    gainRef.current = 1;\n    onValueCommit?.(outRef.current);\n    scheduleRender();\n    scheduleResume();\n  };\n\n  const handlePointerDown = (e: PointerEvent<HTMLDivElement>) => {\n    const track = trackRef.current;\n    if (disabled || e.button !== 0 || !track) return;\n    const rect = track.getBoundingClientRect();\n    if (!(rect.width > 0) || span <= 0) return;\n    const coarse = isCoarsePointer();\n    const onThumb = thumbRef.current?.contains(e.target as Node) ?? false;\n    if (!onThumb) {\n      // Track press: jump to the point, then the drag continues relatively from there.\n      const raw = clamp(min + ((e.clientX - rect.left) / rect.width) * span, min, max);\n      rawRef.current = raw;\n      emit(raw);\n      moveFrac(fractionOf(raw, min, max), true);\n    }\n    activeRef.current = true;\n    dragRef.current = {\n      pointerId: e.pointerId,\n      lastX: e.clientX,\n      centerY: rect.top + rect.height / 2,\n      width: rect.width,\n      gainOn: !coarse || touchPrecision,\n      falloff: coarse ? TOUCH_FALLOFF : precisionFalloff,\n    };\n    e.currentTarget.setPointerCapture(e.pointerId);\n    scheduleRender();\n  };\n\n  const handlePointerMove = (e: PointerEvent<HTMLDivElement>) => {\n    const drag = dragRef.current;\n    if (!drag || drag.pointerId !== e.pointerId) return;\n    const g = drag.gainOn ? gainAt(Math.abs(e.clientY - drag.centerY), minGain, drag.falloff) : 1;\n    const dx = e.clientX - drag.lastX;\n    drag.lastX = e.clientX;\n    const pxPerUnit = drag.width / span;\n    const raw = clamp(rawRef.current + (dx / pxPerUnit) * g, min, max);\n    rawRef.current = raw;\n    gainRef.current = g;\n    moveFrac(fractionOf(raw, min, max), false);\n    emit(raw);\n    scheduleRender();\n  };\n\n  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {\n    noteInput();\n    if (disabled) return;\n    const fine = e.altKey && fineStep;\n    const delta = fine ? unit / 10 : e.shiftKey ? unit * 10 : unit;\n    const snapUnit = fine ? unit / 10 : unit;\n    const base = outRef.current;\n    let target: number;\n    switch (e.key) {\n      case \"ArrowRight\":\n      case \"ArrowUp\":\n        target = base + delta;\n        break;\n      case \"ArrowLeft\":\n      case \"ArrowDown\":\n        target = base - delta;\n        break;\n      case \"PageUp\":\n        target = base + span / 10;\n        break;\n      case \"PageDown\":\n        target = base - span / 10;\n        break;\n      case \"Home\":\n        target = min;\n        break;\n      case \"End\":\n        target = max;\n        break;\n      default:\n        return;\n    }\n    e.preventDefault();\n    const next = snapTo(target, min, max, snapUnit);\n    rawRef.current = next;\n    emit(next, snapUnit);\n    moveFrac(fractionOf(next, min, max), true);\n    scheduleRender();\n  };\n\n  // Render values. Live gesture values come from `ui`, and posed `debugGain` overrides them.\n  const engaged = debugGain !== undefined || ui.dragging;\n  const effGain = debugGain ?? ui.gain;\n  const bandOpacity = engaged ? clamp((1 - effGain) / 0.5, 0, 1) : 0;\n  const chipOn = showGain && engaged && effGain < GAIN_CHIP_BELOW;\n  const pxPerUnit = trackW > 0 && span > 0 ? trackW / span : 0;\n  const tickBase = ui.dragging ? ui.raw : shown;\n  const ticks = bandOpacity > 0 && pxPerUnit > 0 ? bandTicks(tickBase, min, max, unit, effGain, pxPerUnit) : [];\n  const readout = fmt(shown);\n  const valueText = chipOn ? `${readout}, fine, ${effGain.toFixed(2)}× gain` : readout;\n  const bandMotion = ui.dragging ? \"\" : \"transition-opacity duration-[120ms] motion-reduce:transition-none\";\n\n  const accent = tok(\"accent\", p.accent);\n  const textSoft = tok(\"text-soft\", p.textSoft);\n  const textFaint = tok(\"text-faint\", p.textFaint);\n  const borderStrong = tok(\"border-strong\", p.borderStrong);\n  const surface = tok(\"surface\", p.surface);\n  const shadow = resolvedTone === \"light\" ? \"0 1px 2px rgba(66,52,33,0.14)\" : \"0 1px 2px rgba(0,0,0,0.5)\";\n  const shadowToken = tok(\"shadow-surface\", shadow);\n\n  return (\n    <div\n      ref={rootRef}\n      onPointerDownCapture={noteInput}\n      onPointerUp={scheduleResume}\n      onPointerCancel={scheduleResume}\n      onKeyUp={scheduleResume}\n      className={cn(\n        \"relative w-full min-w-0 select-none px-[12px] font-bjork-alpha transition-opacity duration-[120ms] motion-reduce:transition-none\",\n        disabled && \"opacity-[0.45]\",\n        className,\n      )}\n    >\n      {/* Row 1: label, gain chip, readout */}\n      <div className=\"flex h-[18px] items-center justify-between gap-3\">\n        <span className=\"truncate text-[12px] font-medium\" style={{ color: tok(\"text-medium\", p.textMedium) }}>\n          {label}\n        </span>\n        <div className=\"flex shrink-0 items-center gap-2\">\n          <span\n            aria-hidden\n            className={cn(\n              \"rounded-[6px] px-[6px] py-[2px] font-mono text-[10px] leading-none tabular-nums transition-opacity duration-[120ms] motion-reduce:transition-none\",\n              chipOn ? \"opacity-100\" : \"opacity-0\",\n            )}\n            style={{ color: tok(\"accent-ink\", p.accentInk), background: tok(\"accent-soft\", p.accentSoft) }}\n          >\n            {`${effGain.toFixed(2)}×`}\n          </span>\n          <span className=\"font-mono text-[13px] leading-none tabular-nums\" style={{ color: tok(\"text\", p.text) }}>\n            {readout}\n          </span>\n        </div>\n      </div>\n\n      {/* Row 2: precision band, a 120 to 160px window centred on the thumb */}\n      <div className=\"relative mt-[2px] h-[24px]\" aria-hidden>\n        <motion.div\n          className={cn(\"absolute top-0 h-[24px] w-[120px] -translate-x-1/2 overflow-hidden sm:w-[160px]\", bandMotion)}\n          style={{\n            left: 0,\n            x: thumbX,\n            opacity: bandOpacity,\n            maskImage: BAND_MASK,\n            WebkitMaskImage: BAND_MASK,\n          }}\n        >\n          {ticks.map((t) => (\n            <span\n              key={t.m}\n              className=\"absolute bottom-0 w-px -translate-x-1/2\"\n              style={{\n                left: `calc(50% + ${t.px.toFixed(2)}px)`,\n                height: t.major ? 12 : 6,\n                background: textSoft,\n              }}\n            />\n          ))}\n          <span\n            className=\"absolute left-1/2 top-0 h-[24px] w-[2px] -translate-x-1/2\"\n            style={{ background: accent }}\n          />\n        </motion.div>\n      </div>\n\n      {/* Row 3: hairline track and thumb. The whole row is the pointer target. */}\n      <div\n        ref={trackRef}\n        onPointerDown={handlePointerDown}\n        onPointerMove={handlePointerMove}\n        onPointerUp={(e) => endDrag(e.pointerId)}\n        onPointerCancel={(e) => endDrag(e.pointerId)}\n        onLostPointerCapture={(e) => endDrag(e.pointerId)}\n        className=\"relative mt-[2px] h-[20px] touch-none cursor-ew-resize\"\n      >\n        <span\n          className=\"absolute inset-x-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full\"\n          style={{ background: borderStrong }}\n        />\n        <motion.span\n          className=\"absolute left-0 top-1/2 h-[2px] w-full origin-left -translate-y-1/2 rounded-full\"\n          style={{ scaleX: frac, background: accent }}\n        />\n        <motion.div\n          ref={thumbRef}\n          role=\"slider\"\n          tabIndex={disabled ? -1 : 0}\n          aria-label={label}\n          aria-orientation=\"horizontal\"\n          aria-valuemin={min}\n          aria-valuemax={max}\n          aria-valuenow={shown}\n          aria-valuetext={valueText}\n          aria-disabled={disabled || undefined}\n          onKeyDown={handleKeyDown}\n          className=\"absolute top-1/2 size-[20px] -translate-x-1/2 -translate-y-1/2 touch-none rounded-full border outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)]\"\n          style={{\n            left: 0,\n            x: thumbX,\n            background: surface,\n            borderColor: borderStrong,\n          }}\n        >\n          {/* Shadow lives on its own layer, so the focus ring on the thumb is not overridden. */}\n          <span aria-hidden className=\"absolute inset-0 rounded-full\" style={{ boxShadow: shadowToken }} />\n          <span\n            className=\"absolute left-1/2 top-1/2 size-[6px] -translate-x-1/2 -translate-y-1/2 rounded-full\"\n            style={{ background: accent }}\n          />\n        </motion.div>\n      </div>\n\n      {/* Row 4: ticks every 2%, majors every 10%, optional mark labels */}\n      <div className=\"relative mt-[2px] h-[8px]\" aria-hidden>\n        {Array.from({ length: TICK_COUNT }, (_, i) => {\n          const major = i % TICK_MAJOR_EVERY === 0;\n          return (\n            <span\n              key={i}\n              className=\"absolute bottom-0 w-px -translate-x-1/2\"\n              style={{\n                left: `${i * 2}%`,\n                height: major ? 8 : 4,\n                background: major ? textSoft : textFaint,\n              }}\n            />\n          );\n        })}\n        {marks?.map((m) =>\n          m.label ? (\n            <span\n              key={`${m.value}-${m.label}`}\n              className=\"absolute top-full mt-[4px] -translate-x-1/2 whitespace-nowrap font-mono text-[10px] leading-none\"\n              style={{ left: `${fractionOf(m.value, min, max) * 100}%`, color: textFaint }}\n            >\n              {m.label}\n            </span>\n          ) : null,\n        )}\n      </div>\n    </div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/controls/adaptive-precision-slider.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/palette.ts",
+      "content": "export type BjorkTone = \"dark\" | \"light\";\n\n// Canvas, WebGL and SVG attribute colours. DOM code uses the CSS tokens with these as fallbacks.\nexport const BJORK_PALETTE = {\n  dark: {\n    bg: \"#050505\", stage: \"#111111\", surface: \"#121212\", raised: \"#161616\", active: \"#202020\",\n    border: \"#232323\", borderStrong: \"#343434\",\n    text: \"#ededed\", textMedium: \"rgba(237,237,237,0.72)\", textMuted: \"rgba(237,237,237,0.52)\",\n    textSoft: \"rgba(237,237,237,0.36)\", textFaint: \"rgba(237,237,237,0.22)\", hair: \"rgba(237,237,237,0.12)\",\n    accent: \"#ec5c13\", accentInk: \"#ec5c13\", accentFill: \"#b84a12\", accentSoft: \"rgba(236,92,19,0.12)\", accentMuted: \"rgba(236,92,19,0.24)\",\n    accentFg: \"#fff2ea\", success: \"#4cc38a\", warning: \"#f2b544\", error: \"#ff5c4d\",\n  },\n  light: {\n    bg: \"#f7f5ef\", stage: \"#f7f5ef\", surface: \"#fffcf6\", raised: \"#f5efe3\", active: \"#efe7d8\",\n    border: \"#eee6db\", borderStrong: \"#e1d7c8\",\n    text: \"#171717\", textMedium: \"rgba(23,23,23,0.72)\", textMuted: \"rgba(23,23,23,0.52)\",\n    textSoft: \"rgba(23,23,23,0.36)\", textFaint: \"rgba(23,23,23,0.22)\", hair: \"rgba(23,23,23,0.10)\",\n    accent: \"#ec7d43\", accentInk: \"#b4531f\", accentFill: \"#ec7d43\", accentSoft: \"rgba(236,125,67,0.10)\", accentMuted: \"rgba(236,125,67,0.20)\",\n    accentFg: \"#3f2112\", success: \"#1f8a55\", warning: \"#a86b00\", error: \"#c8361f\",\n  },\n} as const;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/palette.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/tone.ts",
+      "content": "\"use client\";\n\nimport { useSyncExternalStore } from \"react\";\nimport { useTheme } from \"next-themes\";\nimport type { BjorkTone } from \"./palette\";\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\n/**\n * Resolves the tone for a component. An explicit `tone` always wins.\n * Otherwise it follows next-themes' resolved theme, but only after mount,\n * so the server render and first client render agree on dark.\n */\nexport function useBjorkTone(tone?: BjorkTone): BjorkTone {\n  const { resolvedTheme } = useTheme();\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  if (tone) return tone;\n  if (!mounted) return \"dark\";\n  return resolvedTheme === \"light\" ? \"light\" : \"dark\";\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/tone.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/loop.ts",
+      "content": "\"use client\";\n\nimport { useCallback, useEffect, useMemo, useRef, type RefObject } from \"react\";\n\nexport interface VisibleLoopOptions {\n  enabled?: boolean;\n  fpsCap?: number;\n  rootMargin?: string;\n}\n\n/**\n * Runs `frame(dt, t)` on requestAnimationFrame while the element is near the viewport,\n * the tab is visible and `enabled` is not false. Return `false` from `frame` to go idle\n * until `wake()` is called. Writes `data-loop` on the element: running, idle or paused.\n */\nexport function useVisibleLoop(\n  ref: RefObject<HTMLElement | null>,\n  frame: (dt: number, t: number) => boolean | void,\n  opts?: VisibleLoopOptions,\n): { wake: () => void } {\n  const enabled = opts?.enabled !== false;\n  const fpsCap = opts?.fpsCap ?? 0;\n  const rootMargin = opts?.rootMargin ?? \"96px\";\n\n  const frameRef = useRef(frame);\n  useEffect(() => {\n    frameRef.current = frame;\n  }, [frame]);\n\n  const wakeRef = useRef<() => void>(() => {});\n  const wake = useCallback(() => wakeRef.current(), []);\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el || typeof window === \"undefined\") return;\n\n    let wants = true; // false once the frame callback returns false\n    let inView = false;\n    let raf = 0;\n    let last = 0;\n    let t = 0;\n    const minFrame = fpsCap > 0 ? 1000 / fpsCap : 0;\n\n    const canRun = () => enabled && inView && document.visibilityState === \"visible\";\n    const stop = () => {\n      if (raf) cancelAnimationFrame(raf);\n      raf = 0;\n    };\n\n    const update = () => {\n      if (!enabled) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      if (!wants) {\n        stop();\n        el.dataset.loop = \"idle\";\n        return;\n      }\n      if (!canRun()) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      el.dataset.loop = \"running\";\n      if (!raf) {\n        last = performance.now();\n        raf = requestAnimationFrame(tick);\n      }\n    };\n\n    const tick = (now: number) => {\n      raf = 0;\n      if (!canRun() || !wants) {\n        update();\n        return;\n      }\n      const elapsed = now - last;\n      if (minFrame && elapsed < minFrame - 0.5) {\n        raf = requestAnimationFrame(tick);\n        return;\n      }\n      last = now;\n      const dt = Math.min(0.05, Math.max(0, elapsed / 1000));\n      t += dt;\n      const keep = frameRef.current(dt, t);\n      if (keep === false) {\n        wants = false;\n        update();\n        return;\n      }\n      raf = requestAnimationFrame(tick);\n    };\n\n    const observer = new IntersectionObserver(\n      ([entry]) => {\n        inView = entry.isIntersecting;\n        update();\n      },\n      { rootMargin },\n    );\n    observer.observe(el);\n\n    const onVisibility = () => update();\n    document.addEventListener(\"visibilitychange\", onVisibility);\n\n    wakeRef.current = () => {\n      wants = true;\n      update();\n    };\n\n    update();\n\n    return () => {\n      stop();\n      observer.disconnect();\n      document.removeEventListener(\"visibilitychange\", onVisibility);\n      wakeRef.current = () => {};\n    };\n  }, [ref, enabled, fpsCap, rootMargin]);\n\n  return useMemo(() => ({ wake }), [wake]);\n}\n\n// matchMedia based check. False on the server.\nexport function isCoarsePointer(): boolean {\n  if (typeof window === \"undefined\" || typeof window.matchMedia !== \"function\") return false;\n  return window.matchMedia(\"(pointer: coarse)\").matches;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/loop.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Controls",
+    "registryUrl": "https://ui.isaiahbjork.com/adaptive-precision-slider.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/adaptive-precision-slider.json"
+  },
+  "type": "registry:component"
+}

@@ -68,7 +68,7 @@ const componentRoutes: ComponentGroup[] = [
     title: "AI Components",
     routes: [
       { name: "AI Voice Input", path: "/ai/ai-voice-input" },
-      // @slot agent-trace
+      { name: "Agent Trace", path: "/ai/agent-trace" },
 
       // @slot handoff-beam
 
@@ -103,7 +103,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Profile Hover Card", path: "/cards/profile-hover-card" },
       { name: "Project Cards", path: "/cards/project-cards" },
       { name: "Video Upload Card", path: "/cards/video-upload-card" },
-      // @slot solar-sky-panel
+      { name: "Solar Sky Panel", path: "/cards/solar-sky-panel" },
 
     ],
   },
@@ -121,9 +121,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Dumbbell Chart", path: "/charts/dumbbell-chart" },
       { name: "Forecast Fan", path: "/charts/forecast-fan" },
       { name: "Live Line", path: "/charts/live-line" },
-
-      // @slot route-trace
-
+      { name: "Route Trace", path: "/charts/route-trace" },
       { name: "Sankey Flow", path: "/charts/sankey-flow" },
       { name: "Scatter Brush", path: "/charts/scatter-brush" },
       { name: "Slope Chart", path: "/charts/slope-chart" },
@@ -154,6 +152,16 @@ const componentRoutes: ComponentGroup[] = [
     title: "Text",
     routes: [
       { name: "Reveal Text", path: "/heroes/reveal-text" },
+      { name: "Plane Type", path: "/text/plane-type" },
+      { name: "Glyph Morph", path: "/text/glyph-morph" },
+      { name: "Weight Wave", path: "/text/weight-wave" },
+      { name: "Decode Text", path: "/text/decode-text" },
+      { name: "Magnetic Letters", path: "/text/magnetic-letters" },
+      { name: "Slice Shift", path: "/text/slice-shift" },
+      { name: "Stroke Draw Type", path: "/text/stroke-draw-type" },
+      { name: "Ink Bleed Text", path: "/text/ink-bleed-text" },
+      { name: "Liquid Text", path: "/text/liquid-text" },
+      { name: "Chromatic Text", path: "/text/chromatic-text" },
       // @slot plane-type
 
       // @slot scatter-rewind
@@ -194,7 +202,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Ruler Carousel", path: "/galleries/ruler-carousel" },
       { name: "Minimap Scrollbar", path: "/navigation/minimap-scrollbar" },
 
-      // @slot radial-command-ring
+      { name: "Radial Command Ring", path: "/navigation/radial-command-ring" },
 
     ],
   },
@@ -219,17 +227,30 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Resizable Table", path: "/tables/resizable-table" },
       { name: "Server Management Table", path: "/tables/server-management" },
       { name: "Flap Ledger", path: "/tables/flap-ledger" },
+      { name: "Sortable Table", path: "/tables/sortable-table" },
+      { name: "Pricing Table", path: "/tables/pricing-table" },
+      { name: "Invoice Table", path: "/tables/invoice-table" },
+      { name: "Leaderboard", path: "/tables/leaderboard-table" },
+      { name: "Changelog Table", path: "/tables/changelog-table" },
+      { name: "API Reference Table", path: "/tables/api-reference-table" },
+      { name: "File Tree Table", path: "/tables/file-tree-table" },
+      { name: "Timetable", path: "/tables/timetable" },
+      { name: "Shortcuts Table", path: "/tables/shortcuts-table" },
+      { name: "Spec Sheet", path: "/tables/spec-sheet" },
+      { name: "Transactions Table", path: "/tables/transactions-table" },
+      { name: "Spreadsheet Grid", path: "/tables/spreadsheet-grid" },
+      { name: "Permissions Matrix", path: "/tables/permissions-matrix" },
 
     ],
   },
   {
     title: "Controls & Inputs",
     routes: [
-      // @slot adaptive-precision-slider
+      { name: "Adaptive Precision Slider", path: "/controls/adaptive-precision-slider" },
 
-      // @slot click-wheel
+      { name: "Click Wheel", path: "/controls/click-wheel" },
 
-      // @slot velocity-ink
+      { name: "Velocity Ink", path: "/controls/velocity-ink" },
 
     ],
   },
@@ -245,7 +266,7 @@ const componentRoutes: ComponentGroup[] = [
   {
     title: "Feedback & Status",
     routes: [
-      // @slot morph-loader
+      { name: "Morph Loader", path: "/feedback/morph-loader" },
 
     ],
   },
