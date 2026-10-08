@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { AnimatedDownload } from "@/components/bjork-ui/buttons/animated-download";
+import { AnimatedDownload } from "@/components/bjork-ui/hud/animated-download";
 import { ComponentDemoShell } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives";
 import { getGalleryItem } from "@/lib/bjork-gallery";
@@ -72,7 +72,7 @@ export default function Home() {
       item={item}
       description="A download progress component with scrambled status text, file counts, remaining time, and an interruptible trigger. The demo keeps the animation state outside the visual component so it can be wired to real transfer events."
       dependencies={["framer-motion", "lucide-react", "clsx"]}
-      usageCode={`import { AnimatedDownload } from "@/components/bjork-ui/buttons/animated-download";
+      usageCode={`import { AnimatedDownload } from "@/components/bjork-ui/hud/animated-download";
 
 export function Demo() {
   return (

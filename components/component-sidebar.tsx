@@ -129,6 +129,7 @@ const componentRoutes: ComponentGroup[] = [
     title: "HUD",
     collapsible: true,
     routes: [
+      { name: "Animated Download", path: "/hud/animated-download" },
       { name: "Glitchy 404", path: "/hud/glitchy-404" },
       { name: "HUD Button", path: "/hud/hud-button" },
       { name: "HUD Frame", path: "/hud/base" },
@@ -141,11 +142,11 @@ const componentRoutes: ComponentGroup[] = [
   {
     title: "Interactive Elements",
     routes: [
-      { name: "Animated Download", path: "/buttons/animated-download" },
       { name: "Animated Status Badge", path: "/badges/animated-status-badge" },
       { name: "Draggable Rope", path: "/interactive/draggable-rope" },
       { name: "Gradient Selector", path: "/dropdowns/gradient-selector" },
       { name: "Message Dock", path: "/hud/message-dock" },
+      { name: "Timer", path: "/misc/timer" },
       { name: "Voice Powered Orb", path: "/interactive/voice-powered-orb" },
     ],
   },

@@ -24,7 +24,7 @@ export interface GalleryItem {
     | "shader"
     | "studio";
   /** Live studio embed. The card links out; the shader stays on the tool page. */
-  studio?: "silt" | "intaglio";
+  studio?: "silt" | "intaglio" | "phosphor";
   accent: string;
   isNew?: boolean;
   hasStaticPreview?: boolean;
@@ -167,10 +167,10 @@ export const galleryItems: GalleryItem[] = [
     id: "bjork15",
     slug: "animated-download",
     title: "Animated download",
-    route: "/buttons/animated-download",
-    sourcePath: "components/bjork-ui/buttons/animated-download.tsx",
+    route: "/hud/animated-download",
+    sourcePath: "components/bjork-ui/hud/animated-download.tsx",
     tier: "copy",
-    collection: "Buttons",
+    collection: "HUD",
     preview: "upload",
     accent: "#ec5c13",
   },
@@ -916,6 +916,30 @@ export const galleryItems: GalleryItem[] = [
     studio: "intaglio",
     accent: "#26823a",
     hasStaticPreview: false,
+  },
+  {
+    id: "bjork92",
+    slug: "phosphor",
+    title: "Phosphor",
+    route: "https://isaiahbjork.com/phosphor",
+    sourcePath: "",
+    tier: "lab",
+    collection: "Shaders",
+    preview: "studio",
+    studio: "phosphor",
+    accent: "#ffb070",
+    hasStaticPreview: false,
+  },
+  {
+    id: "bjork93",
+    slug: "timer",
+    title: "Timer",
+    route: "/misc/timer",
+    sourcePath: "components/bjork-ui/misc/timer.tsx",
+    tier: "copy",
+    collection: "Interactive",
+    preview: "radial",
+    accent: "#ffc107",
   },
 ];
 

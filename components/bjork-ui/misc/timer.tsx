@@ -157,7 +157,7 @@ export function Timer({
       scale: 1,
       y: 0,
       transition: { 
-        type: "spring", 
+        type: "spring" as const, 
         stiffness: 300, 
         damping: 30,
         staggerChildren: 0.1,
@@ -171,7 +171,7 @@ export function Timer({
     visible: { 
       opacity: 1, 
       y: 0,
-      transition: { type: "spring", stiffness: 400, damping: 25 }
+      transition: { type: "spring" as const, stiffness: 400, damping: 25 }
     }
   }
 
@@ -217,7 +217,7 @@ export function Timer({
               strokeDashoffset: shouldReduceMotion ? strokeDashoffset : strokeDashoffset
             }}
             transition={{
-              type: "spring",
+              type: "spring" as const,
               stiffness: 100,
               damping: 20,
               mass: 1
@@ -249,7 +249,7 @@ export function Timer({
             initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
             transition={{
-              type: "spring",
+              type: "spring" as const,
               stiffness: 300,
               damping: 25
             }}
@@ -272,7 +272,9 @@ export function Timer({
         variants={itemVariants}
       >
         <motion.button
+          type="button"
           onClick={handlePlayPause}
+          aria-label={isRunning ? "Pause timer" : "Start timer"}
           className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 text-white"
           style={{ 
             backgroundColor: primaryButtonColor,
@@ -281,7 +283,7 @@ export function Timer({
           whileHover={{ 
             scale: 1.05,
             backgroundColor: primaryButtonHover,
-            transition: { type: "spring", stiffness: 400, damping: 25 }
+            transition: { type: "spring" as const, stiffness: 400, damping: 25 }
           }}
           whileTap="tap"
         >
@@ -290,7 +292,7 @@ export function Timer({
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{
-              type: "spring",
+              type: "spring" as const,
               stiffness: 300,
               damping: 25
             }}
@@ -304,7 +306,9 @@ export function Timer({
         </motion.button>
 
         <motion.button
+          type="button"
           onClick={handleReset}
+          aria-label="Reset timer"
           className="w-12 h-12 rounded-full flex items-center justify-center transition-colors"
           style={{ 
             backgroundColor: secondaryButtonColor,
@@ -314,7 +318,7 @@ export function Timer({
           whileHover={{ 
             scale: 1.05,
             backgroundColor: secondaryButtonHover,
-            transition: { type: "spring", stiffness: 400, damping: 25 }
+            transition: { type: "spring" as const, stiffness: 400, damping: 25 }
           }}
           whileTap="tap"
         >

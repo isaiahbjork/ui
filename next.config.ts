@@ -14,6 +14,15 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: process.cwd(),
   },
+  async redirects() {
+    return [
+      {
+        source: "/buttons/animated-download",
+        destination: "/hud/animated-download",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

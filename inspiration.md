@@ -34,11 +34,18 @@ I will be adding to this periodically, so check back daily.
 - [Skiper UI](https://skiper-ui.com/components)
 - [Ali Imam](https://aliimam.in/) - UI inspiration
 - [Watermelon UI](https://ui.watermelon.sh/)
+- [Canvas UI](https://canvasui.dev) - creative canvas and WebGL components
+- [Moumen Lab](https://lab.moumen.dev/components) - interaction experiments
+- [Componentry](https://componentry.dev) - animated React UI components
+- [Amicro](https://amicro.vercel.app/) - React micro-transitions
+- [Origin Kit](https://www.originkit.dev)
+- [Beautiful UI](https://www.beautifului.dev)
 
 ## Components
 
 - [awesome-shadcn/ui](https://github.com/birobirobiro/awesome-shadcn-ui?tab=readme-ov-file) - list of components
 - [Aurora](https://github.com/tornikegomareli/Aurora) - Apple Intelligence-style SwiftUI glow backed by Metal shaders
+- [MetalForge](https://metalforge.xyz/) - Beautiful Metal shaders for SwiftUI & React Native (Skia) without writing shader code — visual editor with 50+ effects, exports .metal + SwiftUI view
 - [OTP Form](https://input-otp.rodz.dev/)
 - [Plate](https://platejs.org/) - rich text editor
 - [Remotion](https://www.remotion.dev/) - video
@@ -105,6 +112,7 @@ I will be adding to this periodically, so check back daily.
 - [Joel Plus Hologram](https://joel.plus/hologram/) - bump-map holographic visual effect demo
 - [Jhey on CodePen](https://codepen.io/jh3y)
 - [Move Things With CSS](https://jh3y.gumroad.com/l/move-things-with-css)
+- [DialKit](https://github.com/joshpuckett/dialkit) - visual timeline editing for animations
 
 ## Inspiration
 
@@ -135,11 +143,21 @@ I will be adding to this periodically, so check back daily.
 - [Open Graph Examples](https://opengraphexamples.com/)
 - [Pushkeen](https://pushkeen.ai/) - mobile app notifications inspiration
 - [Praveen Isomer ASCII Cards/Koi Animation](https://x.com/praveenisomer/status/2054162170372399615?s=46) - ASCII card and koi fish animation reference
+- [Transitions.dev](https://transitions.dev/) - UI transition inspiration
+- [Animated Blur Number](https://github.com/serafimcloud/animated-blur-number) - animated numeric display inspiration
+- [Ditther](https://www.ditther.com/) - dithered visual inspiration
+- [BNB Icons](https://bnbicons.com/) - icon design inspiration
+- [Mint.gg](https://mint.gg/) - design inspiration
+- [Recent.Design](https://recent.design)
+- [Best Designs on X](https://bestdesignsonx.com)
+- [The Internet Designs](https://theinternetdesigns.com)
+- [Inspora](https://inspora.design)
 
 ## Mobile App Inspiration
 
 - [Screenlane](https://screenlane.com/)
 - [Mobbin](https://mobbin.com/)
+- [Native Bloom](https://nativebloom.dev/) - React Native UI catalog
 
 ## Figma
 
@@ -151,7 +169,6 @@ I will be adding to this periodically, so check back daily.
 
 ## Templates
 
-- [Automata Next.js Landing Page](https://store.isaiahbjork.com/l/automata-nextjs-landing-page)
 - [UI8](https://ui8.net/)
 
 ## Tools
@@ -191,6 +208,10 @@ I will be adding to this periodically, so check back daily.
 - [Framer Crafts](https://framercrafts.com/)
 - [Framer University](https://framer.university/)
 
+## Resources
+
+- [Zero: The Engineering Behind a Defiant Interactive Narrative](https://tympanus.net/codrops/2026/07/17/zero-the-engineering-behind-a-defiant-interactive-narrative/)
+
 ## Extra
 
 - [Fern](https://buildwithfern.com/) - SDK/API docs
@@ -202,3 +223,19 @@ I will be adding to this periodically, so check back daily.
 - [Using Queues](https://encore.dev/blog/queueing)
 - [ScreenshotOne](https://screenshotone.com/) - screenshot API
 - [ThreeD SVG](https://www.threedsvg.com/) - SVG to 3D
+- [Border Beam](https://github.com/Jakubantalik/border-beam/tree/main) - animated border beam
+
+## Craft & Principles
+
+- [Optical Alignment](https://craft.gustavofior.com/optical-alignment) - **core principle**: align by perceived weight, not bounding boxes. Every component (especially the ruler carousel) must follow it
+- [Design Manifestos](https://designmanifestos.org) - collected design manifestos
+
+## Component Inspiration (2026-10)
+
+- [Open Source UI](https://opensourceui.in) - open source component index
+- [Designeer](https://www.designeer.xyz) - design engineering showcase
+- [Three Fur Test](https://three-fur-test.vercel.app/#5) - three.js shell-texture fur
+- [Scrolltide](https://www.scrolltide.co) - scroll-driven interactions
+- [ThinkingOrbs](https://github.com/haplollc/ThinkingOrbs) - AI thinking-state orbs
+- [Libraries.dev / Voice](https://libraries.dev/voice) - voice UI libraries
+- [Built by Designers](https://builtbydesigners.com) - products built by designers

@@ -1,0 +1,183 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "timer",
+  "title": "Timer",
+  "description": "Timer is a production-ready interactive component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "lucide-react",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/misc/timer.tsx",
+      "content": "\"use client\"\n\nimport { useState, useEffect, useRef } from \"react\"\nimport { motion, useReducedMotion } from \"framer-motion\"\nimport { Play, Pause, RotateCcw } from \"lucide-react\"\nimport { cn } from \"@/lib/utils\"\n\ninterface TimerProps {\n  initialTime?: number // in seconds\n  duration?: number // total duration in seconds\n  strokeWidth?: number // thickness of the progress line\n  tickLength?: number // length of the radial tick marks\n  tickColor?: string // color of the tick marks\n  textColor?: string // color of the time text\n  titleColor?: string // color of the title text\n  gradientFrom?: string // start color for progress gradient\n  gradientTo?: string // end color for progress gradient\n  gradientVia?: string // middle color for progress gradient\n  primaryButtonColor?: string // color for play/pause button\n  primaryButtonHover?: string // hover color for play/pause button\n  secondaryButtonColor?: string // color for reset button\n  secondaryButtonHover?: string // hover color for reset button\n  className?: string\n  title?: string\n}\n\nexport function Timer({ \n  initialTime = 0,\n  duration = 10,\n  strokeWidth = 24,\n  tickLength = 10,\n  tickColor = \"rgba(0,0,0,0.2)\",\n  textColor = \"rgb(31, 41, 55)\", // gray-800\n  titleColor = \"rgb(107, 114, 128)\", // gray-500\n  gradientFrom = \"#FFD700\", // gold\n  gradientTo = \"#FF8F00\", // orange\n  gradientVia = \"#FFC107\", // amber\n  primaryButtonColor = \"rgb(31, 41, 55)\", // gray-800\n  primaryButtonHover = \"rgb(55, 65, 81)\", // gray-700\n  secondaryButtonColor = \"rgb(243, 244, 246)\", // gray-100\n  secondaryButtonHover = \"rgb(229, 231, 235)\", // gray-200\n  className = \"\",\n  title = \"Work Time\"\n}: TimerProps) {\n  const [time, setTime] = useState(initialTime)\n  const [isRunning, setIsRunning] = useState(false)\n  const [startTime, setStartTime] = useState<number | null>(null)\n  const intervalRef = useRef<NodeJS.Timeout | null>(null)\n  const shouldReduceMotion = useReducedMotion()\n\n  // Format time as MM:SS\n  const formatTime = (seconds: number) => {\n    const mins = Math.floor(seconds / 60)\n    const secs = seconds % 60\n    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`\n  }\n\n  // Calculate progress (0 to 1)\n  const progress = duration > 0 ? time / duration : 0\n  const circumference = 2 * Math.PI * 140 // radius of 140\n  const strokeDasharray = circumference\n  const strokeDashoffset = circumference - (progress * circumference)\n\n  // Generate radial tick marks\n  const generateTickMarks = () => {\n    const tickCount = 60 // number of tick marks\n    const centerX = 160\n    const centerY = 160\n    const innerRadius = 140 - tickLength / 2\n    const outerRadius = 140 + tickLength / 2\n    const ticks = []\n\n    for (let i = 0; i < tickCount; i++) {\n      const angle = (i * 360) / tickCount\n      const radian = (angle * Math.PI) / 180\n\n      const x1 = Math.round((centerX + innerRadius * Math.cos(radian)) * 100) / 100\n      const y1 = Math.round((centerY + innerRadius * Math.sin(radian)) * 100) / 100\n      const x2 = Math.round((centerX + outerRadius * Math.cos(radian)) * 100) / 100\n      const y2 = Math.round((centerY + outerRadius * Math.sin(radian)) * 100) / 100\n\n      ticks.push(\n        <line\n          key={i}\n          x1={x1}\n          y1={y1}\n          x2={x2}\n          y2={y2}\n          stroke={tickColor}\n          strokeWidth=\"2\"\n          className=\"opacity-40\"\n        />\n      )\n    }\n    return ticks\n  }\n\n  // Timer logic using time-based approach\n  useEffect(() => {\n    if (isRunning && startTime) {\n      intervalRef.current = setInterval(() => {\n        const now = Date.now()\n        const elapsed = Math.floor((now - startTime) / 1000) + initialTime\n        \n        if (elapsed >= duration) {\n          setTime(duration)\n          setIsRunning(false)\n          setStartTime(null)\n        } else {\n          setTime(elapsed)\n        }\n      }, 100) // Update more frequently for smoother display\n    } else {\n      if (intervalRef.current) {\n        clearInterval(intervalRef.current)\n        intervalRef.current = null\n      }\n    }\n\n    return () => {\n      if (intervalRef.current) {\n        clearInterval(intervalRef.current)\n      }\n    }\n  }, [isRunning, startTime, duration, initialTime])\n\n  const handlePlayPause = () => {\n    if (!isRunning) {\n      // Starting the timer - set start time accounting for current progress\n      const now = Date.now()\n      setStartTime(now - (time - initialTime) * 1000)\n      setIsRunning(true)\n    } else {\n      // Pausing the timer\n      setIsRunning(false)\n      setStartTime(null)\n    }\n  }\n\n  const handleReset = () => {\n    setIsRunning(false)\n    setStartTime(null)\n    setTime(initialTime)\n  }\n\n\n\n  // Animation variants\n  const containerVariants = {\n    hidden: { \n      opacity: 0, \n      scale: 0.9,\n      y: 20\n    },\n    visible: { \n      opacity: 1, \n      scale: 1,\n      y: 0,\n      transition: { \n        type: \"spring\" as const, \n        stiffness: 300, \n        damping: 30,\n        staggerChildren: 0.1,\n        delayChildren: 0.1\n      }\n    }\n  }\n\n  const itemVariants = {\n    hidden: { opacity: 0, y: 10 },\n    visible: { \n      opacity: 1, \n      y: 0,\n      transition: { type: \"spring\" as const, stiffness: 400, damping: 25 }\n    }\n  }\n\n  const buttonVariants = {\n    tap: { scale: 0.95 }\n  }\n\n  return (\n    <motion.div\n      className={cn(\"relative\", className)}\n      variants={containerVariants}\n      initial=\"hidden\"\n      animate=\"visible\"\n\n    >\n      {/* Timer Circle */}\n      <motion.div \n        className=\"relative flex items-center justify-center mb-8\"\n        variants={itemVariants}\n      >\n                <svg\n          width=\"320\"\n          height=\"320\"\n          viewBox=\"0 0 320 320\"\n          className=\"transform -rotate-90\"\n        >\n          {/* Radial tick marks */}\n          {generateTickMarks()}\n          \n          {/* Progress circle */}\n          <motion.circle\n            cx=\"160\"\n            cy=\"160\"\n            r=\"140\"\n            fill=\"none\"\n            stroke=\"url(#gradient)\"\n            strokeWidth={strokeWidth}\n            strokeLinecap=\"round\"\n            strokeDasharray={strokeDasharray}\n            strokeDashoffset={strokeDashoffset}\n            initial={{ strokeDashoffset: circumference }}\n            animate={{ \n              strokeDashoffset: shouldReduceMotion ? strokeDashoffset : strokeDashoffset\n            }}\n            transition={{\n              type: \"spring\" as const,\n              stiffness: 100,\n              damping: 20,\n              mass: 1\n            }}\n            style={{\n              filter: `drop-shadow(0 4px 8px ${gradientFrom}30)`\n            }}\n          />\n          \n          {/* Gradient definition */}\n          <defs>\n            <linearGradient id=\"gradient\" x1=\"0%\" y1=\"0%\" x2=\"100%\" y2=\"0%\">\n              <stop offset=\"0%\" stopColor={gradientFrom} />\n              <stop offset=\"50%\" stopColor={gradientVia} />\n              <stop offset=\"100%\" stopColor={gradientTo} />\n            </linearGradient>\n          </defs>\n        </svg>\n\n        {/* Center content */}\n        <motion.div \n          className=\"absolute inset-0 flex flex-col items-center justify-center\"\n          variants={itemVariants}\n        >\n          <motion.div \n            className=\"text-7xl font-light mb-2\"\n            style={{ color: textColor }}\n            key={time}\n            initial={{ scale: 0.9 }}\n            animate={{ scale: 1 }}\n            transition={{\n              type: \"spring\" as const,\n              stiffness: 300,\n              damping: 25\n            }}\n          >\n            {formatTime(time)}\n          </motion.div>\n          <motion.div \n            className=\"text-sm\"\n            style={{ color: titleColor }}\n            variants={itemVariants}\n          >\n            {title}\n          </motion.div>\n        </motion.div>\n      </motion.div>\n\n             {/* Controls */}\n      <motion.div \n        className=\"flex items-center justify-center gap-4\"\n        variants={itemVariants}\n      >\n        <motion.button\n          type=\"button\"\n          onClick={handlePlayPause}\n          aria-label={isRunning ? \"Pause timer\" : \"Start timer\"}\n          className=\"w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 text-white\"\n          style={{ \n            backgroundColor: primaryButtonColor,\n          }}\n          variants={buttonVariants}\n          whileHover={{ \n            scale: 1.05,\n            backgroundColor: primaryButtonHover,\n            transition: { type: \"spring\" as const, stiffness: 400, damping: 25 }\n          }}\n          whileTap=\"tap\"\n        >\n          <motion.div\n            key={isRunning ? \"pause\" : \"play\"}\n            initial={{ scale: 0, opacity: 0 }}\n            animate={{ scale: 1, opacity: 1 }}\n            transition={{\n              type: \"spring\" as const,\n              stiffness: 300,\n              damping: 25\n            }}\n          >\n            {isRunning ? (\n              <Pause className=\"w-5 h-5\" />\n            ) : (\n              <Play className=\"w-5 h-5 ml-0.5\" />\n            )}\n          </motion.div>\n        </motion.button>\n\n        <motion.button\n          type=\"button\"\n          onClick={handleReset}\n          aria-label=\"Reset timer\"\n          className=\"w-12 h-12 rounded-full flex items-center justify-center transition-colors\"\n          style={{ \n            backgroundColor: secondaryButtonColor,\n            color: textColor\n          }}\n          variants={buttonVariants}\n          whileHover={{ \n            scale: 1.05,\n            backgroundColor: secondaryButtonHover,\n            transition: { type: \"spring\" as const, stiffness: 400, damping: 25 }\n          }}\n          whileTap=\"tap\"\n        >\n          <RotateCcw className=\"w-5 h-5 text-gray-600\" />\n        </motion.button>\n      </motion.div>\n    </motion.div>\n  )\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/misc/timer.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Interactive",
+    "registryUrl": "https://ui.isaiahbjork.com/timer.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/timer.json"
+  },
+  "type": "registry:component"
+}

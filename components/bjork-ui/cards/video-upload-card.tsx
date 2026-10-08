@@ -14,6 +14,9 @@ interface VideoUploadCardProps {
   title?: string;
   description?: string;
   tone?: "dark" | "light";
+  /** Clip shown in the dropped-in player until someone uploads their own. */
+  demoVideoUrl?: string;
+  demoPosterUrl?: string;
 }
 
 interface VideoComponentProps {
@@ -22,6 +25,7 @@ interface VideoComponentProps {
   filename?: string;
   onRemove?: () => void;
   videoUrl?: string;
+  posterUrl?: string;
   palette: UploadPalette;
 }
 
@@ -109,6 +113,7 @@ const VideoComponent = ({
   filename = "video.mp4",
   onRemove,
   videoUrl,
+  posterUrl,
   palette,
 }: VideoComponentProps) => {
   const [isRemoving, setIsRemoving] = useState(false);
@@ -270,6 +275,8 @@ const VideoComponent = ({
                   <video
                     ref={videoRef}
                     src={videoUrl}
+                    poster={posterUrl}
+                    preload="metadata"
                     className={cn(
                       "aspect-video w-full rounded-md border-l border-r border-t object-cover",
                       palette.videoBorder
@@ -400,6 +407,8 @@ export function VideoUploadCard({
   title = "Upload Your Video",
   description = "Drop in your videos and start playing instantly.",
   tone,
+  demoVideoUrl = "/videos/upload-demo.mp4",
+  demoPosterUrl = "/videos/upload-demo-poster.jpg",
 }: VideoUploadCardProps) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -548,9 +557,10 @@ export function VideoUploadCard({
               <VideoComponent
                 isAnimating={isAnimating}
                 onAnimationComplete={handleAnimationComplete}
-                filename={uploadedFile?.name}
+                filename={uploadedFile?.name ?? (demoVideoUrl ? "cliff-dive.mp4" : undefined)}
                 onRemove={handleRemoveFile}
-                videoUrl={videoUrl || undefined}
+                videoUrl={videoUrl || demoVideoUrl || undefined}
+                posterUrl={videoUrl ? undefined : demoPosterUrl}
                 palette={palette}
               />
 
