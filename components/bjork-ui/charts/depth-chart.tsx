@@ -95,12 +95,15 @@ function walk(book: Book, side: "bid" | "ask", level: number) {
 
 // Cumulative depth rises away from mid, so the empty space next to a probe is on the mid side:
 // above-left of an ask point, above-right of a bid point. Fall back to the other side at the edge.
-function placeProbeTooltip(side: "bid" | "ask", x: number, y: number, tw: number, th: number, w: number, h: number, gap = 12) {
+// `top` is the header (legend and spread pill): if above would reach it, the card drops below the probe.
+function placeProbeTooltip(side: "bid" | "ask", x: number, y: number, tw: number, th: number, w: number, h: number, top: number, gap = 12) {
   let tx = side === "ask" ? x - gap - tw : x + gap;
   if (tx < 0) tx = x + gap;
   if (tx + tw > w) tx = x - gap - tw;
   tx = clamp(tx, 0, Math.max(0, w - tw));
-  const ty = clamp(y - th - gap, 0, Math.max(0, h - th));
+  let ty = y - th - gap;
+  if (ty < top) ty = y + gap;
+  ty = clamp(ty, top, Math.max(top, h - th));
   return { x: Math.round(tx), y: Math.round(ty) };
 }
 
@@ -357,7 +360,7 @@ export function DepthChart({
       ctx.strokeStyle = p.stage;
       ctx.stroke();
       if (tip?.el) {
-        const pos = placeProbeTooltip(s.probe.side, x, y, tip.size.w, tip.size.h, w, h);
+        const pos = placeProbeTooltip(s.probe.side, x, y, tip.size.w, tip.size.h, w, h, plot.t);
         tip.el.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
       }
     }
