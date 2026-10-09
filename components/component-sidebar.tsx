@@ -197,7 +197,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Portfolio Gallery", path: "/galleries/portfolio-gallery" },
       // @slot mosaic-settle
 
-      // @slot torn-edge-reveal
+      { name: "Torn Edge Reveal", path: "/galleries/torn-edge-reveal" },
 
     ],
   },
