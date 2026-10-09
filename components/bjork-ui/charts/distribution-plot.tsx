@@ -34,7 +34,7 @@ export interface DistributionPlotProps {
   tail?: "above" | "below";
   markers?: DistributionMarker[];
   showDensity?: boolean;
-  /** Fixed x domain. Auto by default. */
+  /** Fixed x domain. Auto by default. Values outside a fixed domain are left out of the bars (never piled into the edge bins) but still count toward every share and percentile. */
   domain?: [number, number];
   formatValue?: (v: number) => string;
   unit?: string;
@@ -95,7 +95,10 @@ function computeStats(values: number[], bins: number | "auto", domain: [number, 
   const binCount = bins === "auto" ? autoBins(sorted, lo, hi) : clamp(Math.round(bins), 4, 120);
   const binW = (hi - lo) / binCount;
   const counts = new Array(binCount).fill(0);
-  for (const v of sorted) counts[clamp(Math.floor((v - lo) / binW), 0, binCount - 1)]++;
+  for (const v of sorted) {
+    if (v < lo || v > hi) continue;
+    counts[Math.min(binCount - 1, Math.floor((v - lo) / binW))]++;
+  }
   const bw = silverman(sorted) || binW;
   const density: number[] = [];
   for (let k = 0; k < KDE_SAMPLES; k++) density.push(kde(sorted, lo + ((hi - lo) * k) / (KDE_SAMPLES - 1), bw) * n * binW);
@@ -136,6 +139,8 @@ interface Run {
   drag: number | null;
   lastInput: number;
   attractT: number;
+  /** Threshold the attract loop is drawing, kept apart from the real one. */
+  attractThr: number | null;
 }
 
 export function DistributionPlot({
@@ -212,6 +217,7 @@ export function DistributionPlot({
     drag: null,
     lastInput: 0,
     attractT: 0,
+    attractThr: null,
   });
 
   const { rootRef, hostRef, canvasRef, wake } = useChartCanvas(({ ctx, w, h, dt }) => {
@@ -286,13 +292,21 @@ export function DistributionPlot({
     const xt = niceTicks(S.lo, S.hi, Math.max(3, Math.floor(pW / 90)));
     writeLabels(xPool.current, s.xCache, xt.map((v) => ({ text: c.formatValue(v), x: xOf(v), y: plot.b + 13, ax: -50 })));
 
+    // Attract: the drawn threshold sweeps through the upper tail. React state and hit-testing keep the real one.
+    const attracting = c.attract && !c.reduce && c.threshold !== null && c.threshold !== undefined && (!s.lastInput || clock() - s.lastInput > ATTRACT_IDLE_MS);
+    if (attracting) {
+      s.attractT += dt;
+      s.attractThr = quantile(S.sorted, 0.7 + 0.25 * (0.5 - 0.5 * Math.cos(s.attractT * 0.6)));
+    } else s.attractThr = null;
+    const thrTarget = s.attractThr ?? c.threshold;
+
     // Threshold, eased toward its target so keyboard steps glide.
-    if (c.threshold !== null && c.threshold !== undefined) {
-      if (s.thrDisp === null || c.reduce || s.drag !== null) s.thrDisp = c.threshold;
+    if (thrTarget !== null && thrTarget !== undefined) {
+      if (s.thrDisp === null || c.reduce || s.drag !== null) s.thrDisp = thrTarget;
       else {
-        s.thrDisp = damp(s.thrDisp, c.threshold, 0.06, dt);
-        if (Math.abs(s.thrDisp - c.threshold) > (S.hi - S.lo) * 1e-4) moving = true;
-        else s.thrDisp = c.threshold;
+        s.thrDisp = damp(s.thrDisp, thrTarget, 0.06, dt);
+        if (Math.abs(s.thrDisp - thrTarget) > (S.hi - S.lo) * 1e-4) moving = true;
+        else s.thrDisp = thrTarget;
       }
     } else s.thrDisp = null;
     const thrX = s.thrDisp !== null ? xOf(s.thrDisp) : null;
@@ -382,7 +396,7 @@ export function DistributionPlot({
       ctx.moveTo(x, y + 6);
       ctx.lineTo(x, plot.b);
       ctx.stroke();
-      placed.push({ text, x: pin.x - 3, y: y, ax: 0 });
+      placed.push({ text, x: Math.max(0, Math.min(pin.x - 3, w - tw)), y: y, ax: 0 });
     }
     writeLabels(pinPool.current, s.pinCache, placed.map((pl) => ({ ...pl, opacity: pinAlpha })));
 
@@ -398,7 +412,7 @@ export function DistributionPlot({
       const hw = handle.offsetWidth;
       handle.style.opacity = String(clamp((s.enter - 0.4) / 0.6, 0, 1));
       handle.style.transform = `translate3d(${clamp(thrX - hw / 2, 0, w - hw).toFixed(1)}px, ${(plot.t - 24).toFixed(1)}px, 0)`;
-      const thrNow = c.threshold ?? 0;
+      const thrNow = thrTarget ?? 0;
       const above = countAbove(S.sorted, thrNow);
       const share = (c.tail === "above" ? above : S.n - above) / Math.max(1, S.n);
       const vText = `${c.formatValue(thrNow)}${c.unit ? ` ${c.unit}` : ""}`;
@@ -409,23 +423,14 @@ export function DistributionPlot({
 
     // Tooltip for the hovered bin.
     const tip = tipRef.current;
-    if (tip?.el && s.hoverBin !== null) {
+    if (tip?.el && s.hoverBin !== null && s.hoverBin < S.binCount) {
       const k = s.hoverBin;
       const x = plot.l + (k + 0.5) * bw;
       const pos = placeTooltip(x, yOf(S.counts[k]), tip.size.w, tip.size.h, w, h, 10);
       tip.el.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
     }
 
-    // Attract: the threshold sweeps through the upper tail.
-    if (c.attract && !c.reduce && c.threshold !== null && (!s.lastInput || clock() - s.lastInput > ATTRACT_IDLE_MS)) {
-      s.attractT += dt;
-      const q = 0.7 + 0.25 * (0.5 - 0.5 * Math.cos(s.attractT * 0.6));
-      // Drives the drawn threshold only; React state is untouched until a real input.
-      c.threshold = quantile(S.sorted, q);
-      return true;
-    }
-
-    return moving || s.enter < 1;
+    return attracting || moving || s.enter < 1;
   });
 
   const setThreshold = (v: number, announce = true) => {
@@ -526,10 +531,28 @@ export function DistributionPlot({
     if (onBinsChange) onBinsChange(next);
     else setBinsState(next);
     announcer.current?.say(`${next} bins`);
+    setHoverBin(null, null);
+  };
+
+  // Without a threshold the arrow keys walk the bins instead, with the same tooltip as hover.
+  const stepBin = (k: number) => {
+    setHoverBin(k, "keyboard");
+    const a = stats.lo + k * stats.binW;
+    announcer.current?.say(`${fmt(a)} to ${fmt(a + stats.binW)}: ${formatNumber(stats.counts[k], 0)} values, ${formatPercent(stats.counts[k] / Math.max(1, stats.n), 1)}`);
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     st.current.lastInput = clock();
+    const noThreshold = threshold === null || threshold === undefined;
+    if (noThreshold && (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "Home" || e.key === "End")) {
+      e.preventDefault();
+      const last = stats.binCount - 1;
+      const cur = st.current.hoverBin;
+      const next =
+        e.key === "Home" ? 0 : e.key === "End" ? last : cur === null ? (e.key === "ArrowRight" ? 0 : last) : clamp(cur + (e.key === "ArrowRight" ? 1 : -1) * (e.shiftKey ? 10 : 1), 0, last);
+      stepBin(next);
+      return;
+    }
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       if (threshold === null || threshold === undefined) return;
       e.preventDefault();
@@ -562,7 +585,7 @@ export function DistributionPlot({
         ref={wrapperRef}
         role="group"
         aria-roledescription="chart"
-        aria-label={`${ariaLabel}. Left and right move the threshold one bin, Shift moves ten, brackets change the bin count.`}
+        aria-label={`${ariaLabel}. Left and right ${threshold === null || threshold === undefined ? "move between bins" : "move the threshold one bin"}, Shift moves ten, brackets change the bin count.`}
         tabIndex={0}
         onPointerEnter={() => {
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
