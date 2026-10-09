@@ -1,6 +1,6 @@
 "use client"
 
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion"
 import { ChevronDown, MapPin } from "lucide-react"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
@@ -146,11 +146,12 @@ const chevronVariants = {
 
 function ProjectCard({ project }: { project: Project }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const reduce = useReducedMotion()
 
   return (
     <motion.div
       variants={cardVariants}
-      initial="hidden"
+      initial={reduce ? false : "hidden"}
       animate="visible"
       whileHover="hover"
       className="group cursor-pointer border-b border-[#d6d0c5] py-4 first:pt-4 last:border-b-0 last:pb-4 dark:border-[#25211d]"
@@ -177,7 +178,7 @@ function ProjectCard({ project }: { project: Project }) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
                 className={cn(
-                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-all duration-200",
+                  "rounded-full px-2.5 py-1 text-[11px] font-medium transition-[background-color,border-color,color,transform,opacity] duration-200",
                   project.status === "Paid"
                     ? "bg-[#302820] text-[#f1d6c6] ring-1 ring-[#ec5c13]/20 dark:bg-[#27221e] dark:text-[#e7caba]"
                     : "bg-[#dad4c8] text-[#5b554e] dark:bg-[#24211d] dark:text-[#b6aea4]"
@@ -267,13 +268,14 @@ function ProjectCard({ project }: { project: Project }) {
 }
 
 export function ProjectCards({ projects }: ProjectCardsProps) {
+  const reduce = useReducedMotion()
   return (
-    <div className="mx-auto w-full max-w-4xl rounded-[22px] bg-[#ebe6dc] px-4 py-0 text-[#191716] shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] dark:bg-[#151515] dark:text-[#f3efe8] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
+    <div className="mx-auto w-full max-w-4xl rounded-[20px] border border-[color:var(--bjork-border-muted)] bg-[var(--bjork-surface)] px-4 py-0 text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-surface)]">
+      <motion.div initial={reduce ? false : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}>
         {projects.map((project, index) => (
           <motion.div
             key={project.id}
-            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            initial={reduce ? false : { opacity: 0, y: 30, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             transition={{
               type: "spring",

@@ -38,7 +38,7 @@ export function Demo() {
   );
 }`}
       previewScaleClassName="w-[760px] scale-[0.68]"
-      previewCaptureScaleClassName="w-[760px] -translate-y-20 scale-[0.45]"
+      previewCaptureScaleClassName="w-[760px] scale-[0.62]"
     >
       <CoachSchedulingCard
         onTimeSlotSelect={handleTimeSlotSelect}

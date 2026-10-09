@@ -86,7 +86,7 @@ const brandTheme: ThemeColors = {
   headerText: "text-[#171717]/60 dark:text-[#ededed]/42",
   percentageText: "text-[#bd4514] dark:text-[#d86a2c]",
   cardBackground:
-    "bg-[#f4f1e9] dark:bg-[#121212] border border-[#d8d3c7] dark:border-[#161616] shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_18px_34px_-16px_rgba(55,47,36,0.28)] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_18px_34px_-16px_rgba(0,0,0,0.9)]",
+    "bg-[#f4f1e9] dark:bg-[#121212] border border-[color:var(--bjork-border-muted)] shadow-[var(--bjork-shadow-surface)]",
   dividerColor: "bg-[#d8d3c7] dark:bg-[#232323]",
   stageTitle: "text-[#171717] dark:text-[#ededed]",
   completedBadge: { background: "bg-[#8a7a60]/14", text: "text-[#6b5f4b] dark:text-[#b8aa91]" },
@@ -292,7 +292,7 @@ export function OnboardingStages({
   };
 
   const iconVariants = {
-    hidden: { scale: 0, rotate: -180, opacity: 0 },
+    hidden: { scale: 0.9, rotate: -20, opacity: 0 },
     visible: {
       scale: 1,
       rotate: 0,
@@ -329,7 +329,7 @@ export function OnboardingStages({
   };
 
   const percentageVariants = {
-    hidden: { scale: 0, opacity: 0, rotate: -10 },
+    hidden: { scale: 0.9, opacity: 0, rotate: -10 },
     visible: {
       scale: 1,
       opacity: 1,
