@@ -22,6 +22,7 @@ const ROWS: DumbbellRow[] = [
   { id: "qa", label: "QA engineer", a: 96000, b: 94000 },
   { id: "sec", label: "Security", a: 138000, b: 171000 },
 ];
+const YEARS: [string, string] = ["2020", "2025"];
 const money = (v: number) => `$${formatCompact(v, 0)}`;
 const gap = (g: number) => formatSigned(g, (n) => `$${formatCompact(n, 0)}`);
 
@@ -49,11 +50,11 @@ export default function Page() {
     >
       {isPreview ? (
         <div className="w-[660px]">
-          <DumbbellChart rows={ROWS} labels={["2020", "2025"]} formatValue={money} formatGap={gap} rowHeight={36} activeId="ml" ariaLabel="Median salary by role" />
+          <DumbbellChart rows={ROWS} labels={YEARS} formatValue={money} formatGap={gap} rowHeight={36} activeId="ml" ariaLabel="Median salary by role" />
         </div>
       ) : (
         <DemoColumn width={720}>
-          <DumbbellChart rows={ROWS} labels={["2020", "2025"]} sort={sort} onSortChange={setSort} formatValue={money} formatGap={gap} rowHeight={34} ariaLabel="Median salary by role" />
+          <DumbbellChart rows={ROWS} labels={YEARS} sort={sort} onSortChange={setSort} formatValue={money} formatGap={gap} rowHeight={34} ariaLabel="Median salary by role" />
           <ControlRow>
             <OptionGroup
               label="Sort"

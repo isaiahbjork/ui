@@ -58,6 +58,7 @@ const SORT_NAMES: Record<DumbbellSort, string> = { a: "start", b: "end", gap: "g
 const ATTRACT_STEP_MS = 3000;
 const ATTRACT_IDLE_MS = 4000;
 
+const DEFAULT_LABELS: [string, string] = ["Before", "After"];
 const clock = () => performance.now();
 const defaultFormatValue = (v: number) => formatCompact(v, 0);
 const defaultFormatGap = (g: number) => formatSigned(g, (n) => formatCompact(n, 0));
@@ -86,7 +87,7 @@ interface Run {
 
 export function DumbbellChart({
   rows,
-  labels = ["Before", "After"],
+  labels = DEFAULT_LABELS,
   sort: sortProp,
   defaultSort = "gap",
   onSortChange,
@@ -330,18 +331,24 @@ export function DumbbellChart({
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const s = st.current;
     s.lastInput = clock();
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    // Rows are the only stepping axis, so left/right step through them too (right = next row).
+    if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "ArrowRight" || e.key === "ArrowLeft") {
       e.preventDefault();
+      if (!rows.length) return;
+      const fwd = e.key === "ArrowDown" || e.key === "ArrowRight";
       const cur = s.hover !== null && s.source !== "attract" ? order.indexOf(s.hover) : -1;
-      const next = cur < 0 ? (e.key === "ArrowDown" ? 0 : rows.length - 1) : clamp(cur + (e.key === "ArrowDown" ? 1 : -1), 0, rows.length - 1);
+      const next = cur < 0 ? (fwd ? 0 : rows.length - 1) : clamp(cur + (fwd ? 1 : -1), 0, rows.length - 1);
       setHover(order[next], "keyboard");
     } else if (e.key === "s" || e.key === "S") {
       e.preventDefault();
       setSort(SORTS[(SORTS.indexOf(sort) + 1) % SORTS.length]);
     } else if (e.key === "Home" || e.key === "End") {
       e.preventDefault();
+      if (!rows.length) return;
       setHover(order[e.key === "Home" ? 0 : rows.length - 1], "keyboard");
     } else if (e.key === "Escape") {
+      if (st.current.hover === null) return;
+      e.preventDefault();
       setHover(null, null);
     }
   };
@@ -349,6 +356,12 @@ export function DumbbellChart({
   const tableRows = useMemo(() => order.map((i) => [rows[i].label, formatValue(rows[i].a), formatValue(rows[i].b), formatGap(rows[i].b - rows[i].a, rows[i].a, rows[i].b)]), [order, rows, formatValue, formatGap]);
   const tableCols = useMemo(() => ["Item", labels[0], labels[1], "Gap"], [labels]);
   const height = HEADER_H + rows.length * rowHeight + 4;
+  const summary = useMemo(() => {
+    let top = -1;
+    for (let i = 0; i < rows.length; i++) if (top < 0 || Math.abs(rows[i].b - rows[i].a) > Math.abs(rows[top].b - rows[top].a)) top = i;
+    const t = rows[top];
+    return `${ariaLabel}: ${rows.length} rows from ${labels[0]} to ${labels[1]}${t ? `. Largest change: ${t.label}, ${formatGap(t.b - t.a, t.a, t.b)}` : ""}`;
+  }, [rows, labels, ariaLabel, formatGap]);
 
   return (
     <div ref={rootRef} data-loop="idle" className={cn("relative w-full select-none text-[color:var(--bjork-text)]", className)} style={{ ...vars, height }}>
@@ -356,7 +369,7 @@ export function DumbbellChart({
         ref={wrapperRef}
         role="group"
         aria-roledescription="chart"
-        aria-label={`${ariaLabel}, sorted by ${SORT_NAMES[sort]}. Up and down move between rows, S changes the sort.`}
+        aria-label={`${ariaLabel}, sorted by ${SORT_NAMES[sort]}. Arrow keys move between rows, S changes the sort.`}
         tabIndex={0}
         onPointerEnter={() => {
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
@@ -371,7 +384,7 @@ export function DumbbellChart({
         className={cn("absolute inset-0 touch-pan-y rounded-[10px]", chartFocusRing)}
       >
         <div ref={hostRef} className="absolute inset-0">
-          <canvas ref={canvasRef} role="img" aria-label={`${ariaLabel}: ${rows.length} rows from ${labels[0]} to ${labels[1]}`} className="pointer-events-none absolute left-0 top-0" />
+          <canvas ref={canvasRef} role="img" aria-label={summary} className="pointer-events-none absolute left-0 top-0" />
         </div>
         {/* Legend: keys mirror the marks. */}
         <div aria-hidden="true" className="pointer-events-none absolute left-0 top-0 flex items-center gap-4 font-bjork-alpha text-[11px] font-medium leading-3 text-[color:var(--bjork-text-medium)]">
