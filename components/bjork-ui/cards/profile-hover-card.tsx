@@ -123,7 +123,7 @@ export function ProfileHoverCard({
       whileHover="hover"
       variants={containerVariants}
       className={cn(
-        "group relative h-96 w-80 cursor-pointer overflow-hidden rounded-[24px] border border-[#d8d3c7] text-[#171717] shadow-[inset_0_7px_14px_rgba(255,255,255,0.18),0_18px_34px_-16px_rgba(55,47,36,0.35)] backdrop-blur-sm dark:border-[#161616] dark:text-[#ededed] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),0_18px_34px_-16px_rgba(0,0,0,0.9)]",
+        "group relative h-96 w-80 cursor-pointer overflow-hidden rounded-[20px] border border-[color:var(--bjork-border-muted)] text-[#171717] shadow-[var(--bjork-shadow-surface)] backdrop-blur-sm dark:text-[#ededed]",
         className
       )}
     >

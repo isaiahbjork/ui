@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Upload, X } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -194,6 +194,7 @@ const AudioComponent = ({
   onRemove,
   palette,
 }: AudioComponentProps) => {
+  const reduce = useReducedMotion();
   const [isRemoving, setIsRemoving] = useState(false);
   const [shouldShow, setShouldShow] = useState(false);
 
@@ -224,14 +225,14 @@ const AudioComponent = ({
       {shouldShow && (
         <motion.div
           className="absolute z-20"
-          initial={{
+          initial={reduce ? false : {
             // Start at bottom-right corner of the main card
             right: 20,
             bottom: 20,
             opacity: 0,
           }}
           animate={isRemoving ? {
-            scale: 0,
+            scale: 0.9,
             opacity: 0,
             filter: "blur(8px)",
             transition: {
@@ -251,7 +252,7 @@ const AudioComponent = ({
             },
           }}
           exit={{
-            scale: 0,
+            scale: 0.9,
             opacity: 0,
             filter: "blur(8px)",
             transition: {
@@ -265,11 +266,12 @@ const AudioComponent = ({
           onAnimationComplete={isRemoving ? handleRemoveComplete : onAnimationComplete}
         >
           <motion.div 
-            initial={{ scale: 1.5 }}
+            initial={reduce ? false : { scale: 1.5 }}
             animate={
               isRemoving
                 ? {
-                    scale: 0,
+                    scale: 0.9,
+                    opacity: 0,
                     transition: { duration: 0.4 },
                   }
                 : {
@@ -327,6 +329,7 @@ export function AudioUploadCard({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const reduce = useReducedMotion();
   const palette =
     tone === "light" || (!tone && mounted && resolvedTheme === "light")
       ? uploadPalettes.light
@@ -410,7 +413,7 @@ export function AudioUploadCard({
   return (
     <motion.div
       className={cn("relative w-full max-w-md mx-auto", className)}
-      initial={tone ? false : { opacity: 0, y: 20 }}
+      initial={tone || reduce ? false : { opacity: 0, y: 20 }}
       animate={tone ? undefined : { opacity: 1, y: 0 }}
       transition={tone ? undefined : { type: "spring", stiffness: 300, damping: 30 }}
     >

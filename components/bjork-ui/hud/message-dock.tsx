@@ -408,8 +408,8 @@ export function MessageDock({
                   {character.online && (
                     <motion.div
                       className={cn("absolute bottom-0 right-0 h-3 w-3 rounded-full border-2", palette.online)}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: isExpanded && !isSelected ? 0 : 1 }}
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: isExpanded && !isSelected ? 0 : 1, opacity: isExpanded && !isSelected ? 0 : 1 }}
                       transition={{
                         delay: isExpanded
                           ? isSelected
@@ -559,7 +559,7 @@ export function MessageDock({
                     rotate: 90,
                     transition: {
                       duration: 0.1,
-                      ease: "easeIn"
+                      ease: "easeOut"
                     }
                   }}
                 >

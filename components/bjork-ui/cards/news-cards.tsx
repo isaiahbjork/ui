@@ -36,80 +36,76 @@ interface NewsCardsProps {
 const defaultStatusBars: StatusBar[] = [
   {
     id: "1",
-    category: "US Politics",
-    subcategory: "Donald Trump",
+    category: "City Life",
+    subcategory: "Transit",
     length: 3,
     opacity: 1,
   },
   {
     id: "2",
-    category: "US Politics",
-    subcategory: "Donald Trump",
+    category: "City Life",
+    subcategory: "Transit",
     length: 2,
     opacity: 0.7,
   },
   {
     id: "3",
-    category: "World News",
-    subcategory: "EU Policy",
+    category: "Science",
+    subcategory: "Oceans",
     length: 1,
     opacity: 0.4,
   }
 ];
 
+const abstractImage = (from: string, to: string, glow: string) =>
+  `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1600 900'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='${from}'/><stop offset='1' stop-color='${to}'/></linearGradient></defs><rect width='1600' height='900' fill='url(%23g)'/><circle cx='1120' cy='330' r='280' fill='${glow}' fill-opacity='.18'/><circle cx='520' cy='640' r='170' fill='%23f7f3ea' fill-opacity='.08'/></svg>`;
+
 const defaultNewsCards: NewsCard[] = [
   {
     id: "1",
-    title: "RFK Jr: Trump to Announce Other Democrats Joining His Campaign",
-    category: "US Politics",
-    subcategory: "Donald Trump",
+    title: "Port Alder council approves a riverside tram line for next spring",
+    category: "City Life",
+    subcategory: "Transit",
     timeAgo: "15 min ago",
-    location: "United States",
-    image: "https://images.unsplash.com/photo-1560472355-536de3962603?w=1600&h=900&fit=crop&q=80",
+    location: "Port Alder",
+    image: abstractImage("%23ec5c13", "%23171717", "%23ec5c13"),
     gradientColors: ["from-[#ec5c13]/22", "to-[#8a7a60]/16"],
     content: [
-      "In a surprising political development, Robert F. Kennedy Jr. announced that former President Donald Trump is preparing to reveal a significant number of Democratic politicians who will be joining his 2024 campaign effort. This unprecedented crossover could reshape the traditional party lines that have defined American politics for decades.",
-      "Sources close to the Kennedy campaign suggest that several high-profile Democrats, disillusioned with their party's current direction, have been quietly negotiating terms for their public endorsement of Trump. This move represents a dramatic shift in the political landscape and could signal broader realignment within American political parties.",
-      "The announcement is expected to include former senators, governors, and mayors from key swing states, potentially providing Trump with crucial credibility among moderate voters who have been skeptical of his candidacy. Political analysts are calling this development unprecedented in modern American politics.",
-      "Kennedy, who himself switched from the Democratic party, cited concerns about government overreach and censorship as primary motivations for these defections. The campaign promises that these revelations will demonstrate growing bipartisan support for Trump's vision of American governance.",
-      "Critics argue that this represents opportunistic politics rather than genuine ideological alignment, suggesting that these politicians are positioning themselves for potential appointments in a future Trump administration. However, supporters maintain that this reflects authentic concern about the country's direction.",
-      "The timing of this announcement, coming just months before the election, is seen as strategically calculated to maximize impact during the crucial campaign period when voter attention is at its peak."
+      "The Port Alder city council voted on Tuesday to build a six-stop tram line along the old river wharf. Construction is scheduled to begin next spring, with the first trains expected to run within two years.",
+      "Planners say the route will connect the ferry terminal, the market district and the northern housing estates. Early estimates put daily ridership at around twelve thousand, with most trips taking under fifteen minutes.",
+      "Local shop owners raised concerns about several weeks of road closures during construction. The council said it will fund a temporary delivery corridor and a small business support scheme to offset the disruption.",
+      "The project is expected to cost just under the amount set aside in the spring budget. A public consultation on station designs will open next month."
     ]
   },
   {
     id: "2",
-    title: "EU signs off on landmark migration and asylum policy reforms",
-    category: "US Politics",
-    subcategory: "Donald Trump",
+    title: "Researchers map a new cold-water reef off the Halden coast",
+    category: "Science",
+    subcategory: "Oceans",
     timeAgo: "41 min ago",
-    location: "United States",
-    image: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=1600&h=900&fit=crop&q=80",
+    location: "Halden coast",
+    image: abstractImage("%238a7a60", "%23171717", "%23f7f3ea"),
     gradientColors: ["from-[#ec5c13]/18", "to-[#171717]/18"],
     content: [
-      "The European Union has formally approved comprehensive migration and asylum policy reforms that represent the most significant overhaul of immigration law in the bloc's history. After years of contentious negotiations, member states have reached consensus on new frameworks that balance humanitarian obligations with security concerns.",
-      "The new policies establish unified standards for processing asylum claims across all EU member states, ending the current system where the burden disproportionately falls on border countries like Italy, Greece, and Spain. This redistribution mechanism aims to ensure more equitable sharing of responsibilities among member nations.",
-      "Key provisions include streamlined processing procedures that promise to reduce waiting times for asylum seekers from years to months, while also implementing stricter criteria for economic migrants. The reforms introduce enhanced background checking systems and improved coordination between national security agencies.",
-      "Human rights organizations have expressed mixed reactions to the changes. While praising improved processing times and standardized procedures, they raise concerns about potential restrictions that could limit access to protection for legitimate refugees fleeing persecution and conflict.",
-      "Implementation of these reforms will begin gradually over the next 18 months, with full enforcement expected by 2026. The EU has allocated significant funding to support member states in upgrading their immigration infrastructure and training personnel on new procedures.",
-      "This landmark agreement represents a rare moment of unity within the EU on one of its most divisive issues, potentially serving as a model for international cooperation on migration challenges facing developed nations worldwide."
+      "A survey team from the Halden Marine Institute has documented a previously unknown reef system at roughly 140 metres depth. The reef is built largely from slow-growing coral and sponge colonies.",
+      "Using a remote camera sled over three weeks, the team recorded more than forty species, including several that had not been logged in the region before. Samples are being sent for genetic analysis.",
+      "Marine biologists say the reef may serve as a refuge for fish populations during warm seasons, although they caution that its growth rate is very slow and that it will need protection from trawling.",
+      "The institute plans to publish its full survey next year and has asked the regional government to consider a seasonal access limit for the area."
     ]
   },
   {
     id: "3",
-    title: "Climate Summit Reaches Historic Agreement on Carbon Neutrality",
-    category: "Environment",
-    subcategory: "Climate Change",
+    title: "Night market returns to the Lantern Quarter after a two-year break",
+    category: "Culture",
+    subcategory: "Food",
     timeAgo: "1 hour ago",
-    location: "Global",
-    image: "https://images.unsplash.com/photo-1529107386315-e1a2ed48a620?w=1600&h=900&fit=crop&q=80",
+    location: "Lantern Quarter",
+    image: abstractImage("%23ec5c13", "%238a7a60", "%23f7f3ea"),
     gradientColors: ["from-[#8a7a60]/18", "to-[#ec5c13]/12"],
     content: [
-      "World leaders at the Global Climate Summit have reached a groundbreaking agreement committing 195 nations to achieve carbon neutrality by 2040, a decade earlier than previous targets. This historic accord represents the most ambitious climate action plan ever negotiated, with binding commitments and financial penalties for non-compliance.",
-      "The agreement establishes a revolutionary carbon credit system that will create economic incentives for rapid decarbonization while generating funding for climate adaptation projects in developing nations. Major industrial powers have committed to investing $2 trillion annually in renewable energy infrastructure and green technology development.",
-      "Breakthrough provisions include mandatory phase-out schedules for fossil fuel subsidies, universal adoption of renewable energy standards, and establishment of international carbon pricing mechanisms. The accord also addresses deforestation, with legally binding commitments to halt forest destruction and restore degraded ecosystems.",
-      "Scientific advisors to the summit praised the agreement as the first climate accord with enforcement mechanisms robust enough to achieve stated goals. Independent modeling suggests these measures could limit global warming to 1.5 degrees Celsius, preventing the most catastrophic climate impacts.",
-      "Implementation will require unprecedented international cooperation and technological innovation. The agreement establishes joint research initiatives for carbon capture, renewable energy storage, and sustainable agriculture practices that could transform how human civilization interacts with the natural environment.",
-      "Environmental activists, while celebrating this progress, emphasize that success depends entirely on rigorous implementation and continued political commitment from signatory nations, particularly as governments change through democratic processes."
+      "The Lantern Quarter night market reopens this weekend with about ninety stalls, after being paused since the redevelopment of its square. Organisers say the market will run every Friday and Saturday through the autumn.",
+      "This year's lineup leans toward small producers, with bakers, fermentation makers and a growing number of stalls selling preserved fruit and tea. A rotating stage will host local musicians each evening.",
+      "Residents have asked for quieter closing times, and the organisers have agreed to end music by ten o'clock on weeknights. Entry remains free, and a late bus route will run from the central station."
     ]
   }
 ];
@@ -309,7 +305,7 @@ export function NewsCards({
                <motion.article
                  key={card.id}
                  layoutId={`card-${card.id}`}
-                 className="group cursor-pointer overflow-hidden rounded-[20px] border border-[var(--bjork-border)] bg-[var(--bjork-surface)] text-[var(--bjork-text)] [box-shadow:var(--bjork-shadow-surface)] transition-all duration-300 dark:border-[#161616] dark:bg-[#121212] dark:text-[#ededed] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_18px_34px_-16px_rgba(0,0,0,0.9)]"
+                 className="group cursor-pointer overflow-hidden rounded-[20px] border border-[var(--bjork-border)] bg-[var(--bjork-surface)] text-[var(--bjork-text)] [box-shadow:var(--bjork-shadow-surface)] transition-[background-color,border-color,color,opacity,transform] duration-300 dark:border-[#161616] dark:bg-[#121212] dark:text-[#ededed] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_18px_34px_-16px_rgba(0,0,0,0.9)]"
                  variants={shouldAnimate ? cardVariants : {}}
                  whileHover={shouldAnimate ? {
                    y: -4,
@@ -406,7 +402,7 @@ export function NewsCards({
                  {/* Close Button */}
                  <motion.button
                    className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-white/18 bg-[#090909]/78 text-white backdrop-blur-md transition-colors hover:bg-[#161616]"
-                   initial={{ opacity: 0, scale: 0 }}
+                   initial={{ opacity: 0, scale: 0.9 }}
                    animate={{ opacity: 1, scale: 1 }}
                    transition={{ delay: 0.2 }}
                    whileHover={{ scale: 1.1 }}
