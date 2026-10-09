@@ -399,7 +399,7 @@ export function BulletChart({
     tickCache: [],
   });
 
-  const { rootRef, hostRef, canvasRef, wake } = useChartCanvas(({ ctx, w, dt }) => {
+  const { rootRef, hostRef, canvasRef, wake } = useChartCanvas(({ ctx, w, h, dt }) => {
     const s = st.current;
     const c = cfg.current;
     const p = c.pal;
@@ -638,10 +638,16 @@ export function BulletChart({
       const bandTop = TOP_PAD + hov * rh + head + c.bandOff;
       const tw = tip.size.w;
       const th = tip.size.h;
+      // Horizontally the tooltip lives over the bar track: the label and value columns are
+      // exclusion zones. Beside the furthest mark when it fits, else pinned inside the track.
       let tx = x + 12;
-      if (tx + tw > w) tx = x - 12 - tw;
-      tx = clamp(tx, 0, Math.max(0, w - tw));
-      const ty = bandTop - th - 8 >= 0 ? bandTop - th - 8 : bandTop + BAND_H + 8;
+      if (tx + tw > r) tx = x - 12 - tw;
+      if (tx < l) tx = tw <= pw ? clamp(x - tw / 2, l, r - tw) : clamp(r - tw, 0, Math.max(0, w - tw));
+      // Vertically above the band, else below it, else (short charts) wherever there is more room,
+      // overflowing downward with the page flow rather than off the top.
+      const above = bandTop - th - 8;
+      const below = bandTop + BAND_H + 8;
+      const ty = above >= 0 ? above : below + th <= h ? below : th <= h ? clamp(below, 0, h - th) : Math.max(0, Math.min(below, h - th));
       tip.el.style.transform = `translate3d(${Math.round(tx)}px, ${Math.round(ty)}px, 0)`;
     }
 
