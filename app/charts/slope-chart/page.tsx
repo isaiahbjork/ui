@@ -24,6 +24,8 @@ const ITEMS: SlopeItem[] = [
   { id: "rb", label: "Ruby", a: 2.4, b: 1.4 },
 ];
 
+const YEARS: [string, string] = ["2023", "2025"];
+
 export default function Page() {
   const isPreview = usePreviewMode();
   const [filter, setFilter] = useState<"all" | "up" | "down">("all");
@@ -48,11 +50,11 @@ export default function Page() {
     >
       {isPreview ? (
         <div className="w-[600px]">
-          <SlopeChart items={ITEMS} labels={["2023", "2025"]} defaultHighlightId="rs" height={420} ariaLabel="Share of new projects by language" />
+          <SlopeChart items={ITEMS} labels={YEARS} defaultHighlightId="rs" height={420} ariaLabel="Share of new projects by language" />
         </div>
       ) : (
         <DemoColumn width={640}>
-          <SlopeChart items={ITEMS} labels={["2023", "2025"]} filter={filter} defaultHighlightId="ts" height={420} ariaLabel="Share of new projects by language" />
+          <SlopeChart items={ITEMS} labels={YEARS} filter={filter} defaultHighlightId="ts" height={420} ariaLabel="Share of new projects by language" />
           <ControlRow>
             <OptionGroup
               label="Filter"

@@ -56,8 +56,10 @@ const VALUE_TAU = 0.14;
 const ATTRACT_STEP_MS = 1800;
 const ATTRACT_IDLE_MS = 4000;
 
+const DEFAULT_LABELS: [string, string] = ["Before", "After"];
 const clock = () => performance.now();
-const defaultFormatValue = (v: number) => `${formatNumber(v, 1)}%`;
+// Intl prints a hyphen-minus; values carry a true minus.
+const defaultFormatValue = (v: number) => `${v < 0 ? "−" : ""}${formatNumber(Math.abs(v), 1)}%`;
 const defaultFormatChange = (a: number, b: number) => `${formatSigned(b - a, (n) => formatNumber(n, 1))} pts · ${formatSigned(a ? (b - a) / Math.abs(a) : 0, (n) => formatPercent(n, 0))}`;
 
 // Spreads label centres so neighbours sit at least `gap` apart, staying as close to their targets as possible.
@@ -104,7 +106,7 @@ interface Run {
 
 export function SlopeChart({
   items,
-  labels = ["Before", "After"],
+  labels = DEFAULT_LABELS,
   highlightId: highlightProp,
   defaultHighlightId = null,
   onHighlightChange,
@@ -407,6 +409,11 @@ export function SlopeChart({
 
   const tableRows = useMemo(() => items.map((it) => [it.label, formatValue(it.a), formatValue(it.b), formatChange(it.a, it.b)]), [items, formatValue, formatChange]);
   const tableCols = useMemo(() => ["Item", labels[0], labels[1], "Change"], [labels]);
+  const summary = useMemo(() => {
+    const up = items.filter((it) => it.b > it.a).length;
+    const down = items.filter((it) => it.b < it.a).length;
+    return `${ariaLabel}: ${items.length} items from ${labels[0]} to ${labels[1]}, ${up} rose and ${down} fell`;
+  }, [items, labels, ariaLabel]);
 
   return (
     <div ref={rootRef} data-loop="idle" className={cn("relative w-full select-none text-[color:var(--bjork-text)]", className)} style={{ ...vars, height }}>
@@ -435,7 +442,7 @@ export function SlopeChart({
         className={cn("absolute inset-0 cursor-pointer touch-pan-y rounded-[10px]", chartFocusRing)}
       >
         <div ref={hostRef} className="absolute inset-0">
-          <canvas ref={canvasRef} role="img" aria-label={`${ariaLabel}: ${items.length} items from ${labels[0]} to ${labels[1]}`} className="pointer-events-none absolute left-0 top-0" />
+          <canvas ref={canvasRef} role="img" aria-label={summary} className="pointer-events-none absolute left-0 top-0" />
         </div>
         <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-5 font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)]">
           <span ref={headARef} className="absolute left-0 top-1.5 [text-box:trim-both_cap_alphabetic]">
