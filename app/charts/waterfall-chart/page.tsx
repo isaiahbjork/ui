@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { WaterfallChart, type WaterfallStep } from "@/components/bjork-ui/charts/waterfall-chart";
 import { formatCompact } from "@/components/bjork-ui/charts/_kit/scale";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup, ToggleButton } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("waterfall-chart");
 // The sign goes before the currency: −$3.4K, never $−3.4K.
@@ -43,6 +43,11 @@ export default function Page() {
   const [showGhost, setShowGhost] = useState(true);
   const sc = SCENARIOS[scenario];
 
+  const reset = () => {
+    setScenario("good");
+    setShowGhost(true);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -61,6 +66,22 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[720px] scale-[1.12]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Scenario"
+            value={scenario}
+            onChange={setScenario}
+            options={[
+              { label: "Good week", value: "good" },
+              { label: "Bad week", value: "bad" },
+            ]}
+          />
+          <ShellSwitch label="Ghost" checked={showGhost} onCheckedChange={setShowGhost} />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[680px]">
@@ -69,20 +90,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={760}>
           <WaterfallChart start={sc.start} steps={sc.steps} ghost={showGhost ? sc.ghost : null} formatValue={money} height={360} ariaLabel="Weekly trading P&L" />
-          <ControlRow>
-            <OptionGroup
-              label="Scenario"
-              value={scenario}
-              onChange={setScenario}
-              options={[
-                { label: "Good week", value: "good" },
-                { label: "Bad week", value: "bad" },
-              ]}
-            />
-            <ToggleButton pressed={showGhost} onClick={() => setShowGhost((v) => !v)}>
-              Ghost
-            </ToggleButton>
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

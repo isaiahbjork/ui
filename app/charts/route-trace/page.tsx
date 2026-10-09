@@ -2,10 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { BjorkButtonGroup } from "@/components/bjork-ui/primitives/button-group";
-import { BjorkSlider } from "@/components/bjork-ui/primitives/slider";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellRange, ShellSegmented, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import {
   RouteTrace,
   type RouteEdge,
@@ -103,53 +100,11 @@ export default function Page() {
     [searchThroughput],
   );
 
-  const controls = (
-    <div className="flex w-full min-w-0 flex-col items-center gap-4">
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {NODES.map((n) => {
-          const isDown = Boolean(downIds[n.id]);
-          return (
-            <BjorkButton
-              key={n.id}
-              size="sm"
-              variant={isDown ? "secondary" : "ghost"}
-              aria-pressed={isDown}
-              onClick={() => setDownIds((prev) => ({ ...prev, [n.id]: !prev[n.id] }))}
-            >
-              {`${n.label}: ${isDown ? "down" : "up"}`}
-            </BjorkButton>
-          );
-        })}
-      </div>
-      <div className="flex w-full max-w-[420px] flex-col gap-2">
-        <div className="flex items-center justify-between font-mono text-[12px] tabular-nums text-[color:var(--bjork-text-muted)]">
-          <span>Gateway to Search throughput</span>
-          <span>{`${Math.round(searchThroughput * 100)}%`}</span>
-        </div>
-        <BjorkSlider
-          min={0}
-          max={100}
-          value={Math.round(searchThroughput * 100)}
-          onValueChange={(v) => setSearchThroughput(v / 100)}
-          aria-label="Gateway to Search throughput"
-        />
-      </div>
-      <BjorkButtonGroup aria-label="Speed">
-        {[0.5, 1, 2].map((value) => (
-          <BjorkButton
-            key={value}
-            size="sm"
-            variant={speed === value ? "secondary" : "ghost"}
-            aria-pressed={speed === value}
-            onClick={() => setSpeed(value)}
-            className="tabular-nums"
-          >
-            {`${value}×`}
-          </BjorkButton>
-        ))}
-      </BjorkButtonGroup>
-    </div>
-  );
+  const reset = () => {
+    setDownIds({});
+    setSearchThroughput(0.7);
+    setSpeed(1);
+  };
 
   return (
     <SimpleComponentDemoPage
@@ -165,6 +120,34 @@ export default function Page() {
       }
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[920px] scale-[0.82]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          {NODES.map((n) => (
+            <ShellSwitch
+              key={n.id}
+              label={`${n.label} down`}
+              checked={Boolean(downIds[n.id])}
+              onCheckedChange={(down) => setDownIds((prev) => ({ ...prev, [n.id]: down }))}
+            />
+          ))}
+          <ShellRange
+            label="Traffic"
+            value={Math.round(searchThroughput * 100)}
+            min={0}
+            max={100}
+            displayValue={`${Math.round(searchThroughput * 100)}%`}
+            onChange={(v) => setSearchThroughput(v / 100)}
+          />
+          <ShellSegmented
+            label="Speed"
+            value={speed}
+            onChange={setSpeed}
+            options={[0.5, 1, 2].map((value) => ({ label: `${value}×`, value }))}
+          />
+        </>
+      }
     >
       <div className="flex w-full min-w-0 flex-col items-center gap-6">
         <div className={isPreview ? "w-[min(920px,calc(100vw-56px))] min-w-0" : "w-[min(760px,calc(100vw-56px))] lg:w-[min(760px,calc(50vw-128px))] min-w-0"}>
@@ -181,7 +164,6 @@ export default function Page() {
             attract={false}
           />
         </div>
-        {!isPreview && controls}
       </div>
     </SimpleComponentDemoPage>
   );

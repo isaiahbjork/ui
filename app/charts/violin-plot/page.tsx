@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { ViolinPlot, createRegionGroups, type ViolinMode } from "@/components/bjork-ui/charts/violin-plot";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("violin-plot");
 const GROUPS = createRegionGroups(21);
@@ -14,6 +14,10 @@ const DOMAIN: [number, number] = [0, 600];
 export default function Page() {
   const isPreview = usePreviewMode();
   const [mode, setMode] = useState<ViolinMode>("violin");
+
+  const reset = () => {
+    setMode("violin");
+  };
 
   return (
     <SimpleComponentDemoPage
@@ -32,6 +36,20 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[760px] scale-[1.1]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <ShellSegmented
+          label="View"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { label: "Violin", value: "violin" },
+            { label: "Box", value: "box" },
+            { label: "Strip", value: "strip" },
+          ]}
+        />
+      }
     >
       {isPreview ? (
         <div className="w-[720px]">
@@ -40,18 +58,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={800}>
           <ViolinPlot groups={GROUPS} yDomain={DOMAIN} mode={mode} onModeChange={setMode} unit="ms" height={360} ariaLabel="Response time by region" />
-          <ControlRow>
-            <OptionGroup
-              label="View"
-              value={mode}
-              onChange={setMode}
-              options={[
-                { label: "Violin", value: "violin" },
-                { label: "Box", value: "box" },
-                { label: "Strip", value: "strip" },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>
