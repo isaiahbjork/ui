@@ -53,7 +53,7 @@ const TILE_EDGES: RouteEdge[] = [
   { from: "search", to: "postgres", throughput: 0.5 },
 ];
 
-// Five columns at 124px keep the labels at 10px or more inside the shell's half-width card on a laptop.
+// Five columns at 124px. Where that can't hold labels at 10px, the diagram turns to flow top to bottom.
 const DEMO_CELL = { w: 124, h: 88 };
 
 const usageCode = `import { RouteTrace } from "@/components/bjork-ui/charts/route-trace";
@@ -154,7 +154,7 @@ export default function Page() {
   return (
     <SimpleComponentDemoPage
       item={item}
-      description="A live system diagram routed like a circuit board. Traffic shows as packets, and failure shows as silence."
+      description="A live system diagram routed like a circuit board. Traffic shows as packets, and failure shows as silence. It always fits its container: wide spaces flow left to right, narrow ones turn the flow top to bottom. Arrow keys walk the services, and the line underneath reads the focused one's traffic."
       dependencies={["framer-motion"]}
       usageCode={usageCode}
       details={

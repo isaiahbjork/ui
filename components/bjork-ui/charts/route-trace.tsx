@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -15,6 +16,7 @@ import { BJORK_PALETTE, type BjorkTone } from "@/components/bjork-ui/_core/palet
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
 import { useElementSize } from "@/components/bjork-ui/_core/canvas";
 import { hashString } from "@/components/bjork-ui/_core/random";
+import { ChartAnnouncer, chartFocusRing, chartVars, type AnnouncerHandle } from "@/components/bjork-ui/charts/_kit/chrome";
 
 export type RouteStatus = "ok" | "degraded" | "down";
 
@@ -34,14 +36,26 @@ export interface RouteEdge {
   status?: RouteStatus;
 }
 
+export type RouteOrientation = "auto" | "horizontal" | "vertical";
+
 export interface RouteTraceProps {
+  /** Nodes on a grid: `col` is the flow step (left to right), `row` the lane within it. */
   nodes: RouteNode[];
+  /** Directed edges; `throughput` is 0 to 1 and sets packet length and count. */
   edges: RouteEdge[];
+  /** Grid cell in px for the horizontal layout. */
   cell?: { w: number; h: number };
   cornerRadius?: number;
   speed?: number;
   selectedId?: string;
   onNodeSelect?: (id: string) => void;
+  /**
+   * `auto` (default) flows left to right while that fits at a legible size and turns the flow
+   * top to bottom on narrow containers. Either way the whole graph scales to fit, never clips.
+   */
+  orientation?: RouteOrientation;
+  /** One line under the diagram: the status summary, or the active node's traffic. Default true. */
+  readout?: boolean;
   ariaLabel?: string;
   tone?: BjorkTone;
   attract?: boolean;
@@ -77,7 +91,18 @@ interface Cell {
 interface Resolved {
   nodes: RouteNode[];
   byId: Map<string, RouteNode>;
+  /** Flow-space centres: x along the flow (columns), y across it (rows). */
   centres: Map<string, Pt>;
+  /** Screen centres, after the layout's orientation. */
+  screen: Map<string, Pt>;
+}
+
+// Routing runs in flow space (x = flow, y = lane) and the result is transposed for the vertical layout.
+interface Layout {
+  vertical: boolean;
+  cell: Cell;
+  /** Node half extent along the flow. */
+  halfFlow: number;
 }
 
 const DEFAULT_CELL: Cell = { w: 140, h: 88 };
@@ -87,6 +112,7 @@ const PIN_SPACING = 8;
 const LANE_SPACING = 6;
 const PAD = 24;
 const MIN_SCALE = 0.84; // a 12px label stays at 10px or more
+const VERTICAL_CROSS = NODE_HALF_W * 2 + 20; // column pitch when the flow runs top to bottom
 const MAX_SCALE = 1.25;
 const PACKET_SPEED = 80;
 const MIN_PACKET_GAP = 4;
@@ -147,10 +173,11 @@ function devError(message: string) {
   if (process.env.NODE_ENV !== "production") console.error(`RouteTrace: ${message}`);
 }
 
-function resolveNodes(input: RouteNode[], cell: Cell): Resolved {
+function resolveNodes(input: RouteNode[], cell: Cell, vertical = false): Resolved {
   const nodes: RouteNode[] = [];
   const byId = new Map<string, RouteNode>();
   const centres = new Map<string, Pt>();
+  const screen = new Map<string, Pt>();
   const cells = new Map<string, string>();
 
   for (const n of input) {
@@ -167,10 +194,12 @@ function resolveNodes(input: RouteNode[], cell: Cell): Resolved {
     cells.set(cellKey, n.id);
     byId.set(n.id, n);
     nodes.push(n);
-    centres.set(n.id, { x: n.col * cell.w + cell.w / 2, y: n.row * cell.h + cell.h / 2 });
+    const c = { x: n.col * cell.w + cell.w / 2, y: n.row * cell.h + cell.h / 2 };
+    centres.set(n.id, c);
+    screen.set(n.id, vertical ? { x: c.y, y: c.x } : c);
   }
 
-  return { nodes, byId, centres };
+  return { nodes, byId, centres, screen };
 }
 
 // Removes duplicate and collinear points, then fillets every corner with an arc.
@@ -245,7 +274,7 @@ interface RouteBuild {
 }
 
 // Deterministic orthogonal routing. Adjacent columns use a Z-route. Everything else uses a gutter route.
-function buildRoutes(resolved: Resolved, edges: RouteEdge[], cell: Cell, radius: number): RouteBuild {
+function buildRoutes(resolved: Resolved, edges: RouteEdge[], cell: Cell, radius: number, halfFlow = NODE_HALF_W, vertical = false): RouteBuild {
   const { byId, centres } = resolved;
   const centre = (id: string): Pt => centres.get(id) ?? { x: 0, y: 0 };
   const colOf = (id: string) => byId.get(id)?.col ?? 0;
@@ -328,8 +357,8 @@ function buildRoutes(resolved: Resolved, edges: RouteEdge[], cell: Cell, radius:
     const t = centre(e.to);
     const sc = colOf(e.from);
     const tc = colOf(e.to);
-    const pOut: Pt = { x: s.x + NODE_HALF_W, y: pinY.get(`out|${p.key}`) ?? s.y };
-    const pIn: Pt = { x: t.x - NODE_HALF_W, y: pinY.get(`in|${p.key}`) ?? t.y };
+    const pOut: Pt = { x: s.x + halfFlow, y: pinY.get(`out|${p.key}`) ?? s.y };
+    const pIn: Pt = { x: t.x - halfFlow, y: pinY.get(`in|${p.key}`) ?? t.y };
 
     let raw: Pt[];
     if (p.zig) {
@@ -344,7 +373,7 @@ function buildRoutes(resolved: Resolved, edges: RouteEdge[], cell: Cell, radius:
       raw = [pOut, { x: x1, y: pOut.y }, { x: x1, y: gy }, { x: x2, y: gy }, { x: x2, y: pIn.y }, pIn];
     }
 
-    const snapped = raw.map((q) => ({ x: snap(q.x), y: snap(q.y) }));
+    const snapped = raw.map((q) => (vertical ? { x: snap(q.y), y: snap(q.x) } : { x: snap(q.x), y: snap(q.y) }));
     const { d, length } = orthoPath(snapped, radius);
     return { key: p.key, from: e.from, to: e.to, d, length };
   });
@@ -371,15 +400,41 @@ export function routeEdges(
   return buildRoutes(resolved, edges, cell, r).routes.map(({ key, d }) => ({ key, d }));
 }
 
-// Nearest node in a direction, scored as along + 2 × perpendicular distance.
+interface Bounds {
+  x0: number;
+  y0: number;
+  w: number;
+  h: number;
+}
+
+// Resolved nodes, routes and screen bounds (grid extents plus 24px of padding) for one layout.
+function buildLayout(input: RouteNode[], edges: RouteEdge[], radius: number, layout: Layout) {
+  const resolved = resolveNodes(input, layout.cell, layout.vertical);
+  const built = buildRoutes(resolved, edges, layout.cell, radius, layout.halfFlow, layout.vertical);
+  let bounds: Bounds = { x0: -PAD, y0: -PAD, w: PAD * 2, h: PAD * 2 };
+  if (resolved.nodes.length > 0) {
+    const cols = resolved.nodes.map((n) => n.col);
+    const rows = resolved.nodes.map((n) => n.row);
+    const minC = Math.min(...cols);
+    const minR = Math.min(...rows);
+    const flow = { x0: minC * layout.cell.w - PAD, w: (Math.max(...cols) - minC + 1) * layout.cell.w + PAD * 2 };
+    const cross = { y0: minR * layout.cell.h - PAD, h: (Math.max(...rows) - minR + 1) * layout.cell.h + PAD * 2 };
+    bounds = layout.vertical
+      ? { x0: cross.y0, y0: flow.x0, w: cross.h, h: flow.w }
+      : { x0: flow.x0, y0: cross.y0, w: flow.w, h: cross.h };
+  }
+  return { resolved, built, bounds, vertical: layout.vertical };
+}
+
+// Nearest node in a direction on screen, scored as along + 2 × perpendicular distance.
 function nearestNode(resolved: Resolved, fromId: string, dir: Pt): string | null {
-  const from = resolved.centres.get(fromId);
+  const from = resolved.screen.get(fromId);
   if (!from) return null;
   let best: string | null = null;
   let bestScore = Infinity;
   for (const n of resolved.nodes) {
     if (n.id === fromId) continue;
-    const c = resolved.centres.get(n.id);
+    const c = resolved.screen.get(n.id);
     if (!c) continue;
     const dx = c.x - from.x;
     const dy = c.y - from.y;
@@ -403,6 +458,8 @@ export function RouteTrace({
   speed = 1,
   selectedId,
   onNodeSelect,
+  orientation = "auto",
+  readout = true,
   ariaLabel = "System diagram",
   tone,
   attract = false,
@@ -411,6 +468,7 @@ export function RouteTrace({
 }: RouteTraceProps) {
   const resolvedTone = useBjorkTone(tone);
   const palette = BJORK_PALETTE[resolvedTone];
+  const vars = useMemo(() => chartVars(palette), [palette]);
   const mounted = useHasMounted();
   const prefersReducedMotion = useReducedMotion() ?? false;
   const reduced = mounted && prefersReducedMotion;
@@ -421,56 +479,42 @@ export function RouteTrace({
   const buttonRefs = useRef(new Map<string, HTMLButtonElement>());
   const lastInputRef = useRef(-Infinity);
   const clockRef = useRef(0);
+  const announcer = useRef<AnnouncerHandle>(null);
   const size = useElementSize(rootRef);
+  const describedBy = `route-trace-${useId().replace(/:/g, "")}`;
 
   const [clock, setClock] = useState(0);
   const [hoverId, setHoverId] = useState<string | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
-  const [edgesOver, setEdgesOver] = useState({ start: false, end: false });
+  // The node that holds the single tab stop (roving tabindex); it survives blur.
+  const [tabId, setTabId] = useState<string | null>(null);
 
-  const resolved = useMemo(
-    () => resolveNodes(nodes, { w: cellW, h: cellH }),
-    [nodes, cellW, cellH],
+  // Both layouts are cheap; the container width picks one.
+  const horizontal = useMemo(
+    () => buildLayout(nodes, edges, cornerRadius, { vertical: false, cell: { w: cellW, h: cellH }, halfFlow: NODE_HALF_W }),
+    [nodes, edges, cornerRadius, cellW, cellH],
   );
-  const built = useMemo(
-    () => buildRoutes(resolved, edges, { w: cellW, h: cellH }, cornerRadius),
-    [resolved, edges, cellW, cellH, cornerRadius],
+  const vertical = useMemo(
+    () =>
+      buildLayout(nodes, edges, cornerRadius, {
+        vertical: true,
+        cell: { w: Math.max(NODE_HALF_H * 2 + 40, cellH), h: Math.min(cellW, VERTICAL_CROSS) },
+        halfFlow: NODE_HALF_H,
+      }),
+    [nodes, edges, cornerRadius, cellW, cellH],
   );
+  const avail = size.width;
+  const fitH = avail > 0 ? avail / horizontal.bounds.w : 1;
+  const fitV = avail > 0 ? avail / vertical.bounds.w : 1;
+  const useVertical =
+    orientation === "vertical" || (orientation === "auto" && avail > 0 && fitH < MIN_SCALE && fitV > fitH);
+  const layout = useVertical ? vertical : horizontal;
+  const { resolved, built, bounds } = layout;
+  // Fit the width, never clip: below MIN_SCALE the graph keeps shrinking rather than scrolling.
+  // The portrait layout never grows past 1:1, so a narrow column doesn't get a towering diagram.
+  const scale = useVertical ? Math.min(1, fitV) : Math.min(MAX_SCALE, fitH);
 
   const edgeByKey = useMemo(() => new Map(edges.map((e) => [edgeKey(e), e])), [edges]);
-
-  // Stage geometry: grid extents plus 24px of padding.
-  const bounds = useMemo(() => {
-    if (resolved.nodes.length === 0) return { x0: -PAD, y0: -PAD, w: PAD * 2, h: PAD * 2 };
-    const cols = resolved.nodes.map((n) => n.col);
-    const rows = resolved.nodes.map((n) => n.row);
-    const minC = Math.min(...cols);
-    const maxC = Math.max(...cols);
-    const minR = Math.min(...rows);
-    const maxR = Math.max(...rows);
-    return {
-      x0: minC * cellW - PAD,
-      y0: minR * cellH - PAD,
-      w: (maxC - minC + 1) * cellW + PAD * 2,
-      h: (maxR - minR + 1) * cellH + PAD * 2,
-    };
-  }, [resolved, cellW, cellH]);
-
-  const scale = size.width > 0 ? Math.min(MAX_SCALE, Math.max(MIN_SCALE, size.width / bounds.w)) : 1;
-
-  const syncOverflow = () => {
-    const el = rootRef.current;
-    if (!el) return;
-    setEdgesOver({
-      start: el.scrollLeft > 1,
-      end: el.scrollLeft + el.clientWidth < el.scrollWidth - 1,
-    });
-  };
-
-  useEffect(() => {
-    syncOverflow();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [size.width, scale, bounds.w]);
 
   // Attract: one non-entry node goes down for 2.5s every 5s, and throughputs drift. Input pauses it for 4s.
   const attractOn = attract && !reduced && !frozen;
@@ -498,7 +542,7 @@ export function RouteTrace({
     return targets[slot % targets.length]?.id ?? null;
   }, [attractOn, clock, resolved]);
 
-  // Animations and transitions for status changes
+  // Pauses the packet animation offscreen and in background tabs.
   useEffect(() => {
     const el = rootRef.current;
     if (!el || typeof IntersectionObserver === "undefined") return;
@@ -534,41 +578,98 @@ export function RouteTrace({
     return "ok";
   };
 
+  // Flow order (column, then row) for Home and End and the default tab stop.
+  const flowOrder = useMemo(() => [...resolved.nodes].sort((a, b) => a.col - b.col || a.row - b.row).map((n) => n.id), [resolved]);
+  const rovingId =
+    tabId && resolved.byId.has(tabId) ? tabId : selectedId && resolved.byId.has(selectedId) ? selectedId : (flowOrder[0] ?? null);
+
+  // Status summary, read by screen readers with the group and shown in the readout.
+  const byStatus: Record<RouteStatus, string[]> = { ok: [], degraded: [], down: [] };
+  for (const n of resolved.nodes) byStatus[nodeStatus.get(n.id) ?? "ok"].push(n.label);
+  const summaryParts = [`${byStatus.ok.length} healthy`];
+  if (byStatus.degraded.length) summaryParts.push(`${byStatus.degraded.length} degraded (${byStatus.degraded.join(", ")})`);
+  if (byStatus.down.length) summaryParts.push(`${byStatus.down.length} down (${byStatus.down.join(", ")})`);
+  const summary = `${resolved.nodes.length} services: ${summaryParts.join(", ")}. ${built.routes.length} connections.`;
+
+  // Announce status changes the caller makes (not the attract loop's demo outages).
+  const statusKey = JSON.stringify(resolved.nodes.map((n) => [n.id, nodeStatus.get(n.id) ?? "ok"]));
+  const prevStatus = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevStatus.current;
+    prevStatus.current = statusKey;
+    if (prev === null || prev === statusKey || attractOn) return;
+    const before = new Map(JSON.parse(prev) as [string, RouteStatus][]);
+    const changed = (JSON.parse(statusKey) as [string, RouteStatus][])
+      .filter(([id, st]) => before.has(id) && before.get(id) !== st)
+      .map(([id, st]) => `${resolved.byId.get(id)?.label ?? id} ${STATUS_WORD[st]}`);
+    if (changed.length) announcer.current?.say(changed.join(", "));
+  }, [statusKey, attractOn, resolved]);
+
   const activeId = hoverId ?? focusId;
   const transitionMs = (ms: number) => (reduced ? 0 : ms);
-  const x0 = bounds.x0;
-  const y0 = bounds.y0;
-  const vbW = bounds.w;
-  const vbH = bounds.h;
+  const { x0, y0, w: vbW, h: vbH } = bounds;
+  const pct = (v: number) => `${Math.round(clamp01(v) * 100)}%`;
+
+  // Incoming and outgoing traffic of one node, for its accessible name and the readout.
+  const trafficOf = (id: string) => {
+    const label = (other: string) => resolved.byId.get(other)?.label ?? other;
+    const valid = edges.filter((e) => resolved.byId.has(e.from) && resolved.byId.has(e.to) && e.from !== e.to);
+    return {
+      out: valid.filter((e) => e.from === id).map((e) => ({ id: e.to, label: label(e.to), v: e.throughput, st: edgeStatus(e.from, e.to, e.status) })),
+      in: valid.filter((e) => e.to === id).map((e) => ({ id: e.from, label: label(e.from), v: e.throughput, st: edgeStatus(e.from, e.to, e.status) })),
+    };
+  };
 
   const onNodeKey = (event: KeyboardEvent<HTMLButtonElement>, id: string) => {
     stampInput(lastInputRef);
-    const dir = ARROW_DIRS[event.key];
-    if (!dir) return;
+    let next: string | null = null;
+    if (event.key === "Home") next = flowOrder[0] ?? null;
+    else if (event.key === "End") next = flowOrder[flowOrder.length - 1] ?? null;
+    else if (event.key === "Escape") {
+      setHoverId(null);
+      return;
+    } else {
+      const dir = ARROW_DIRS[event.key];
+      if (!dir) return;
+      next = nearestNode(resolved, id, dir);
+    }
     event.preventDefault();
-    const next = nearestNode(resolved, id, dir);
-    if (next) buttonRefs.current.get(next)?.focus();
+    if (next) {
+      setTabId(next);
+      buttonRefs.current.get(next)?.focus();
+    }
   };
+
+  let readoutText = summary;
+  if (activeId && resolved.byId.has(activeId)) {
+    const n = resolved.byId.get(activeId)!;
+    const t = trafficOf(activeId);
+    const bits = [
+      ...t.in.map((e) => `from ${e.label} ${e.st === "down" ? "no traffic" : pct(e.v)}`),
+      ...t.out.map((e) => `to ${e.label} ${e.st === "down" ? "no traffic" : pct(e.v)}`),
+    ];
+    readoutText = `${n.label} · ${STATUS_WORD[nodeStatus.get(activeId) ?? "ok"]}${bits.length ? ` · ${bits.join(" · ")}` : ""}`;
+  }
 
   return (
     <div
       ref={rootRef}
       data-route-trace=""
       data-tone={resolvedTone}
+      data-orientation={useVertical ? "vertical" : "horizontal"}
       role="group"
-      aria-label={ariaLabel}
+      aria-roledescription="system diagram"
+      aria-label={`${ariaLabel}. Arrow keys move between services, Home and End jump to the first and last, Enter selects.`}
+      aria-describedby={describedBy}
       onPointerMove={() => stampInput(lastInputRef)}
       onPointerDown={() => stampInput(lastInputRef)}
       onKeyDown={() => stampInput(lastInputRef)}
-      onScroll={syncOverflow}
-      style={{
-        maskImage: `linear-gradient(to right, ${edgesOver.start ? "transparent" : "#000"} 0, #000 24px, #000 calc(100% - 24px), ${edgesOver.end ? "transparent" : "#000"} 100%)`,
-        WebkitMaskImage: `linear-gradient(to right, ${edgesOver.start ? "transparent" : "#000"} 0, #000 24px, #000 calc(100% - 24px), ${edgesOver.end ? "transparent" : "#000"} 100%)`,
-      }}
-      className={cn("relative w-full min-w-0 overflow-x-auto overflow-y-hidden p-2", className)}
+      style={vars}
+      className={cn("relative w-full min-w-0 overflow-hidden p-2", className)}
     >
       <style>{ROUTE_CSS}</style>
-      <div className="mx-auto" style={{ width: vbW * scale, height: vbH * scale }}>
+      {/* Hidden until measured, so the first paint is never the wrong layout or scale. */}
+      <div className="mx-auto" style={{ width: vbW * scale, height: vbH * scale, visibility: avail > 0 ? undefined : "hidden" }}>
         <div
           className="relative"
           style={{ width: vbW, height: vbH, transform: `scale(${scale})`, transformOrigin: "0 0" }}
@@ -656,7 +757,7 @@ export function RouteTrace({
 
           {resolved.nodes.map((n) => {
             const st = nodeStatus.get(n.id) ?? "ok";
-            const c = resolved.centres.get(n.id) ?? { x: 0, y: 0 };
+            const c = resolved.screen.get(n.id) ?? { x: 0, y: 0 };
             const left = c.x - NODE_HALF_W - x0;
             const top = c.y - NODE_HALF_H - y0;
             const dimmed = activeId !== null && activeId !== n.id;
@@ -665,6 +766,11 @@ export function RouteTrace({
             // LED centre on the label's cap-height centre (blur test), 1px border included
             const ledTop = n.sublabel ? 10 : 16;
             const selected = selectedId === n.id;
+            const t = trafficOf(n.id);
+            const links = [
+              t.out.length ? `sends to ${t.out.map((e) => `${e.label} ${pct(e.v)}`).join(", ")}` : "",
+              t.in.length ? `receives from ${t.in.map((e) => e.label).join(", ")}` : "",
+            ].filter(Boolean);
 
             return (
               <button
@@ -674,23 +780,30 @@ export function RouteTrace({
                   else buttonRefs.current.delete(n.id);
                 }}
                 type="button"
-                aria-label={`${n.label}, ${STATUS_WORD[st]}`}
+                tabIndex={n.id === rovingId ? 0 : -1}
+                aria-label={`${n.label}${n.sublabel ? `, ${n.sublabel}` : ""}, ${STATUS_WORD[st]}${links.length ? `. ${links.join("; ")}` : ""}`}
                 aria-current={selected ? "true" : undefined}
-                onClick={() => onNodeSelect?.(n.id)}
+                onClick={() => {
+                  setTabId(n.id);
+                  onNodeSelect?.(n.id);
+                }}
                 onKeyDown={(event) => onNodeKey(event, n.id)}
-                onFocus={() => setFocusId(n.id)}
+                onFocus={() => {
+                  setFocusId(n.id);
+                  setTabId(n.id);
+                }}
                 onBlur={() => setFocusId((prev) => (prev === n.id ? null : prev))}
                 onPointerEnter={() => setHoverId(n.id)}
                 onPointerLeave={() => setHoverId((prev) => (prev === n.id ? null : prev))}
-                className="absolute rounded-[8px] border text-left outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)] active:scale-[0.97]"
+                className={cn("absolute rounded-[8px] border text-left active:scale-[0.97]", chartFocusRing)}
                 style={{
                   left,
                   top,
                   width: NODE_HALF_W * 2,
                   height: NODE_HALF_H * 2,
-                  borderColor: `var(--bjork-border-strong, ${palette.borderStrong})`,
+                  borderColor: palette.borderStrong,
                   borderWidth: 1,
-                  background: `var(--bjork-surface, ${palette.surface})`,
+                  background: palette.surface,
                   opacity: dimmed ? DIM_NODE : 1,
                   transition: `opacity ${transitionMs(160)}ms ease, transform ${transitionMs(140)}ms ease-out`,
                   outline: selected ? `1px solid ${palette.accentInk}` : undefined,
@@ -704,13 +817,23 @@ export function RouteTrace({
                       key={`${p.side}-${p.y}`}
                       aria-hidden="true"
                       className="pointer-events-none absolute size-1"
-                      style={{
-                        // -2 half pin, -1 border: children are placed in the padding box
-                        top: p.y - (c.y - NODE_HALF_H) - 3,
-                        left: p.side === "in" ? -2.5 : undefined,
-                        right: p.side === "out" ? -3.5 : undefined,
-                        background: `var(--bjork-border-strong, ${palette.borderStrong})`,
-                      }}
+                      style={
+                        layout.vertical
+                          ? {
+                              // Pins on the top (in) and bottom (out) edges; children sit in the padding box.
+                              left: p.y - (c.x - NODE_HALF_W) - 3,
+                              top: p.side === "in" ? -2.5 : undefined,
+                              bottom: p.side === "out" ? -3.5 : undefined,
+                              background: palette.borderStrong,
+                            }
+                          : {
+                              // -2 half pin, -1 border: children are placed in the padding box
+                              top: p.y - (c.y - NODE_HALF_H) - 3,
+                              left: p.side === "in" ? -2.5 : undefined,
+                              right: p.side === "out" ? -3.5 : undefined,
+                              background: palette.borderStrong,
+                            }
+                      }
                     />
                   ))}
                 <span
@@ -724,28 +847,22 @@ export function RouteTrace({
                   }}
                 />
                 <span className="pointer-events-none absolute inset-y-0 left-[22px] right-[8px] flex flex-col justify-center">
-                  <span
-                    className="block truncate font-bjork-alpha text-[12px] font-medium leading-[14px]"
-                    style={{ color: `var(--bjork-text, ${palette.text})` }}
-                  >
+                  <span className="block truncate font-bjork-alpha text-[12px] font-medium leading-[14px]" style={{ color: palette.text }}>
                     {n.label}
                   </span>
                   {n.sublabel && (
-                    <span
-                      className="block truncate font-mono text-[10px] leading-[12px] tabular-nums"
-                      style={{ color: `var(--bjork-text-soft, ${palette.textSoft})` }}
-                    >
+                    <span className="block truncate font-mono text-[10px] leading-[12px] tabular-nums" style={{ color: palette.textSoft }}>
                       {n.sublabel}
                     </span>
                   )}
                 </span>
-                {st === "down" && (
+                {st !== "ok" && (
                   <span
                     aria-hidden="true"
                     className="pointer-events-none absolute right-0 -top-[13px] font-mono text-[9px] leading-[10px]"
-                    style={{ color: palette.error }}
+                    style={{ color: st === "down" ? palette.error : palette.warning }}
                   >
-                    DOWN
+                    {st === "down" ? "DOWN" : "DEGRADED"}
                   </span>
                 )}
               </button>
@@ -754,20 +871,29 @@ export function RouteTrace({
         </div>
       </div>
 
-      <ul className="sr-only">
-        {built.routes.map((r) => {
-          const edge = edgeByKey.get(r.key);
-          const from = resolved.byId.get(r.from);
-          const to = resolved.byId.get(r.to);
-          if (!edge || !from || !to) return null;
-          const st = edgeStatus(r.from, r.to, edge.status);
-          return (
-            <li key={r.key}>
-              {`${from.label} to ${to.label}, throughput ${Math.round(edge.throughput * 100)}%, ${STATUS_WORD[st]}`}
-            </li>
-          );
-        })}
-      </ul>
+      {readout && (
+        <p
+          aria-hidden="true"
+          className="mx-auto mt-2 line-clamp-2 min-h-[30px] max-w-[64ch] text-balance text-center font-mono text-[11px] leading-[15px] tabular-nums text-[color:var(--bjork-text-muted)]"
+        >
+          {readoutText}
+        </p>
+      )}
+
+      <div id={describedBy} className="sr-only">
+        <p>{summary}</p>
+        <ul>
+          {built.routes.map((r) => {
+            const edge = edgeByKey.get(r.key);
+            const from = resolved.byId.get(r.from);
+            const to = resolved.byId.get(r.to);
+            if (!edge || !from || !to) return null;
+            const st = edgeStatus(r.from, r.to, edge.status);
+            return <li key={r.key}>{`${from.label} to ${to.label}, throughput ${pct(edge.throughput)}, ${STATUS_WORD[st]}`}</li>;
+          })}
+        </ul>
+      </div>
+      <ChartAnnouncer ref={announcer} />
     </div>
   );
 }
