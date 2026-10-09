@@ -383,7 +383,7 @@ export function StackedAreaChart({
     // Scratch buffers, grown only when the data grows.
     if (s.xs.length < N) {
       s.xs = new Float64Array(N);
-      s.tan = new Float64Array(N);
+      s.tan = new Float64Array(Math.max(N, MAX_SERIES));
       s.tot = new Float64Array(N);
     }
     if (s.los.length < N * S) {
@@ -498,19 +498,38 @@ export function StackedAreaChart({
       ticks.map((v) => ({ text: usePct ? formatPercent(v) : c.formatValue(v), x: plot.l - 8, y: yTick(v), ax: -100, opacity: fade })),
     );
 
-    // Edge geometry for every series over the window, in screen space.
+    // Edge geometry for every series over the window, in screen space. When the window holds more
+    // than one point per 3px, the drawing uses bucket means (buckets aligned to absolute indices,
+    // so panning never shimmers; every series shares them, so the stack stays consistent). The
+    // crosshair, tooltip and keyboard still read the true points.
     const xs = s.xs;
     const los = s.los;
     const his = s.his;
     const kL = 1 - s.lines;
-    for (let j = i0; j <= i1; j++) {
-      xs[j] = xOf(T[j]);
+    const B = Math.max(1, Math.ceil((i1 - i0 + 1) / Math.max(1, pW / 3)));
+    const k0 = Math.max(0, Math.floor(i0 / B) - (B > 1 ? 1 : 0));
+    const k1 = Math.min(Math.floor((N - 1) / B), Math.floor(Math.max(0, i1) / B) + (B > 1 ? 1 : 0));
+    const R = N ? k1 - k0 + 1 : 0;
+    for (let r = 0; r < R; r++) {
+      const ja = (k0 + r) * B;
+      const jb = Math.min(N - 1, ja + B - 1);
+      const cnt = jb - ja + 1;
+      let tm = 0;
+      for (let j = ja; j <= jb; j++) tm += T[j];
+      xs[r] = xOf(tm / cnt);
+      // s.tan doubles as per-series scratch here; the tangents overwrite it later.
       let tot = 0;
-      for (let i = 0; i < S; i++) tot += D[i].values[j] * s.vis[i];
+      for (let i = 0; i < S; i++) {
+        let v = 0;
+        for (let j = ja; j <= jb; j++) v += D[i].values[j];
+        v = (v / cnt) * s.vis[i];
+        s.tan[i] = v;
+        tot += v;
+      }
       let cum = 0;
       let cumP = 0;
       for (let i = 0; i < S; i++) {
-        const v = D[i].values[j] * s.vis[i];
+        const v = s.tan[i];
         const share = tot > 0 ? v / tot : 0;
         const b0 = cum * kL;
         const aS = plot.b - (b0 / s.hi) * pH;
@@ -523,12 +542,14 @@ export function StackedAreaChart({
           ya = plot.b + (ya - plot.b) * e;
           yb = plot.b + (yb - plot.b) * e;
         }
-        los[i * N + j] = ya;
-        his[i * N + j] = yb;
+        los[i * N + r] = ya;
+        his[i * N + r] = yb;
         cum += v;
         cumP += share;
       }
     }
+    const ra = 0;
+    const rb = R - 1;
 
     let topVis = -1;
     for (let i = S - 1; i >= 0; i--) {
@@ -543,17 +564,17 @@ export function StackedAreaChart({
     ctx.rect(plot.l, plot.t - 3, pW, pH + 3);
     ctx.clip();
     ctx.lineJoin = "round";
-    if (i1 > i0 && S) {
+    if (rb > ra && S) {
       const fillBase = FILL_ALPHA[c.tone];
       for (let i = 0; i < S; i++) {
         if (s.vis[i] <= 0.01) continue;
         const em = s.emph[i];
         const col = c.colors[i];
         ctx.beginPath();
-        monoTangents(xs, his, i * N, i0, i1, s.tan);
-        traceEdge(ctx, xs, his, i * N, i0, i1, s.tan, false);
-        monoTangents(xs, los, i * N, i0, i1, s.tan);
-        traceEdge(ctx, xs, los, i * N, i0, i1, s.tan, true);
+        monoTangents(xs, his, i * N, ra, rb, s.tan);
+        traceEdge(ctx, xs, his, i * N, ra, rb, s.tan, false);
+        monoTangents(xs, los, i * N, ra, rb, s.tan);
+        traceEdge(ctx, xs, los, i * N, ra, rb, s.tan, true);
         ctx.closePath();
         const fa = Math.min(0.85, fillBase * em) * kL;
         if (fa > 0.003) {
@@ -565,8 +586,8 @@ export function StackedAreaChart({
           ctx.save();
           ctx.clip();
           ctx.beginPath();
-          monoTangents(xs, his, i * N, i0, i1, s.tan);
-          traceEdge(ctx, xs, his, i * N, i0, i1, s.tan, false);
+          monoTangents(xs, his, i * N, ra, rb, s.tan);
+          traceEdge(ctx, xs, his, i * N, ra, rb, s.tan, false);
           ctx.lineWidth = i < topVis ? 5 : 3;
           ctx.strokeStyle = withAlpha(col, clamp(0.3 + 0.7 * em, 0, 1));
           ctx.stroke();
@@ -580,8 +601,8 @@ export function StackedAreaChart({
         for (let i = 0; i < topVis; i++) {
           if (s.vis[i] <= 0.01) continue;
           ctx.beginPath();
-          monoTangents(xs, his, i * N, i0, i1, s.tan);
-          traceEdge(ctx, xs, his, i * N, i0, i1, s.tan, false);
+          monoTangents(xs, his, i * N, ra, rb, s.tan);
+          traceEdge(ctx, xs, his, i * N, ra, rb, s.tan, false);
           ctx.stroke();
         }
       }
@@ -590,8 +611,8 @@ export function StackedAreaChart({
         for (let i = 0; i < S; i++) {
           if (s.vis[i] <= 0.01) continue;
           ctx.beginPath();
-          monoTangents(xs, his, i * N, i0, i1, s.tan);
-          traceEdge(ctx, xs, his, i * N, i0, i1, s.tan, false);
+          monoTangents(xs, his, i * N, ra, rb, s.tan);
+          traceEdge(ctx, xs, his, i * N, ra, rb, s.tan, false);
           ctx.strokeStyle = withAlpha(c.colors[i], s.vis[i] * clamp(0.3 + 0.7 * s.emph[i], 0, 1));
           ctx.stroke();
         }
@@ -631,10 +652,10 @@ export function StackedAreaChart({
     const inItems: PlacedLabel[] = [];
     const endItems: PlacedLabel[] = [];
     const labelIn = clamp((s.enter - 0.7) / 0.3, 0, 1);
-    if (i1 - i0 >= 2 && kL > 0.02) {
-      // Pixels per point, to turn the label's half width into a reach in points.
-      const per = (xs[i1] - xs[i0]) / Math.max(1, i1 - i0);
-      const stride = Math.max(1, Math.floor((i1 - i0) / 90));
+    if (rb - ra >= 2 && kL > 0.02) {
+      // Pixels per drawn point, to turn the label's half width into a reach in points.
+      const per = (xs[rb] - xs[ra]) / Math.max(1, rb - ra);
+      const stride = Math.max(1, Math.floor((rb - ra) / 90));
       for (let i = 0; i < S; i++) {
         if (s.vis[i] < 0.5 || c.hiddenSet.has(D[i].id)) continue;
         const text = D[i].label;
@@ -642,11 +663,11 @@ export function StackedAreaChart({
         const reach = Math.max(1, Math.round(half / Math.max(0.1, per)));
         let best = -1;
         let bestT = 0;
-        for (let j = i0 + 1; j < i1; j += stride) {
+        for (let j = ra + 1; j < rb; j += stride) {
           const x = xs[j];
           if (x - half < plot.l + 2 || x + half > plot.r - 2) continue;
-          const a = Math.max(i0, j - reach);
-          const b = Math.min(i1, j + reach);
+          const a = Math.max(ra, j - reach);
+          const b = Math.min(rb, j + reach);
           const o = i * N;
           const ma = (a + j) >> 1;
           const mb = (j + b) >> 1;
@@ -668,8 +689,9 @@ export function StackedAreaChart({
       }
     }
     // Lines mode: labels at the right end, pushed apart, when there are few enough lines.
-    if (s.lines > 0.02 && visibleCountOf(c.hiddenSet, D) <= 4 && i1 > i0) {
-      const jEnd = Math.max(i0, Math.min(i1, lowerBound(T, s.ve + 1e-6) - 1));
+    if (s.lines > 0.02 && visibleCountOf(c.hiddenSet, D) <= 4 && rb > ra) {
+      let jEnd = rb;
+      while (jEnd > ra && xs[jEnd] > plot.r) jEnd--;
       const ys: { text: string; y: number; o: number }[] = [];
       for (let i = 0; i < S; i++) {
         if (s.vis[i] < 0.5 || c.hiddenSet.has(D[i].id)) continue;
@@ -689,8 +711,12 @@ export function StackedAreaChart({
     // Crosshair: rule, a dot on each visible top edge, tooltip beside it.
     const tip = tipRef.current;
     const col = s.col;
-    if (col !== null && col >= 0 && col < N && col >= i0 && col <= i1 && T[col] >= s.vs - span * 1e-6 && T[col] <= s.ve + span * 1e-6) {
-      const x = xs[col];
+    if (col !== null && col >= 0 && col < N && R > 0 && T[col] >= s.vs - span * 1e-6 && T[col] <= s.ve + span * 1e-6) {
+      const x = xOf(T[col]);
+      // Dots sit on the drawn edge: the exact point, or the resampled curve when bucketed.
+      let rr = 0;
+      while (rr < rb && xs[rr + 1] < x) rr++;
+      const f = rr < rb && xs[rr + 1] > xs[rr] ? clamp((x - xs[rr]) / (xs[rr + 1] - xs[rr]), 0, 1) : 0;
       ctx.strokeStyle = withAlpha(p.text, 0.5);
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -700,7 +726,7 @@ export function StackedAreaChart({
       for (let i = 0; i < S; i++) {
         if (s.vis[i] < 0.5) continue;
         ctx.beginPath();
-        ctx.arc(x, his[i * N + col], 3, 0, Math.PI * 2);
+        ctx.arc(x, his[i * N + rr] + (rr < rb ? (his[i * N + rr + 1] - his[i * N + rr]) * f : 0), 3, 0, Math.PI * 2);
         ctx.fillStyle = c.colors[i];
         ctx.fill();
         ctx.lineWidth = 1.5;

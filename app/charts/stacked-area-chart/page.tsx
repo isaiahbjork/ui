@@ -19,16 +19,16 @@ const TIMES = Array.from({ length: DAYS }, (_, j) => START + j * DAY);
 const LAUNCH = 133;
 const END = TIMES[DAYS - 1];
 
-// Seeded daily active users by plan: growth, weekday rhythm (paid plans are work tools), an August
+// Seeded daily active users by plan: growth, a gentle weekend dip (deeper on paid plans), an August
 // lull, the holiday trough, and the launch.
 function createActiveUsers(seed: number): AreaSeries[] {
   const rnd = mulberry32(seed);
   const plans = [
-    { id: "free", label: "Free", base: 9800, growth: 0.3, weekend: 0.88, launch: 0.14 },
-    { id: "starter", label: "Starter", base: 6200, growth: 0.45, weekend: 0.76, launch: 0.1 },
-    { id: "pro", label: "Pro", base: 5100, growth: 0.7, weekend: 0.68, launch: 0.24 },
-    { id: "team", label: "Team", base: 2900, growth: 1.1, weekend: 0.58, launch: 0.42 },
-    { id: "enterprise", label: "Enterprise", base: 1700, growth: 0.55, weekend: 0.5, launch: 0.06 },
+    { id: "free", label: "Free", base: 9800, growth: 0.3, weekend: 0.97, launch: 0.14 },
+    { id: "starter", label: "Starter", base: 6200, growth: 0.45, weekend: 0.95, launch: 0.1 },
+    { id: "pro", label: "Pro", base: 5100, growth: 0.7, weekend: 0.93, launch: 0.24 },
+    { id: "team", label: "Team", base: 2900, growth: 1.1, weekend: 0.91, launch: 0.42 },
+    { id: "enterprise", label: "Enterprise", base: 1700, growth: 0.55, weekend: 0.89, launch: 0.06 },
   ];
   return plans.map((pl) => {
     let noise = 0;
@@ -41,7 +41,7 @@ function createActiveUsers(seed: number): AreaSeries[] {
         const trend = 1 + pl.growth * (j / DAYS);
         const season = 1 - 0.09 * Math.exp(-((j - 222) ** 2) / (2 * 20 * 20)) - 0.18 * Math.exp(-((j - 358) ** 2) / (2 * 5 * 5));
         const launch = j >= LAUNCH ? pl.launch * (0.4 + 0.6 * Math.exp(-(j - LAUNCH) / 8)) : 0;
-        noise = noise * 0.7 + gaussian(rnd) * 0.014;
+        noise = noise * 0.7 + gaussian(rnd) * 0.008;
         return Math.round(pl.base * trend * season * weekday * (1 + launch) * (1 + noise));
       }),
     };
