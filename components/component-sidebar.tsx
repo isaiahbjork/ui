@@ -195,7 +195,7 @@ const componentRoutes: ComponentGroup[] = [
     routes: [
       { name: "Hover Image Gallery", path: "/galleries/hover-image-gallery" },
       { name: "Portfolio Gallery", path: "/galleries/portfolio-gallery" },
-      // @slot mosaic-settle
+      { name: "Mosaic Settle", path: "/galleries/mosaic-settle" },
 
       { name: "Torn Edge Reveal", path: "/galleries/torn-edge-reveal" },
 

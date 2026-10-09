@@ -1149,7 +1149,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork107 mosaic-settle
+  {
+    id: "bjork107",
+    slug: "mosaic-settle",
+    title: "Mosaic settle",
+    route: "/galleries/mosaic-settle",
+    sourcePath: "components/bjork-ui/galleries/mosaic-settle.tsx",
+    tier: "lab",
+    collection: "Galleries",
+    preview: "gallery",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   {
     id: "bjork108",
