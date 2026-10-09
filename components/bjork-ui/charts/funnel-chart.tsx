@@ -60,6 +60,8 @@ const W_GUT = 26;
 const N_LABEL = 18;
 const N_BAR = 16;
 const N_GUT = 22;
+// Inner side padding, so labels and numbers never sit on the focus ring.
+const PAD_X = 8;
 const COL_GAP = 16;
 const PLOT_GAP = 18;
 const SEG_GAP = 2;
@@ -238,14 +240,14 @@ export function FunnelChart({
     // Bars and gutters stretch (0.7x to 1.5x) to fill a fixed height; label lines never do.
     const flex = N * bar0 + Math.max(0, N - 1) * gut0;
     const k = flex > 0 ? clamp((h - HEADER_H - PAD_B - N * labelH) / flex, 0.7, 1.5) : 1;
-    const L: Layout = { narrow, plotL: 0, plotR: w, labelW: 0, labelH, barH: bar0 * k, gutH: gut0 * k, countR: 0, n: N };
+    const L: Layout = { narrow, plotL: PAD_X, plotR: w - PAD_X, labelW: 0, labelH, barH: bar0 * k, gutH: gut0 * k, countR: 0, n: N };
     if (narrow) {
-      L.countR = w - pctW - 10;
-      L.labelW = Math.max(40, L.countR - countW - 12);
+      L.countR = w - PAD_X - pctW - 10;
+      L.labelW = Math.max(40, L.countR - countW - 12 - PAD_X);
     } else {
       L.labelW = Math.min(Math.max(m.label, 40), clamp(w * 0.26, 90, 200));
-      L.plotL = L.labelW + 14;
-      L.plotR = Math.max(L.plotL + 60, w - pctW - COL_GAP - countW - PLOT_GAP);
+      L.plotL = PAD_X + L.labelW + 14;
+      L.plotR = Math.max(L.plotL + 60, w - PAD_X - pctW - COL_GAP - countW - PLOT_GAP);
       L.countR = L.plotR + PLOT_GAP + countW;
     }
     s.lay = L;
@@ -296,7 +298,7 @@ export function FunnelChart({
       const y1 = barBottom(L, i) + 4;
       ctx.fillStyle = withAlpha(p.text, 0.045);
       ctx.beginPath();
-      ctx.roundRect(narrow ? -4 : 0, y0, narrow ? w + 8 : w, y1 - y0, 6);
+      ctx.roundRect(0, y0, w, y1 - y0, 6);
       ctx.fill();
     }
 
@@ -370,10 +372,10 @@ export function FunnelChart({
         nm.style.maxWidth = `${L.labelW.toFixed(0)}px`;
         if (narrow) {
           nm.style.textAlign = "left";
-          nm.style.transform = `translate3d(0px, ${(rowTop(L, i) + labelH / 2 - 1).toFixed(1)}px, 0) translate(0, -50%)`;
+          nm.style.transform = `translate3d(${PAD_X}px, ${(rowTop(L, i) + labelH / 2 - 1).toFixed(1)}px, 0) translate(0, -50%)`;
         } else {
           nm.style.textAlign = "right";
-          nm.style.transform = `translate3d(${L.labelW.toFixed(1)}px, ${(yT + bh / 2).toFixed(1)}px, 0) translate(-100%, -50%)`;
+          nm.style.transform = `translate3d(${(PAD_X + L.labelW).toFixed(1)}px, ${(yT + bh / 2).toFixed(1)}px, 0) translate(-100%, -50%)`;
         }
       }
       const yVal = narrow ? rowTop(L, i) + labelH / 2 - 1 : yT + bh / 2;
@@ -386,14 +388,14 @@ export function FunnelChart({
       const pc = pctRefs.current[i];
       if (pc) {
         pc.style.opacity = vo;
-        pc.style.transform = `translate3d(${w.toFixed(1)}px, ${yVal.toFixed(1)}px, 0) translate(-100%, -50%)`;
+        pc.style.transform = `translate3d(${(w - PAD_X).toFixed(1)}px, ${yVal.toFixed(1)}px, 0) translate(-100%, -50%)`;
       }
       const gu = gutRefs.current[i];
       if (gu && i > 0) {
         const gy = (barBottom(L, i - 1) + rowTop(L, i)) / 2;
         gu.style.opacity = String(lossOf(i) * (s.hover !== null && !hov ? 0.5 : 1));
-        gu.style.maxWidth = `${(w - (narrow ? 0 : L.plotL + 8)).toFixed(0)}px`;
-        gu.style.transform = `translate3d(${(narrow ? 0 : L.plotL + 8).toFixed(1)}px, ${gy.toFixed(1)}px, 0) translate(0, -50%)`;
+        gu.style.maxWidth = `${(w - PAD_X - (narrow ? L.plotL : L.plotL + 8)).toFixed(0)}px`;
+        gu.style.transform = `translate3d(${(narrow ? L.plotL : L.plotL + 8).toFixed(1)}px, ${gy.toFixed(1)}px, 0) translate(0, -50%)`;
       }
     }
 
@@ -421,7 +423,7 @@ export function FunnelChart({
     if (tip?.el && s.hover !== null && s.hover < N) {
       const i = s.hover;
       const { w: tw, h: th } = tip.size;
-      const limit = narrow ? w : L.plotR;
+      const limit = narrow ? w - PAD_X : L.plotR;
       const extentIn = (y0: number, y1: number) => {
         let e = L.plotL;
         for (let j = 0; j < N; j++) {
@@ -433,7 +435,7 @@ export function FunnelChart({
           }
           if (j > 0) {
             const gy0 = barBottom(L, j - 1);
-            if (gy0 <= y1 && top >= y0) e = Math.max(e, (narrow ? 0 : L.plotL + 8) + (m.gut[j] ?? 0));
+            if (gy0 <= y1 && top >= y0) e = Math.max(e, (narrow ? L.plotL : L.plotL + 8) + (m.gut[j] ?? 0));
           }
         }
         return e;
@@ -485,11 +487,11 @@ export function FunnelChart({
   const tooltipFor = (i: number): TooltipContent | null => {
     const r = rows[i];
     if (!r) return null;
-    const out: TooltipRow[] = [{ key: "v", label: valueLabel, value: formatValue(r.value), color: withAlpha(pal.text, 0.6) }];
+    const out: TooltipRow[] = [{ key: "v", label: valueLabel, value: formatValue(r.value) }];
     if (i > 0) {
       out.push({ key: "c", label: "Of previous step", value: r.conv !== null ? formatRate(r.conv) : "–" });
       out.push({ key: "o", label: "Of first step", value: r.overall !== null ? formatRate(r.overall) : "–" });
-      out.push({ key: "l", label: "Lost", value: r.lost > 0 ? `−${formatValue(r.lost)}` : formatValue(0), strong: false, color: i === worst ? pal.accent : undefined });
+      out.push({ key: "l", label: "Lost", value: r.lost > 0 ? `−${formatValue(r.lost)}` : formatValue(0), strong: false });
     }
     if (r.prev !== null) {
       out.push({ key: "p", label: previousLabel, value: formatValue(r.prev), strong: false });
@@ -636,7 +638,7 @@ export function FunnelChart({
         {/* Legend: keys mirror the marks. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-[4px] flex items-center gap-x-4 font-bjork-alpha text-[11px] font-medium leading-3 text-[color:var(--bjork-text-medium)]"
+          className="pointer-events-none absolute left-2 top-[4px] flex items-center gap-x-4 font-bjork-alpha text-[11px] font-medium leading-3 text-[color:var(--bjork-text-medium)]"
         >
           <span className="inline-flex items-center gap-1.5">
             <span className="inline-block h-2 w-3 rounded-r-[2px] bg-[color:var(--bjork-text-muted)]" />
@@ -663,7 +665,7 @@ export function FunnelChart({
         <span
           ref={hPctRef}
           aria-hidden="true"
-          className="pointer-events-none absolute right-0 top-[6px] whitespace-nowrap font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+          className="pointer-events-none absolute right-2 top-[6px] whitespace-nowrap font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]"
         >
           Overall
         </span>
