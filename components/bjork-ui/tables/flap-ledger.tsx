@@ -45,7 +45,7 @@ export interface FlapLedgerProps {
   announceChanges?: boolean;
   ariaLabel?: string;
   tone?: BjorkTone;
-  /** Cycles three built-in departure sets every 5s. Pauses on pointer input and offscreen. */
+  /** Cycles the built-in departure sets every 5s. Pauses on pointer input and offscreen. */
   attract?: boolean;
   className?: string;
 }
@@ -56,11 +56,20 @@ const CHARSET_PRESETS: Record<"digits" | "alpha" | "alnum", string> = {
   alnum: " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789",
 };
 
-const MAX_STEPS = 12;
-const MAX_FLIPPING = 160;
-const ROW_DELAY_MS = 40;
-const LAND_MS = 120;
-const LAND_DEG = -6;
+// Timing is tuned for a Solari board you can follow: each flap is long enough
+// to see the top half fall, cells clatter through several characters, and the
+// start times ripple across each word and down the rows, so one update reads as
+// a wave of roughly 1.5 to 2 seconds rather than a blink.
+const MAX_STEPS = 10;
+const MAX_FLIPPING = 200;
+/** Extra delay per row, so the cascade also travels down the board. */
+const ROW_DELAY_MS = 70;
+/** Extra delay per character inside a column, moving away from the cascade origin. */
+const CHAR_DELAY_MS = 12;
+const LAND_MS = 180;
+const LAND_DEG = -10;
+/** Share of each flap spent on the top half falling. The rest is the bottom half settling. */
+const FALL_SHARE = 0.58;
 const EDGE_FADE_PX = 24;
 const ATTRACT_MS = 5000;
 const ATTRACT_RESUME_MS = 4000;
@@ -84,6 +93,10 @@ interface Material {
   bottomFace: readonly [string, string];
   split: string;
   splitHighlight: string;
+  /** Lit free edge of a flap while it is moving, so it reads as a card. */
+  flapEdge: string;
+  /** Darkening of a flap as it turns away from flat, at edge-on. */
+  flapShade: number;
 }
 
 const MATERIAL: Record<BjorkTone, Material> = {
@@ -93,6 +106,8 @@ const MATERIAL: Record<BjorkTone, Material> = {
     bottomFace: ["#131313", "#101010"],
     split: "#050505",
     splitHighlight: "rgba(255,255,255,0.04)",
+    flapEdge: "rgba(255,255,255,0.16)",
+    flapShade: 0.6,
   },
   light: {
     board: "#efe9dd",
@@ -100,6 +115,8 @@ const MATERIAL: Record<BjorkTone, Material> = {
     bottomFace: ["#f5efe3", "#efe7d8"],
     split: "#e1d7c8",
     splitHighlight: "rgba(255,255,255,0.7)",
+    flapEdge: "rgba(0,0,0,0.14)",
+    flapShade: 0.22,
   },
 };
 
@@ -262,6 +279,8 @@ interface Look {
   board: string;
   split: string;
   splitHighlight: string;
+  flapEdge: string;
+  flapShade: number;
   perspective: number; // device px
 }
 
@@ -279,8 +298,8 @@ class BoardEngine {
   dirty = new Set<CellState>();
   atlases: Atlas[] = [];
   shadeSprite: HTMLCanvasElement | null = null;
-  look: Look = { dpr: 1, board: "#000", split: "#000", splitHighlight: "#000", perspective: 220 };
-  flapMs = 70;
+  look: Look = { dpr: 1, board: "#000", split: "#000", splitHighlight: "#000", flapEdge: "#000", flapShade: 0, perspective: 220 };
+  flapMs = 130;
 
   constructor(public canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext("2d");
@@ -383,11 +402,13 @@ class BoardEngine {
         cell.fallText = step.from;
         cell.riseText = step.to;
       }
-      // Both halves share one phase: the top drops for the first half, the
-      // bottom stays edge-on until then and lifts during the second half.
-      cell.fallDeg = p < 0.5 ? -90 * fallEase(p * 2) : -90;
-      cell.riseDeg = p < 0.5 ? 90 : 90 * (1 - riseEase(p * 2 - 1));
-      cell.shade = 1 - Math.abs(2 * p - 1);
+      // Both halves share one phase: the top half falls under gravity (ease-in)
+      // for the first FALL_SHARE of the flap, then the bottom half, edge-on until
+      // then, slaps down into place with a quick ease-out.
+      const f = FALL_SHARE;
+      cell.fallDeg = p < f ? -90 * fallEase(p / f) : -90;
+      cell.riseDeg = p < f ? 90 : 90 * (1 - riseEase((p - f) / (1 - f)));
+      cell.shade = p < f ? p / f : 1 - (p - f) / (1 - f);
       return;
     }
     const q = (e - total) / LAND_MS;
@@ -399,8 +420,9 @@ class BoardEngine {
       cell.riseText = last.to;
       cell.fallDeg = -90;
       cell.shade = 0;
-      // 0deg -> LAND_DEG at 40% -> 0deg, ease-out on both legs.
-      cell.riseDeg = q < 0.4 ? LAND_DEG * landEase(q / 0.4) : LAND_DEG * (1 - landEase((q - 0.4) / 0.6));
+      // The card overshoots past flat and settles back: 0deg -> LAND_DEG at 30%
+      // -> 0deg, ease-out on both legs.
+      cell.riseDeg = q < 0.3 ? LAND_DEG * landEase(q / 0.3) : LAND_DEG * (1 - landEase((q - 0.3) / 0.7));
       return;
     }
     this.settle(cell);
@@ -477,6 +499,11 @@ class BoardEngine {
       ctx.drawImage(img, sx, upper ? 0 : half, w, half, x, upper ? y : mid, w, half);
       return;
     }
+    // A turning flap catches less light, so it darkens toward edge-on and its
+    // free edge picks up a thin highlight. Without these the moving half is the
+    // same flat grey as the faces behind it and the fall barely reads.
+    const shade = this.look.flapShade * (1 - cos);
+    const edge = Math.max(1, Math.round(this.look.dpr));
     for (let i = 0; i < STRIPS; i++) {
       const d0 = (half * i) / STRIPS;
       const d1 = (half * (i + 1)) / STRIPS;
@@ -488,8 +515,17 @@ class BoardEngine {
       const dw = w * s;
       const dx = x + (w - dw) / 2;
       const pad = i < STRIPS - 1 ? 0.5 : 0; // overlap strips so no seam shows
-      if (upper) ctx.drawImage(img, sx, half - d1, w, d1 - d0, dx, mid - y1, dw, dh + pad);
-      else ctx.drawImage(img, sx, half + d0, w, d1 - d0, dx, mid + y0 - pad, dw, dh + pad);
+      const dy = upper ? mid - y1 : mid + y0 - pad;
+      if (upper) ctx.drawImage(img, sx, half - d1, w, d1 - d0, dx, dy, dw, dh + pad);
+      else ctx.drawImage(img, sx, half + d0, w, d1 - d0, dx, dy, dw, dh + pad);
+      if (shade > 0.01) {
+        ctx.fillStyle = `rgba(0,0,0,${shade.toFixed(3)})`;
+        ctx.fillRect(dx, dy, dw, dh + pad);
+      }
+      if (i === STRIPS - 1 && Math.abs(deg) > 2) {
+        ctx.fillStyle = this.look.flapEdge;
+        ctx.fillRect(dx, upper ? dy : dy + dh + pad - edge, dw, edge);
+      }
     }
   }
 }
@@ -595,28 +631,47 @@ function Led({ state, m, colours }: { state: FlapStatus; m: Metrics; colours: Re
   );
 }
 
-/** Built-in idle sets for `attract`. Keys match the demo columns. */
+/**
+ * Built-in idle sets for `attract`. Keys match the demo columns. Each set is the
+ * next moment on the same board: the top flight departs and the rows scroll up,
+ * a new flight arrives at the bottom, gates move and delayed times slip, so most
+ * rows flip several columns at once.
+ */
 export const FLAP_LEDGER_SAMPLE_ROWS: FlapRow[][] = [
   [
-    { time: "08:15", flight: "BJ204", destination: "LONDON", gate: "A12", status: "ON TIME" },
-    { time: "08:40", flight: "BJ317", destination: "TOKYO", gate: "B4", status: "BOARDING" },
-    { time: "09:05", flight: "BJ82", destination: "BERLIN", gate: "C7", status: "DELAYED" },
-    { time: "09:30", flight: "BJ551", destination: "OSLO", gate: "D2", status: "GATE CLOSED" },
-    { time: "10:10", flight: "BJ19", destination: "NEW YORK", gate: "E9", status: "DEPARTED" },
-  ],
-  [
-    { time: "08:15", flight: "BJ204", destination: "LONDON", gate: "A12", status: "DEPARTED" },
+    { time: "08:15", flight: "BJ204", destination: "LONDON", gate: "A12", status: "GATE CLOSED" },
     { time: "08:40", flight: "BJ317", destination: "TOKYO", gate: "B4", status: "BOARDING" },
     { time: "09:05", flight: "BJ82", destination: "BERLIN", gate: "C7", status: "ON TIME" },
-    { time: "09:30", flight: "BJ551", destination: "OSLO", gate: "D2", status: "DELAYED" },
-    { time: "10:10", flight: "BJ19", destination: "NEW YORK", gate: "E9", status: "ON TIME" },
+    { time: "09:30", flight: "BJ551", destination: "OSLO", gate: "D2", status: "ON TIME" },
+    { time: "09:55", flight: "BJ19", destination: "NEW YORK", gate: "E9", status: "ON TIME" },
   ],
   [
-    { time: "08:15", flight: "BJ204", destination: "LONDON", gate: "A12", status: "DEPARTED" },
-    { time: "08:40", flight: "BJ317", destination: "TOKYO", gate: "B4", status: "DEPARTED" },
+    { time: "08:40", flight: "BJ317", destination: "TOKYO", gate: "B4", status: "GATE CLOSED" },
+    { time: "09:05", flight: "BJ82", destination: "BERLIN", gate: "C7", status: "BOARDING" },
+    { time: "09:50", flight: "BJ551", destination: "OSLO", gate: "D2", status: "DELAYED" },
+    { time: "09:55", flight: "BJ19", destination: "NEW YORK", gate: "E12", status: "ON TIME" },
+    { time: "10:20", flight: "BJ446", destination: "REYKJAVIK", gate: "A3", status: "ON TIME" },
+  ],
+  [
     { time: "09:05", flight: "BJ82", destination: "BERLIN", gate: "C7", status: "GATE CLOSED" },
-    { time: "09:30", flight: "BJ551", destination: "OSLO", gate: "D2", status: "BOARDING" },
-    { time: "10:10", flight: "BJ19", destination: "NEW YORK", gate: "E9", status: "DELAYED" },
+    { time: "09:50", flight: "BJ551", destination: "OSLO", gate: "D5", status: "BOARDING" },
+    { time: "10:15", flight: "BJ19", destination: "NEW YORK", gate: "E12", status: "DELAYED" },
+    { time: "10:20", flight: "BJ446", destination: "REYKJAVIK", gate: "A3", status: "ON TIME" },
+    { time: "10:45", flight: "BJ73", destination: "SINGAPORE", gate: "B11", status: "ON TIME" },
+  ],
+  [
+    { time: "09:50", flight: "BJ551", destination: "OSLO", gate: "D5", status: "GATE CLOSED" },
+    { time: "10:15", flight: "BJ19", destination: "NEW YORK", gate: "E12", status: "BOARDING" },
+    { time: "10:20", flight: "BJ446", destination: "REYKJAVIK", gate: "A7", status: "ON TIME" },
+    { time: "11:00", flight: "BJ73", destination: "SINGAPORE", gate: "B11", status: "DELAYED" },
+    { time: "11:10", flight: "BJ628", destination: "LISBON", gate: "C2", status: "ON TIME" },
+  ],
+  [
+    { time: "10:15", flight: "BJ19", destination: "NEW YORK", gate: "E12", status: "GATE CLOSED" },
+    { time: "10:20", flight: "BJ446", destination: "REYKJAVIK", gate: "A7", status: "BOARDING" },
+    { time: "11:00", flight: "BJ73", destination: "SINGAPORE", gate: "B11", status: "DELAYED" },
+    { time: "11:10", flight: "BJ628", destination: "LISBON", gate: "C4", status: "ON TIME" },
+    { time: "11:35", flight: "BJ905", destination: "MEXICO CITY", gate: "D8", status: "ON TIME" },
   ],
 ];
 
@@ -638,8 +693,8 @@ export function FlapLedger({
   columns,
   rows,
   size = "md",
-  flapMs = 70,
-  stagger = 28,
+  flapMs = 130,
+  stagger = 50,
   cascadeFrom = "changed",
   status,
   announceChanges = false,
@@ -729,6 +784,8 @@ export function FlapLedger({
       board: material.board,
       split: material.split,
       splitHighlight: material.splitHighlight,
+      flapEdge: material.flapEdge,
+      flapShade: material.flapShade,
       perspective: m.perspective * dpr,
     };
     const h = Math.round(m.cellH * dpr);
@@ -834,7 +891,7 @@ export function FlapLedger({
         targets = cellTargets(columns[c], cycles[c], liveRows[r]);
         targetCache.set(key, targets);
       }
-      return { cell, r, c, cycle: cycles[c], target: targets[i] };
+      return { cell, r, c, i, count: targets.length, cycle: cycles[c], target: targets[i] };
     });
 
     const colDistance = columns.map(() => 0);
@@ -861,7 +918,10 @@ export function FlapLedger({
     for (const job of jobs) {
       if (job.target === undefined || job.cell.target === job.target) continue;
       job.cell.target = job.target;
-      const delay = mode === "flip" ? Math.abs(job.c - origin) * stagger + job.r * ROW_DELAY_MS : 0;
+      // The ripple runs outward from the origin column, then along each word in
+      // the same direction, then down the rows.
+      const along = job.c < origin ? job.count - 1 - job.i : job.i;
+      const delay = mode === "flip" ? Math.abs(job.c - origin) * stagger + along * CHAR_DELAY_MS + job.r * ROW_DELAY_MS : 0;
       if (engine.start(job.cell, job.cycle, job.target, mode, now + delay)) moving = true;
     }
     engine.draw();
