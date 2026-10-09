@@ -620,7 +620,7 @@ export function ContactsTable({
                 {paginatedContacts.map((contact) => (
                   <motion.div key={contact.id} variants={shouldAnimate ? rowVariants : {}}>
                     <div
-                      className={`group relative border-b px-3 py-3.5 transition-all duration-150 ${
+                      className={`group relative border-b px-3 py-3.5 transition-[background-color,border-color,color,opacity,transform] duration-150 ${
                         selectedContacts.includes(contact.id)
                           ? palette.selectedRow
                           : palette.row
