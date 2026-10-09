@@ -1515,6 +1515,30 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork190",
+    slug: "streak-card",
+    title: "Streak card",
+    route: "/cards/streak-card",
+    sourcePath: "components/bjork-ui/cards/streak-card.tsx",
+    tier: "copy",
+    collection: "Cards",
+    preview: "schedule",
+    accent: "#ec5c13",
+    isNew: true,
+  },
+  {
+    id: "bjork191",
+    slug: "link-preview-card",
+    title: "Link preview card",
+    route: "/cards/link-preview-card",
+    sourcePath: "components/bjork-ui/cards/link-preview-card.tsx",
+    tier: "copy",
+    collection: "Cards",
+    preview: "gallery",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {
