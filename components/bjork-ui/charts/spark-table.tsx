@@ -6,7 +6,7 @@ import type { BjorkTone } from "@/components/bjork-ui/_core/palette";
 import { mulberry32 } from "@/components/bjork-ui/_core/random";
 import { useChartCanvas, easeOut } from "@/components/bjork-ui/charts/_kit/canvas";
 import { useChartTheme, chartFocusRing, ChartTable, ChartAnnouncer, type AnnouncerHandle } from "@/components/bjork-ui/charts/_kit/chrome";
-import { clamp, crisp, damp, withAlpha, formatCompact, formatPercent, formatDateUTC, gaussian } from "@/components/bjork-ui/charts/_kit/scale";
+import { clamp, crisp, damp, withAlpha, formatCompact, formatPercent, formatSigned, formatDateUTC, gaussian } from "@/components/bjork-ui/charts/_kit/scale";
 
 export interface SparkPoint {
   t: number;
@@ -53,6 +53,8 @@ const defaultFormat = (v: number) => formatCompact(v, 1);
 // Input timestamps for the attract idle timer, read only from event handlers.
 const clock = () => performance.now();
 const defaultFormatTime = (t: number) => formatDateUTC(t);
+// Period change as a signed percent with a true minus; a change that rounds to zero carries no sign.
+const changeText = (chg: number) => formatSigned(chg, (n) => formatPercent(n, n < 0.1 ? 1 : 0));
 
 function layoutColumns(w: number) {
   const narrow = w < 460;
@@ -72,8 +74,6 @@ interface Run {
   source: "pointer" | "keyboard" | "prop" | "attract" | null;
   disp: number[];
   ready: boolean;
-  valueText: string[];
-  deltaText: string[];
   lastInput: number;
   attractAt: number;
 }
@@ -105,7 +105,6 @@ export function SparkTable({
   const selected = selectedProp === undefined ? selState : selectedProp;
 
   const len = useMemo(() => rows.reduce((m, r) => Math.max(m, r.data.length), 0), [rows]);
-  
 
   const cfg = useRef({ rows, selected, reduce, pal, attract, len, formatTime, periodLabel });
   useEffect(() => {
@@ -118,8 +117,6 @@ export function SparkTable({
     source: index != null ? "prop" : null,
     disp: [],
     ready: false,
-    valueText: [],
-    deltaText: [],
     lastInput: 0,
     attractAt: 0,
   });
@@ -269,26 +266,24 @@ export function SparkTable({
       const fmt = row.format ?? defaultFormat;
       const vText = fmt(s.disp[i]);
       const vEl = valueRefs.current[i];
-      if (vEl && s.valueText[i] !== vText) {
-        s.valueText[i] = vText;
-        vEl.textContent = vText;
-      }
+      if (vEl && vEl.textContent !== vText) vEl.textContent = vText;
       // Change from the first point in the window to the index.
       const base = d[0].v;
       const chg = base ? (target - base) / Math.abs(base) : 0;
-      const dText = `${chg >= 0 ? "+" : "−"}${formatPercent(Math.abs(chg), Math.abs(chg) < 0.1 ? 1 : 0)}`;
+      const flat = Math.abs(chg) < 0.0005;
+      const dText = changeText(chg);
+      // Compared against the element itself, not a cache: the chip remounts when the layout
+      // crosses the narrow breakpoint, and its colours must follow a theme switch.
       const dEl = deltaRefs.current[i];
-      if (dEl && s.deltaText[i] !== dText) {
-        s.deltaText[i] = dText;
+      const chip = dEl?.parentElement;
+      if (dEl && chip && (dEl.textContent !== dText || chip.dataset.ink !== p.text)) {
         dEl.textContent = dText;
+        chip.dataset.ink = p.text;
         const good = (row.goodDirection ?? "up") === "up" ? chg >= 0 : chg <= 0;
-        const chip = dEl.parentElement;
-        if (chip) {
-          chip.style.color = Math.abs(chg) < 0.0005 ? p.textMuted : good ? p.success : p.error;
-          chip.style.background = withAlpha(Math.abs(chg) < 0.0005 ? p.text : good ? p.success : p.error, 0.1);
-        }
+        chip.style.color = flat ? p.textMuted : good ? p.success : p.error;
+        chip.style.background = withAlpha(flat ? p.text : good ? p.success : p.error, 0.1);
         const ar = arrowRefs.current[i];
-        if (ar) ar.textContent = chg >= 0 ? "↑" : "↓";
+        if (ar) ar.textContent = flat ? "" : chg > 0 ? "↑" : "↓";
       }
     }
     s.ready = true;
@@ -385,10 +380,18 @@ export function SparkTable({
   const cols = layoutColumns(width || 600);
 
   const tableRows = useMemo(
-    () => rows.map((r) => [r.label, ...(r.data.length ? [(r.format ?? defaultFormat)(r.data[0].v), (r.format ?? defaultFormat)(r.data[r.data.length - 1].v)] : ["", ""])]),
+    () =>
+      rows.map((r) => {
+        const d = r.data;
+        if (!d.length) return [r.label, "", "", ""];
+        const fmt = r.format ?? defaultFormat;
+        const a = d[0].v;
+        const b = d[d.length - 1].v;
+        return [r.label, fmt(a), fmt(b), changeText(a ? (b - a) / Math.abs(a) : 0)];
+      }),
     [rows],
   );
-  const tableCols = useMemo(() => ["Metric", "Start of period", "Latest"], []);
+  const tableCols = useMemo(() => ["Metric", "Start of period", "Latest", "Change"], []);
   const height = HEADER_H + rows.length * rowHeight;
 
   return (
