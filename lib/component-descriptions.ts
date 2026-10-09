@@ -93,6 +93,7 @@ export const componentDescriptions: Record<string, string> = {
   "news-cards": "A responsive news card set with animated editorial cards and stacked content rhythm.",
   "now-playing-card": "A now-playing card with a generated cover, scrubbable progress, transport controls, like and the next track.",
   "onboarding-stages": "A progress card for onboarding, launch checklists, and account setup flows.",
+  "order-book": "A live bid and ask ladder with cumulative depth bars, spread and last price, price grouping and change flashes. Streams snapshots and deltas a frame at a time, and clicking a level hands its price to your order form.",
   "page.tsx": "Components, shader studies, and product-grade interface fragments grouped by collection.",
   "payment-method-card": "Saved payment methods. The selected card tilts under the pointer and flips for billing details; the list below picks, defaults and removes cards and flags expired or expiring ones.",
   "periodic-table": "A full periodic table with spring-physics hover cards that blur in from below each element.",

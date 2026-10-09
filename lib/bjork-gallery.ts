@@ -1795,6 +1795,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
   {
+    id: "bjork240",
+    slug: "order-book",
+    title: "Order book",
+    route: "/charts/order-book",
+    sourcePath: "components/bjork-ui/charts/order-book.tsx",
+    tier: "copy",
+    collection: "Charts",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
+  {
     id: "bjork159",
     slug: "calibration-plot",
     title: "Calibration plot",
