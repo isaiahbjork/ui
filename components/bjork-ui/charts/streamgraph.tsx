@@ -19,6 +19,7 @@ import {
   type TooltipContent,
 } from "@/components/bjork-ui/charts/_kit/chrome";
 import { clamp, crisp, damp, withAlpha, formatCompact, formatPercent, gaussian } from "@/components/bjork-ui/charts/_kit/scale";
+import { CHART_OTHER, MAX_SERIES, foldSeries, seriesColor } from "@/components/bjork-ui/charts/_kit/series";
 
 export interface StreamSeries {
   id: string;
@@ -29,11 +30,15 @@ export interface StreamSeries {
 export type StreamOffset = "wiggle" | "zero" | "expand";
 
 export interface StreamgraphProps {
+  /** Layers in a stable order; colour follows this order (accent, blue, aqua, violet, magenta, amber). */
   series: StreamSeries[];
   /** One label per column, e.g. month names. */
   x: string[];
   offset?: StreamOffset;
-  /** Layer drawn in the accent. */
+  /** Most layers drawn before the smallest fold into one neutral "Other" layer. Capped at 6. */
+  maxSeries?: number;
+  otherLabel?: string;
+  /** Focus mode: the pinned layer keeps its colour and the rest turn grey. Controlled. */
   highlightId?: string | null;
   defaultHighlightId?: string | null;
   onHighlightChange?: (id: string | null) => void;
@@ -54,14 +59,48 @@ const MORPH_TAU = 0.16;
 const ENTER_MS = 1000;
 const X_LABELS = 14;
 const INLINE_LABELS = 12;
-// Neighbouring layers alternate between light and dark ink steps so seams read without hue.
-const INK_STEPS = [0.3, 0.15, 0.24, 0.11, 0.34, 0.19, 0.27, 0.13];
+// Layer fill strength: resting, emphasised (hovered or pinned), and receded.
+const FILL: Record<BjorkTone, { rest: number; on: number; off: number }> = {
+  dark: { rest: 0.56, on: 0.78, off: 0.22 },
+  light: { rest: 0.5, on: 0.72, off: 0.2 },
+};
+// In focus mode the other layers alternate between two grey steps so their seams still read.
+const GREY_STEPS = [0.16, 0.1];
 const ATTRACT_STEP_MS = 2600;
 const ATTRACT_IDLE_MS = 4000;
 const OFFSETS: StreamOffset[] = ["wiggle", "zero", "expand"];
 
 const clock = () => performance.now();
 const defaultFormatValue = (v: number) => formatCompact(v, 1);
+
+interface Layer extends StreamSeries {
+  color: string;
+  /** Labels of the series folded into this layer (Other only). */
+  members: string[];
+}
+
+// Keeps the largest layers (by total) up to `max`, folds the rest into a neutral Other, and
+// colours the kept layers by their position in the caller's data, never by rank.
+function foldLayers(series: StreamSeries[], tone: BjorkTone, max: number, otherLabel: string, m: number): Layer[] {
+  const rows = series.map((sr, i) => ({ sr, i, sum: sr.values.reduce((a, v) => a + Math.max(0, v || 0), 0), rest: null as null | { sr: StreamSeries }[] }));
+  const ranked = [...rows].sort((a, b) => b.sum - a.sum || a.i - b.i);
+  const kept = foldSeries(ranked, clamp(Math.round(max), 2, MAX_SERIES), (rest) => ({
+    sr: {
+      id: "__other",
+      label: otherLabel,
+      values: Array.from({ length: m }, (_, j) => rest.reduce((a, r) => a + Math.max(0, r.sr.values[j] || 0), 0)),
+    },
+    i: Number.MAX_SAFE_INTEGER,
+    sum: 0,
+    rest,
+  }));
+  kept.sort((a, b) => a.i - b.i);
+  return kept.map((r, k) => ({
+    ...r.sr,
+    color: r.rest ? CHART_OTHER[tone] : seriesColor(tone, k),
+    members: r.rest ? r.rest.map((x) => x.sr.label) : [],
+  }));
+}
 
 // Inside-out order: layers peaking early and late sit outside, big steady layers sit in the middle.
 function insideOut(series: StreamSeries[]): number[] {
@@ -172,6 +211,8 @@ export function Streamgraph({
   series,
   x,
   offset = "wiggle",
+  maxSeries = MAX_SERIES,
+  otherLabel = "Other",
   highlightId: highlightProp,
   defaultHighlightId = null,
   onHighlightChange,
@@ -183,7 +224,7 @@ export function Streamgraph({
   attract = false,
   className,
 }: StreamgraphProps) {
-  const { pal, reduce, vars } = useChartTheme(toneProp);
+  const { tone, pal, reduce, vars } = useChartTheme(toneProp);
   const announcer = useRef<AnnouncerHandle>(null);
   const tipRef = useRef<TooltipHandle>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -192,19 +233,22 @@ export function Streamgraph({
   const rectRef = useRef<DOMRect | null>(null);
   const legendRef = useRef<HTMLDivElement>(null);
   const [hlState, setHlState] = useState<string | null>(defaultHighlightId);
-  const highlightId = highlightProp !== undefined ? highlightProp : hlState;
   const [legendHover, setLegendHover] = useState<string | null>(null);
 
   const m = x.length;
-  const order = useMemo(() => insideOut(series), [series]);
+  const layers = useMemo(() => foldLayers(series, tone, maxSeries, otherLabel, m), [series, tone, maxSeries, otherLabel, m]);
+  // A pinned id that was folded pins the Other layer.
+  const rawHighlight = highlightProp !== undefined ? highlightProp : hlState;
+  const highlightId = rawHighlight == null ? null : layers.some((l) => l.id === rawHighlight) ? rawHighlight : layers.some((l) => l.id === "__other") ? "__other" : null;
+  const order = useMemo(() => insideOut(layers), [layers]);
   // Attract drives a local offset; the prop takes over on any real input.
   const [attractOffset, setAttractOffset] = useState<StreamOffset | null>(null);
   const effectiveOffset = attract && attractOffset ? attractOffset : offset;
-  const stacked = useMemo(() => stack(series, order, effectiveOffset, m), [series, order, effectiveOffset, m]);
+  const stacked = useMemo(() => stack(layers, order, effectiveOffset, m), [layers, order, effectiveOffset, m]);
 
-  const cfg = useRef({ series, order, stacked, offset, x, highlightId, legendHover, reduce, pal, attract, formatValue });
+  const cfg = useRef({ layers, order, stacked, offset, x, highlightId, legendHover, reduce, pal, tone, attract, formatValue });
   useEffect(() => {
-    cfg.current = { series, order, stacked, offset, x, highlightId, legendHover, reduce, pal, attract, formatValue };
+    cfg.current = { layers, order, stacked, offset, x, highlightId, legendHover, reduce, pal, tone, attract, formatValue };
   });
 
   const st = useRef<Run>({
@@ -295,8 +339,9 @@ export function Streamgraph({
     writeLabels(xPool.current, s.xCache, xl);
 
     // Layers: smooth bump curves between columns, a surface seam between neighbours.
-    const hlStack = c.highlightId ? c.order.findIndex((i) => c.series[i].id === c.highlightId) : -1;
-    const lgStack = c.legendHover ? c.order.findIndex((i) => c.series[i].id === c.legendHover) : -1;
+    const hlStack = c.highlightId ? c.order.findIndex((i) => c.layers[i].id === c.highlightId) : -1;
+    const lgStack = c.legendHover ? c.order.findIndex((i) => c.layers[i].id === c.legendHover) : -1;
+    const fill = FILL[c.tone];
     const focus = lgStack >= 0 ? lgStack : s.hoverLayer;
     const trace = (edge: number[], reverse: boolean) => {
       const js = reverse ? Array.from({ length: cols }, (_, k) => cols - 1 - k) : Array.from({ length: cols }, (_, k) => k);
@@ -323,9 +368,12 @@ export function Streamgraph({
       trace(s.y1[k], false);
       trace(s.y0[k], true);
       ctx.closePath();
-      const base = INK_STEPS[k % INK_STEPS.length];
-      const dim = focus !== null && !isFocus && !isHl ? 0.55 : 1;
-      ctx.fillStyle = isHl ? withAlpha(p.accent, isFocus || focus === null ? 0.72 : 0.5) : withAlpha(p.text, (isFocus ? base + 0.16 : base) * dim);
+      // Every layer wears its series colour. Hover lifts one and recedes the rest; focus mode
+      // (a pinned layer) keeps only the pinned one in colour and greys the others.
+      const color = c.layers[c.order[k]].color;
+      if (isFocus) ctx.fillStyle = withAlpha(color, fill.on);
+      else if (hlStack >= 0) ctx.fillStyle = isHl ? withAlpha(color, focus === null ? fill.on : fill.rest) : withAlpha(p.text, GREY_STEPS[k % 2]);
+      else ctx.fillStyle = withAlpha(color, focus !== null ? fill.off : fill.rest);
       ctx.fill();
       ctx.lineWidth = 1;
       ctx.strokeStyle = p.stage;
@@ -342,26 +390,18 @@ export function Streamgraph({
         }
       }
       if (bestJ >= 0 && bestT > 18 && s.enter > 0.8) {
-        const text = c.series[c.order[k]].label;
+        const text = c.layers[c.order[k]].label;
         const half = text.length * 3.3 + 4; // Alpha 11px averages ~6.6px per character
         inline.push({
           text,
           x: clamp(xOf(bestJ), plot.l + half, plot.r - half),
           y: (yAt(s.y0[k][bestJ], bestJ) + yAt(s.y1[k][bestJ], bestJ)) / 2,
           ax: -50,
-          opacity: clamp((s.enter - 0.8) * 5, 0, 1) * (focus !== null && !isFocus && !isHl ? 0.5 : 1),
+          opacity: clamp((s.enter - 0.8) * 5, 0, 1) * ((focus !== null && !isFocus) || (hlStack >= 0 && !isHl && !isFocus) ? 0.5 : 1),
         });
       }
     }
     writeLabels(inPool.current, s.inCache, inline);
-    // Inline label colour follows its layer: light text on the accent, ink elsewhere.
-    for (let k = 0; k < inPool.current.length; k++) {
-      const el = inPool.current[k];
-      const it = inline[k];
-      if (!el || !it) continue;
-      const strong = c.series.find((sr) => sr.label === it.text)?.id === c.highlightId;
-      el.dataset.on = strong ? "accent" : "ink";
-    }
 
     // Crosshair column.
     if (s.col !== null && s.col >= 0 && s.col < cols) {
@@ -398,24 +438,28 @@ export function Streamgraph({
 
   useEffect(() => {
     wake();
-  }, [series, x, stacked, highlightId, legendHover, pal, reduce, attract, wake]);
+  }, [layers, x, stacked, highlightId, legendHover, pal, reduce, attract, wake]);
 
+  const valueAt = (l: Layer, j: number) => Math.max(0, l.values[j] || 0);
+  const totalAt = (j: number) => layers.reduce((sum, l) => sum + valueAt(l, j), 0);
+
+  // Rows run top to bottom in stack order so they match the picture; each keeps its series key.
   const tooltipFor = (j: number): TooltipContent => {
-    const total = series.reduce((sum, sr) => sum + (sr.values[j] ?? 0), 0);
+    const total = totalAt(j);
     const hl = st.current.hoverLayer;
     const rows = [...order].reverse().map((i) => {
-      const sr = series[i];
-      const v = sr.values[j] ?? 0;
+      const l = layers[i];
+      const v = valueAt(l, j);
       const stackIdx = order.indexOf(i);
       return {
-        key: sr.id,
-        label: sr.label,
+        key: l.id,
+        label: l.members.length ? `${l.label} (${l.members.length})` : l.label,
         value: effectiveOffset === "expand" ? formatPercent(total ? v / total : 0, 0) : formatValue(v),
-        color: sr.id === highlightId ? pal.accent : withAlpha(pal.text, INK_STEPS[stackIdx % INK_STEPS.length] + 0.25),
-        strong: hl === null || hl === stackIdx || sr.id === highlightId,
+        color: l.color,
+        strong: hl === null ? highlightId === null || l.id === highlightId : hl === stackIdx,
       };
     });
-    return { key: `${j}|${hl}|${effectiveOffset}|${highlightId}|${pal.text}`, title: `${x[j]} · ${formatValue(total)} total`, rows };
+    return { key: `${j}|${hl}|${effectiveOffset}|${highlightId}|${pal.text}|${layers.map((l) => l.color).join()}`, title: `${x[j]} · ${formatValue(total)} total`, rows };
   };
 
   const setCursor = (j: number | null, layer: number | null, source: Run["source"]) => {
@@ -426,8 +470,13 @@ export function Streamgraph({
     s.source = j === null ? null : source;
     if (changed) tipRef.current?.set(j === null ? null : tooltipFor(j));
     if (changed && j !== null && source === "keyboard") {
-      const sr = layer !== null ? series[order[layer]] : null;
-      announcer.current?.say(sr ? `${x[j]}: ${sr.label} ${formatValue(sr.values[j] ?? 0)}` : `${x[j]}: total ${formatValue(series.reduce((a, b) => a + (b.values[j] ?? 0), 0))}`);
+      const l = layer !== null ? layers[order[layer]] : null;
+      const total = totalAt(j);
+      announcer.current?.say(
+        l
+          ? `${x[j]}: ${l.label} ${formatValue(valueAt(l, j))}, ${formatPercent(total ? valueAt(l, j) / total : 0, 0)} of ${formatValue(total)}`
+          : `${x[j]}: total ${formatValue(total)}`,
+      );
     }
     wake();
   };
@@ -469,8 +518,12 @@ export function Streamgraph({
     s.lastInput = clock();
     if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
       e.preventDefault();
-      const j = s.col === null || s.source === "attract" ? m - 1 : clamp(s.col + (e.key === "ArrowLeft" ? -1 : 1), 0, m - 1);
+      const back = e.key === "ArrowLeft";
+      const j = s.col === null || s.source === "attract" ? (back ? m - 1 : 0) : clamp(s.col + (back ? -1 : 1), 0, m - 1);
       setCursor(j, s.hoverLayer, "keyboard");
+    } else if (e.key === "Home" || e.key === "End") {
+      e.preventDefault();
+      setCursor(e.key === "Home" ? 0 : m - 1, s.hoverLayer, "keyboard");
     } else if (e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
       const n = order.length;
@@ -478,20 +531,31 @@ export function Streamgraph({
       setCursor(s.col ?? m - 1, clamp(cur + (e.key === "ArrowUp" ? 1 : -1), 0, n - 1), "keyboard");
     } else if ((e.key === "Enter" || e.key === " ") && s.hoverLayer !== null) {
       e.preventDefault();
-      const id = series[order[s.hoverLayer]].id;
+      const id = layers[order[s.hoverLayer]].id;
       pin(highlightId === id ? null : id);
     } else if (e.key === "Escape") setCursor(null, null, null);
   };
 
+  // Legend in data order (the colour order), with the folded Other last.
   const legend = useMemo(
-    () =>
-      [...order].reverse().map((i) => {
-        const sr = series[i];
-        const k = order.indexOf(i);
-        return { id: sr.id, label: sr.label, color: sr.id === highlightId ? pal.accent : withAlpha(pal.text, INK_STEPS[k % INK_STEPS.length] + 0.18), shape: "rect" as const };
-      }),
-    [order, series, highlightId, pal],
+    () => layers.map((l) => ({ id: l.id, label: l.members.length ? `${l.label} (${l.members.length})` : l.label, color: l.color, shape: "rect" as const })),
+    [layers],
   );
+
+  const summary = useMemo(() => {
+    let best = -1;
+    let bestSum = -1;
+    layers.forEach((l, i) => {
+      if (l.members.length) return;
+      const sum = l.values.reduce((a, v) => a + Math.max(0, v || 0), 0);
+      if (sum > bestSum) {
+        bestSum = sum;
+        best = i;
+      }
+    });
+    const span = m ? `, ${x[0]} to ${x[m - 1]}` : "";
+    return `${ariaLabel}: ${series.length} series over ${m} periods${span}${best >= 0 ? `; largest overall ${layers[best].label}` : ""}.`;
+  }, [layers, series.length, m, x, ariaLabel]);
 
   const tableRows = useMemo(() => x.map((label, j) => [label, ...series.map((sr) => formatValue(sr.values[j] ?? 0))]), [x, series, formatValue]);
   const tableCols = useMemo(() => ["Period", ...series.map((sr) => sr.label)], [series]);
@@ -499,13 +563,13 @@ export function Streamgraph({
   return (
     <div ref={rootRef} data-loop="idle" className={cn("relative w-full select-none text-[color:var(--bjork-text)]", className)} style={{ ...vars, height }}>
       <div ref={hostRef} className="pointer-events-none absolute inset-0">
-        <canvas ref={canvasRef} role="img" aria-label={`${ariaLabel}: ${series.length} layers over ${x.length} periods`} className="pointer-events-none absolute left-0 top-0" />
+        <canvas ref={canvasRef} role="img" aria-label={summary} className="pointer-events-none absolute left-0 top-0" />
       </div>
       <div
         ref={wrapperRef}
         role="group"
         aria-roledescription="chart"
-        aria-label={`${ariaLabel}. Left and right move through periods, up and down move between layers, Enter pins a layer.`}
+        aria-label={`${ariaLabel}. Left and right move through periods, Home and End jump to the ends, up and down move between layers, Enter pins a layer in focus, Escape clears.`}
         tabIndex={0}
         onPointerEnter={() => {
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
@@ -518,7 +582,7 @@ export function Streamgraph({
         onClick={() => {
           const s = st.current;
           if (s.hoverLayer === null) return;
-          const id = series[order[s.hoverLayer]].id;
+          const id = layers[order[s.hoverLayer]].id;
           pin(highlightId === id ? null : id);
         }}
         onPointerLeave={() => setCursor(null, null, null)}
@@ -526,14 +590,14 @@ export function Streamgraph({
         className={cn("absolute inset-0 cursor-crosshair touch-pan-y rounded-[10px]", chartFocusRing)}
       />
       <div ref={legendRef} className="absolute inset-x-0 top-0 z-10">
-        <ChartLegend items={legend} onHover={setLegendHover} activeId={legendHover} />
+        <ChartLegend items={legend} onHover={setLegendHover} activeId={legendHover ?? highlightId} />
       </div>
       <div className="pointer-events-none absolute inset-0">
         <LabelPool count={X_LABELS} pool={xPool} />
         <LabelPool
           count={INLINE_LABELS}
           pool={inPool}
-          className="font-bjork-alpha text-[11px] font-medium leading-none text-[color:var(--bjork-text)] [text-box:trim-both_cap_alphabetic] data-[on=accent]:text-[color:var(--bjork-accent-foreground)]"
+          className="font-bjork-alpha text-[11px] font-medium leading-none text-[color:var(--bjork-text)] [text-box:trim-both_cap_alphabetic]"
         />
         <HoverTooltip ref={tipRef} onMeasure={wake} />
       </div>

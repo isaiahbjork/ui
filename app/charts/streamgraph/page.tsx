@@ -21,7 +21,7 @@ export default function Page() {
   return (
     <SimpleComponentDemoPage
       item={item}
-      description="Layers flowing around a centre line, ordered inside out so the big steady layers sit in the middle and the seasonal ones ride the edges. Switch between stream, stacked and 100% and every edge glides to its new place. The crosshair reads every layer at once, and Enter or a click pins one in the accent."
+      description="Layers flowing around a centre line, ordered inside out so the big steady layers sit in the middle and the seasonal ones ride the edges. Each layer keeps one colour from the legend to the tooltip, and past six the smallest fold into a grey Other. Switch between stream, stacked and 100% and every edge glides to its new place. The crosshair reads every layer at once; Enter or a click pins one in focus and greys the rest."
       dependencies={["framer-motion"]}
       usageCode={`import { Streamgraph } from "@/components/bjork-ui/charts/streamgraph";
 
@@ -38,11 +38,11 @@ export default function Page() {
     >
       {isPreview ? (
         <div className="w-[740px]">
-          <Streamgraph series={SERIES} x={X} defaultHighlightId="electronic" formatValue={hours} height={380} ariaLabel="Listening hours by genre" />
+          <Streamgraph series={SERIES} x={X} index={4} formatValue={hours} height={380} ariaLabel="Listening hours by genre" />
         </div>
       ) : (
         <DemoColumn width={860}>
-          <Streamgraph series={SERIES} x={X} offset={offset} defaultHighlightId="electronic" formatValue={hours} height={380} ariaLabel="Listening hours by genre" />
+          <Streamgraph series={SERIES} x={X} offset={offset} formatValue={hours} height={380} ariaLabel="Listening hours by genre" />
           <ControlRow>
             <OptionGroup
               label="Layout"
