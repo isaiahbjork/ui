@@ -395,7 +395,7 @@ export function SparkTable({
   const height = HEADER_H + rows.length * rowHeight;
 
   return (
-    <div ref={rootRef} data-loop="idle" className={cn("relative w-full select-none rounded-[18px] border border-[color:var(--bjork-border-muted)] bg-[color:var(--bjork-surface)] shadow-[var(--bjork-shadow-surface)] p-3 text-[color:var(--bjork-text)]", className)} style={{ ...vars, height }}>
+    <div ref={rootRef} data-loop="idle" className={cn("relative w-full select-none text-[color:var(--bjork-text)]", className)} style={{ ...vars, height }}>
       <div
         ref={wrapperRef}
         role="group"
