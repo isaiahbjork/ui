@@ -17,7 +17,7 @@ import {
   type AnnouncerHandle,
   type TooltipContent,
 } from "@/components/bjork-ui/charts/_kit/chrome";
-import { clamp, crisp, damp, niceDomain, niceTicks, withAlpha, formatNumber, formatFixed, gaussian } from "@/components/bjork-ui/charts/_kit/scale";
+import { clamp, crisp, damp, niceDomain, niceTicks, withAlpha, formatNumber, formatFixed, formatSigned, gaussian } from "@/components/bjork-ui/charts/_kit/scale";
 
 export interface ScatterPoint {
   id?: string;
@@ -45,6 +45,11 @@ export interface ScatterBrushProps {
   onBrushChange?: (brush: Brush | null, selected: number[]) => void;
   marginals?: boolean;
   bins?: number;
+  /**
+   * Least-squares trend line (y on x) over the brushed selection, or every point when nothing is
+   * brushed. Drawn only across the x range it was fitted on, and adds r² to the readout.
+   */
+  trend?: boolean;
   formatX?: (v: number) => string;
   formatY?: (v: number) => string;
   height?: number;
@@ -70,18 +75,25 @@ const ATTRACT_IDLE_MS = 4000;
 
 const clock = () => performance.now();
 const defaultFormat = (v: number) => formatNumber(v, 1);
+// Correlation with a true minus and no plus sign.
+const fmtR = (v: number) => (v < 0 ? `−${formatFixed(-v, 2)}` : formatFixed(v, 2));
 
 interface Stats {
   n: number;
   mx: number;
   my: number;
   r: number;
+  /** Least-squares fit y = a + b·x, and the x range it covers. */
+  a: number;
+  b: number;
+  xMin: number;
+  xMax: number;
 }
 
 function statsOf(points: ScatterPoint[], idx: number[] | null): Stats {
   const list = idx ?? points.map((_, i) => i);
   const n = list.length;
-  if (!n) return { n: 0, mx: NaN, my: NaN, r: NaN };
+  if (!n) return { n: 0, mx: NaN, my: NaN, r: NaN, a: NaN, b: NaN, xMin: NaN, xMax: NaN };
   let sx = 0;
   let sy = 0;
   for (const i of list) {
@@ -93,14 +105,19 @@ function statsOf(points: ScatterPoint[], idx: number[] | null): Stats {
   let cxy = 0;
   let cxx = 0;
   let cyy = 0;
+  let xMin = Infinity;
+  let xMax = -Infinity;
   for (const i of list) {
     const dx = points[i].x - mx;
     const dy = points[i].y - my;
     cxy += dx * dy;
     cxx += dx * dx;
     cyy += dy * dy;
+    if (points[i].x < xMin) xMin = points[i].x;
+    if (points[i].x > xMax) xMax = points[i].x;
   }
-  return { n, mx, my, r: cxx && cyy ? cxy / Math.sqrt(cxx * cyy) : NaN };
+  const b = cxx ? cxy / cxx : NaN;
+  return { n, mx, my, r: cxx && cyy ? cxy / Math.sqrt(cxx * cyy) : NaN, a: my - b * mx, b, xMin, xMax };
 }
 
 function inBrush(p: ScatterPoint, b: Brush | null): boolean {
@@ -141,6 +158,7 @@ export function ScatterBrush({
   onBrushChange,
   marginals = true,
   bins = 32,
+  trend = false,
   formatX = defaultFormat,
   formatY = defaultFormat,
   height = 420,
@@ -177,9 +195,9 @@ export function ScatterBrush({
   const selected = useMemo(() => (brush ? points.map((p, i) => (inBrush(p, brush) ? i : -1)).filter((i) => i >= 0) : null), [points, brush]);
   const stats = useMemo(() => statsOf(points, selected), [points, selected]);
 
-  const cfg = useRef({ points, dom, brush, marginals, bins, reduce, pal, attract });
+  const cfg = useRef({ points, dom, brush, marginals, bins, reduce, pal, attract, trend, stats });
   useEffect(() => {
-    cfg.current = { points, dom, brush, marginals, bins, reduce, pal, attract };
+    cfg.current = { points, dom, brush, marginals, bins, reduce, pal, attract, trend, stats };
   });
 
   const st = useRef<Run>({
@@ -406,6 +424,32 @@ export function ScatterBrush({
       }
     }
 
+    // Trend line: the least-squares fit over the selection, only across the x range it covers.
+    // During attract the brush moves without re-rendering, so the fit is skipped there.
+    const F = c.stats;
+    const attracting = c.attract && !c.reduce && (!s.lastInput || clock() - s.lastInput > ATTRACT_IDLE_MS);
+    if (c.trend && !attracting && F.n >= 3 && Number.isFinite(F.b) && F.xMax > F.xMin && e >= 1) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(plot.l, plot.t, plot.r - plot.l, plot.b - plot.t);
+      ctx.clip();
+      const ax = xOf(F.xMin);
+      const ay = yOf(F.a + F.b * F.xMin);
+      const bx = xOf(F.xMax);
+      const by = yOf(F.a + F.b * F.xMax);
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(ax, ay);
+      ctx.lineTo(bx, by);
+      ctx.strokeStyle = withAlpha(p.stage, 0.85);
+      ctx.lineWidth = 4.5;
+      ctx.stroke();
+      ctx.strokeStyle = B ? p.accentInk : p.text;
+      ctx.lineWidth = 1.75;
+      ctx.stroke();
+      ctx.restore();
+    }
+
     // Hovered point.
     const tip = tipRef.current;
     if (s.hover !== null && P[s.hover]) {
@@ -426,8 +470,12 @@ export function ScatterBrush({
     return moving || s.enter < 1 || !!s.drag;
   });
 
+  const fit = (st2: Stats) =>
+    trend && Number.isFinite(st2.b) && Number.isFinite(st2.r)
+      ? `, r squared ${formatFixed(st2.r * st2.r, 2)}, trend ${formatSigned(st2.b, (v) => formatNumber(v, 2))} ${yLabel} per ${xLabel}`
+      : "";
   const describeStats = (st2: Stats) =>
-    `${st2.n} of ${points.length} selected${st2.n ? `, mean ${xLabel} ${formatX(st2.mx)}, mean ${yLabel} ${formatY(st2.my)}${Number.isFinite(st2.r) ? `, correlation ${formatFixed(st2.r, 2)}` : ""}` : ""}`;
+    `${st2.n} of ${points.length} selected${st2.n ? `, mean ${xLabel} ${formatX(st2.mx)}, mean ${yLabel} ${formatY(st2.my)}${Number.isFinite(st2.r) ? `, correlation ${fmtR(st2.r)}` : ""}${fit(st2)}` : ""}`;
 
   const setBrush = (b: Brush | null, announce = false) => {
     if (brushProp === undefined) setBrushState(b);
@@ -443,7 +491,7 @@ export function ScatterBrush({
 
   useEffect(() => {
     wake();
-  }, [points, dom, brush, marginals, bins, pal, reduce, attract, wake]);
+  }, [points, dom, brush, marginals, bins, pal, reduce, attract, trend, stats, wake]);
 
   const tooltipFor = (i: number): TooltipContent | null => {
     const pt = points[i];
@@ -604,7 +652,8 @@ export function ScatterBrush({
       setBrush(null, true);
       return;
     }
-    if (e.key === "Enter" && !brush) {
+    // Enter, or the first arrow press, drops a selection in the middle so the keys have something to move.
+    if (!brush && (e.key === "Enter" || e.key.startsWith("Arrow"))) {
       e.preventDefault();
       const w = (x1 - x0) * 0.3;
       const hh = (y1 - y0) * 0.3;
@@ -643,7 +692,7 @@ export function ScatterBrush({
         ref={wrapperRef}
         role="group"
         aria-roledescription="chart"
-        aria-label={`${ariaLabel}. Drag to select a region. Enter adds a selection, arrow keys move it, Alt with arrows resizes it, Escape clears.`}
+        aria-label={`${ariaLabel}. Drag to select a region. Enter or an arrow key adds a selection, arrow keys move it, Shift moves it further, Alt with arrows resizes it, Escape clears.`}
         tabIndex={0}
         onPointerEnter={() => {
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
@@ -672,8 +721,13 @@ export function ScatterBrush({
             y&#772; <span className="text-[color:var(--bjork-text)]">{stats.n ? formatY(stats.my) : "–"}</span>
           </span>
           <span>
-            r <span className={brush ? "text-[color:var(--bjork-accent-ink)]" : "text-[color:var(--bjork-text)]"}>{Number.isFinite(stats.r) ? formatFixed(stats.r, 2) : "–"}</span>
+            r <span className={brush ? "text-[color:var(--bjork-accent-ink)]" : "text-[color:var(--bjork-text)]"}>{Number.isFinite(stats.r) ? fmtR(stats.r) : "–"}</span>
           </span>
+          {trend && (
+            <span>
+              r&#178; <span className="text-[color:var(--bjork-text)]">{Number.isFinite(stats.r) ? formatFixed(stats.r * stats.r, 2) : "–"}</span>
+            </span>
+          )}
         </div>
         <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-11 font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]">
           {xLabel} {"→"}
