@@ -102,6 +102,7 @@ export function Demo() {
 }`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[540px] scale-[0.88]"
+      optionsDefaultOpen={false}
       onReset={reset}
       controls={
         <>
