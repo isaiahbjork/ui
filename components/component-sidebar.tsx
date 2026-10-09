@@ -157,6 +157,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Funnel Chart", path: "/charts/funnel-chart" },
       { name: "Grouped Bar Chart", path: "/charts/grouped-bar-chart" },
       { name: "Live Line", path: "/charts/live-line" },
+      { name: "Order Book", path: "/charts/order-book" },
       { name: "Route Trace", path: "/charts/route-trace" },
       { name: "Sankey Flow", path: "/charts/sankey-flow" },
       { name: "Scatter Brush", path: "/charts/scatter-brush" },
