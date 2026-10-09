@@ -9,7 +9,8 @@ import { ControlRow, DemoColumn, ToggleButton } from "../_demo/controls";
 
 const item = getGalleryItem("forecast-fan");
 const SERIES = createForecastSeries(4, { weeks: 52, horizon: 26, base: 180 });
-const THRESHOLD = { value: 200, label: "$200K floor" };
+// Above the history, so the marker lands in open forecast space rather than on the now line.
+const THRESHOLD = { value: 300, label: "$300K target" };
 const formatK = (v: number) => `$${Math.round(v)}K`;
 
 export default function Page() {
@@ -21,7 +22,7 @@ export default function Page() {
   return (
     <SimpleComponentDemoPage
       item={item}
-      description="History meets forecast at a clear now line. The 50, 80 and 95% bands open out of the last real value, the median runs on as a dashed accent line, and the scrub reads every interval at once. Give it a threshold and it marks the week the outer band clears it."
+      description="History meets forecast at a clear now line. The 50, 80 and 95% bands open out of the last real value, the median runs on as a dashed accent line, and the scrub reads every interval at once. Give it a threshold and it marks the first week the outer band reaches it."
       dependencies={["framer-motion"]}
       usageCode={`import { ForecastFan } from "@/components/bjork-ui/charts/forecast-fan";
 
@@ -29,7 +30,7 @@ export default function Page() {
   history={history}            // { t, v }[]
   forecast={forecast}          // { t, mid, bands: [[p25, p75], [p10, p90], [p025, p975]] }[]
   bandLabels={["50%", "80%", "95%"]}
-  threshold={{ value: 200, label: "Target $200K" }}
+  threshold={{ value: 300, label: "$300K target" }}
   formatValue={(v) => \`$\${Math.round(v)}K\`}
 />`}
       previewScaleClassName="w-[320px]"

@@ -57,7 +57,8 @@ const BAND_ALPHA = [0.22, 0.13, 0.075, 0.05];
 const ATTRACT_STEP_MS = 180;
 const ATTRACT_IDLE_MS = 4000;
 
-const defaultFormatValue = (v: number) => formatNumber(v, 0);
+// Intl writes a hyphen for negatives; the kit uses a true minus.
+const defaultFormatValue = (v: number) => `${v < 0 ? "−" : ""}${formatNumber(Math.abs(v), 0)}`;
 const defaultFormatTime = (t: number) => formatDateUTC(t);
 
 interface Run {
@@ -407,7 +408,8 @@ export function ForecastFan({
     const lastK = fc.length - 1;
     if (badgeRef.current && lastK > 0) {
       const b = badgeRef.current;
-      b.textContent = c.formatValue(fc[lastK].mid);
+      const bt = c.formatValue(fc[lastK].mid);
+      if (b.textContent !== bt) b.textContent = bt;
       b.style.opacity = String(fanDone);
       b.style.transform = `translate3d(${(plot.r + 6).toFixed(1)}px, ${(yOf(fc[lastK].mid) - 11).toFixed(1)}px, 0)`;
     }
@@ -576,7 +578,8 @@ export function ForecastFan({
     s.source = i === null ? null : source;
     tipRef.current?.set(i === null ? null : tooltipFor(i));
     onIndexChange?.(i);
-    if (i !== null && source !== "attract") say(describe(i));
+    // Speak keyboard moves only; a pointer sweep would flood the live region.
+    if (i !== null && source === "keyboard") say(describe(i));
     wake();
   };
 
@@ -666,14 +669,18 @@ export function ForecastFan({
   );
 
   const tableRows = useMemo(() => {
-    const rows: (string | number)[][] = history.map((h) => [formatTime(h.t), formatValue(h.v), "", ""]);
-    for (const f of forecast) {
-      const outerIdx = f.bands.length - 1;
-      rows.push([formatTime(f.t), "", formatValue(f.mid), outerIdx >= 0 ? `${formatValue(f.bands[outerIdx][0])} to ${formatValue(f.bands[outerIdx][1])}` : ""]);
+    // Every interval gets its own column, so the twin carries what the scrub reads.
+    const bandCount = forecast[0]?.bands.length ?? 0;
+    const rows: (string | number)[][] = history.map((h) => [formatTime(h.t), formatValue(h.v), "", ...Array.from({ length: bandCount }, () => "")]);
+    for (const f of points.anchor ? points.fc.slice(1) : points.fc) {
+      rows.push([formatTime(f.t), "", formatValue(f.mid), ...f.bands.map((b) => `${formatValue(b[0])} to ${formatValue(b[1])}`)]);
     }
     return rows;
-  }, [history, forecast, formatTime, formatValue]);
-  const tableCols = useMemo(() => ["Date", "Actual", "Median forecast", `${bandLabels[bandLabels.length - 1] ?? ""} interval`], [bandLabels]);
+  }, [history, forecast, points, formatTime, formatValue]);
+  const tableCols = useMemo(
+    () => ["Date", "Actual", "Median forecast", ...Array.from({ length: forecast[0]?.bands.length ?? 0 }, (_, j) => `${bandLabels[j] ?? `Band ${j + 1}`} interval`)],
+    [bandLabels, forecast],
+  );
 
   const lastH = history[history.length - 1];
   const lastF = forecast[forecast.length - 1];
