@@ -13,6 +13,7 @@ import {
 import { motion } from "framer-motion"
 import { Pause, Play, RotateCcw } from "lucide-react"
 import { BJORK_PALETTE } from "@/components/bjork-ui/_core/palette"
+import { BJORK_SURFACE } from "@/components/bjork-ui/_core/surface"
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone"
 import { cn } from "@/lib/utils"
 
@@ -488,10 +489,10 @@ export function Timer({
       aria-label={title}
       onKeyDown={onKeyDown}
       className={cn(
-        "mx-auto flex w-full max-w-[360px] flex-col items-center gap-7 rounded-[28px] border px-6 py-7 sm:px-8",
+        "mx-auto flex w-full max-w-[360px] flex-col items-center gap-7 rounded-[24px] border px-6 py-7 sm:px-8",
         className
       )}
-      style={{ background: surface, borderColor: frameColor, color: ink }}
+      style={{ background: surface, borderColor: frameColor, color: ink, boxShadow: BJORK_SURFACE[resolvedTone].shadowSurface }}
     >
       <div className="flex w-full items-center justify-between font-mono text-[11px] uppercase tracking-[0.14em]">
         <span style={{ color: muted }}>{title}</span>

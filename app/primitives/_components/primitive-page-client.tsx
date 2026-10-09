@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Bell, ChevronDown, MoreHorizontal, Settings2 } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { bjorkCardVariants } from "@/components/bjork-ui/primitives/card";
+import { cn } from "@/lib/utils";
 import {
   BjorkAccordion,
   BjorkAccordionContent,
@@ -672,7 +674,7 @@ function CollapsiblePreview() {
     <BjorkCollapsible
       open={open}
       onOpenChange={setOpen}
-      className="w-[290px] rounded-[18px] bg-[var(--bjork-bg)] p-3"
+      className={cn(bjorkCardVariants({ variant: "surface", padding: "sm" }), "w-[290px]")}
     >
       <BjorkCollapsibleTrigger asChild>
         <motion.button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { Activity, Gauge, Sparkles } from "lucide-react";
 import {
@@ -15,16 +15,12 @@ const item = getGalleryItem("animated-radial-chart");
 
 export default function Page() {
   const isPreview = usePreviewMode();
-    const previewTheme = usePreviewSearchParam("theme");
+  const previewTheme = usePreviewSearchParam("theme");
   const [value, setValue] = useState(74);
   const [size, setSize] = useState(330);
   const [strokeWidth, setStrokeWidth] = useState(20);
   const [labels, setLabels] = useState("show");
   const [duration, setDuration] = useState(1.6);
-
-  const chartKey = useMemo(() => {
-    return `${value}-${size}-${strokeWidth}-${labels}-${duration}`;
-  }, [duration, labels, size, strokeWidth, value]);
 
   function resetControls() {
     setValue(74);
@@ -36,7 +32,6 @@ export default function Page() {
 
   const chart = (
     <AnimatedRadialChart
-      key={chartKey}
       value={value}
       size={size}
       strokeWidth={strokeWidth}
@@ -48,8 +43,8 @@ export default function Page() {
   if (isPreview) {
     return (
       <div
-        className={`flex min-h-screen items-center justify-center bg-[var(--bjork-bg)] ${
-          previewTheme === "light" ? "light" : "dark"
+        className={`flex min-h-screen items-center justify-center ${
+          previewTheme === "light" ? "light bg-[#f7f5ef]" : "dark bg-[#111]"
         }`}
       >
         <AnimatedRadialChart

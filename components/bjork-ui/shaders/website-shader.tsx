@@ -547,7 +547,7 @@ export function WebsiteShaderDemo({ preset, className }: WebsiteShaderDemoProps)
 
   return (
     <div className={cn("w-full max-w-[900px]", className)}>
-      <div className="relative overflow-hidden rounded-[22px] border border-border/50 bg-card shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
+      <div className="relative overflow-hidden rounded-[22px] border border-[color:var(--bjork-border-muted)] bg-[var(--bjork-surface)] shadow-[var(--bjork-shadow-surface)]">
         <WebsiteShaderCanvas
           preset={activePreset}
           tone={tone}
@@ -557,10 +557,10 @@ export function WebsiteShaderDemo({ preset, className }: WebsiteShaderDemoProps)
 
       <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
         <div>
-          <h2 className="text-[22px] font-medium leading-tight tracking-[-0.025em] text-foreground">
+          <h2 className="text-[22px] font-medium leading-tight tracking-[-0.025em] text-[color:var(--bjork-text)]">
             {activePreset.title}
           </h2>
-          <p className="mt-2 max-w-[620px] text-[14px] leading-6 text-muted-foreground">
+          <p className="mt-2 max-w-[620px] text-[14px] leading-6 text-[color:var(--bjork-text-soft)]">
             {activePreset.summary}
           </p>
         </div>
@@ -568,7 +568,7 @@ export function WebsiteShaderDemo({ preset, className }: WebsiteShaderDemoProps)
           {["1 draw", "No assets", "Auto pause"].map((item) => (
             <div
               key={item}
-              className="rounded-lg border border-border/50 bg-background/60 px-2.5 py-2 text-center text-[11px] font-medium text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
+              className="rounded-lg border border-[color:var(--bjork-border)] bg-[var(--bjork-field)] px-2.5 py-2 text-center text-[11px] font-medium text-[color:var(--bjork-text-soft)] shadow-[var(--bjork-shadow-soft)]"
             >
               {item}
             </div>

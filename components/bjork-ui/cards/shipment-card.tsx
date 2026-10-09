@@ -272,7 +272,7 @@ export function ShipmentCard({
       </div>
 
       {latest && (
-        <p className="mx-5 mt-5 rounded-[12px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-card-raised)] px-3.5 py-2.5 text-[12px] leading-4">
+        <p className="mx-5 mt-5 rounded-[12px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-card-raised)] px-3.5 py-2.5 text-[12px] shadow-[var(--bjork-shadow-soft)] leading-4">
           <span className="text-[color:var(--bjork-text)]">{latest.label}</span>
           {latest.location && <span className="text-[color:var(--bjork-text-muted)]"> · {latest.location}</span>}
           <span className="block text-[color:var(--bjork-text-muted)]">

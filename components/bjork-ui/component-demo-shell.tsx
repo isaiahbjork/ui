@@ -291,6 +291,7 @@ export function ComponentDemoShell({
   const palette = isLightTheme ? shellPalettes.light : shellPalettes.dark;
   const isLightPreview = previewTone === "light" || isLightTheme;
   const isListPreview = previewLayout === "list";
+  const optionsInToolbar = Boolean(controls) && !optionsOpen && !isListPreview;
   const layoutTransition = shouldReduceMotion
     ? ({ duration: 0.12, ease: "easeOut" } as const)
     : ({
@@ -415,7 +416,17 @@ export function ComponentDemoShell({
             )}
           >
             {!isListPreview && (
-              <div className={cn("relative z-30 mb-3 ml-auto flex w-fit rounded-[18px] border p-1.5 backdrop-blur-sm lg:absolute lg:right-6 lg:top-6 lg:mb-0 lg:ml-0", palette.toolbar)}>
+              <div className="relative z-30 mb-3 ml-auto flex w-fit items-start gap-2 lg:absolute lg:right-6 lg:top-6 lg:mb-0 lg:ml-0">
+              {optionsInToolbar && (
+                // Collapsed options sit in the toolbar row, so they never cover the demo.
+                <div className={cn("hidden rounded-[18px] border p-1.5 backdrop-blur-sm lg:flex", palette.toolbar)}>
+                  <ToolbarButton label="Show options" onClick={() => setOptionsOpen(true)} wide>
+                    Options
+                    <ChevronDown className="size-3.5 -rotate-90" />
+                  </ToolbarButton>
+                </div>
+              )}
+              <div className={cn("flex w-fit rounded-[18px] border p-1.5 backdrop-blur-sm", palette.toolbar)}>
                 <ToolbarButton
                   label={isFocusMode ? "Minimize preview" : "Maximize preview"}
                   onClick={() => setIsFocusMode((value) => !value)}
@@ -436,9 +447,10 @@ export function ComponentDemoShell({
                   {isLightTheme ? <Moon className="size-4" /> : <Sun className="size-4" />}
                 </ToolbarButton>
               </div>
+              </div>
             )}
 
-            {controls && (
+            {controls && !optionsInToolbar && (
               <motion.aside
                 drag
                 dragControls={optionsDragControls}
@@ -490,6 +502,8 @@ export function ComponentDemoShell({
                   ? "h-auto items-start justify-center overflow-visible p-0 lg:h-full"
                   : cn(
                       "items-center justify-center overflow-hidden rounded-[16px] p-3 sm:p-6 lg:h-full",
+                      // Keep tall demos clear of the toolbar row, where the collapsed options pill sits.
+                      Boolean(controls) && "lg:pt-[76px]",
                       isLightPreview ? "bg-[#f7f5ef]" : palette.previewInner,
                     ),
                 previewInnerClassName
@@ -1557,7 +1571,7 @@ function DependencyBadge({ dependency, palette }: { dependency: string; palette:
       href={href}
       target="_blank"
       rel="noreferrer"
-      className={cn("flex h-8 w-fit cursor-pointer items-center gap-2 rounded-xl px-3 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-300 active:scale-95", isLight ? "bg-[#eee9df] text-[#171717]/76 hover:bg-[#e5ded1]" : "bg-[#121212] text-[#ededed]/82 hover:bg-[#191919]")}
+      className={cn("flex h-8 w-fit cursor-pointer items-center gap-2 rounded-xl px-3 text-xs shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-[background-color,color,opacity,transform] duration-300 active:scale-95", isLight ? "bg-[#eee9df] text-[#171717]/76 hover:bg-[#e5ded1]" : "bg-[#121212] text-[#ededed]/82 hover:bg-[#191919]")}
     >
       {content}
     </a>
@@ -1650,21 +1664,25 @@ function ToolbarButton({
   active,
   onClick,
   children,
+  wide,
 }: {
   label: string;
   active?: boolean;
   onClick?: () => void;
   children: ReactNode;
+  /** A labelled button: text plus icon instead of a square icon. */
+  wide?: boolean;
 }) {
   const isLight = useShellIsLight();
 
   return (
     <button
       type="button"
-      aria-label={label}
+      aria-label={wide ? undefined : label}
       onClick={onClick}
       className={cn(
-        "flex size-9 items-center justify-center rounded-[12px] transition active:scale-95",
+        "flex h-9 items-center justify-center rounded-[12px] transition active:scale-95",
+        wide ? "gap-1 pl-3 pr-2.5 text-sm" : "w-9",
         isLight ? "text-[#171717]/68 hover:bg-[#f1ece3] hover:text-[#171717]/78" : "text-[#ededed] hover:bg-[#232323]",
         active && (isLight
           ? "bg-[#f1ece3] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] hover:bg-[#ece5d9]"
