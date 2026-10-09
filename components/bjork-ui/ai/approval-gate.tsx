@@ -455,7 +455,8 @@ export function ApprovalGate({
                 transition: reduce ? "none" : `grid-template-rows 240ms ${easeCss.drawer}, opacity 240ms ${easeCss.drawer}`,
               }}
             >
-              <div className="min-h-0 overflow-hidden">
+              {/* Negative margin plus padding leaves room for the input's focus ring inside the clip. */}
+              <div className="-mx-1 -mb-1 min-h-0 overflow-hidden px-1 pb-1">
                 <div className="flex flex-col gap-1.5 pt-3">
                   <label htmlFor={reasonId} className="text-[12px] leading-4 text-[color:var(--bjork-text-muted)]">
                     Reason <span className="text-[color:var(--bjork-text-faint)]">(optional, sent to the assistant)</span>
@@ -620,7 +621,7 @@ export function ApprovalGate({
         }}
       >
         <div className="min-h-0 overflow-hidden">
-          <div ref={receiptRef} tabIndex={-1} className={cn("rounded-[8px]", FOCUS_RING)}>
+          <div ref={receiptRef} tabIndex={-1} className="outline-none">
             <Receipt request={request} status={current} record={record} />
           </div>
         </div>

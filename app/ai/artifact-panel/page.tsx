@@ -129,7 +129,7 @@ export function Demo() {
   );
 }`}
       previewScaleClassName="w-[380px]"
-      previewCaptureScaleClassName="w-[720px] scale-[0.9]"
+      previewCaptureScaleClassName="w-[720px] scale-[1.05]"
     >
       <Demo />
     </SimpleComponentDemoPage>

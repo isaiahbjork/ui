@@ -14,12 +14,12 @@ function Demo() {
   const [threshold, setThreshold] = useState(0.7);
 
   return (
-    <div className="flex w-[min(640px,calc(100vw-56px))] flex-col items-stretch gap-6">
+    <div className="flex w-[min(680px,calc(100vw-56px))] flex-col items-stretch gap-6">
       <RetrievalInspector
         {...SAMPLE_RETRIEVAL}
         threshold={threshold}
         onThresholdChange={setThreshold}
-        defaultExpandedId={isPreview ? "c1" : undefined}
+        defaultExpandedId={isPreview ? "c3" : undefined}
       />
       {!isPreview && (
         <div className="flex flex-wrap items-center justify-center gap-2">
@@ -60,7 +60,7 @@ export function Demo() {
   );
 }`}
       previewScaleClassName="w-[380px]"
-      previewCaptureScaleClassName="w-[640px] scale-[0.66]"
+      previewCaptureScaleClassName="w-[780px] scale-[0.6]"
     >
       <Demo />
     </SimpleComponentDemoPage>

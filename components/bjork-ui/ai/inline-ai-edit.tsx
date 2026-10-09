@@ -275,7 +275,9 @@ export function InlineAiEdit({
       const active = document.activeElement;
       const inside = rootRef.current?.contains(active) || active === document.body;
       if (!latest.current.selection && !inside) return;
+      // Wins over app-wide Cmd+K palettes: this listener runs in the capture phase on window.
       e.preventDefault();
+      e.stopImmediatePropagation();
       if (!latest.current.selection) {
         const para = root.querySelectorAll<HTMLElement>("[data-para-offset]")[lastPara.current];
         if (!para) return;
@@ -290,8 +292,8 @@ export function InlineAiEdit({
       setFrozen(true);
       requestAnimationFrame(() => inputRef.current?.focus());
     };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [pose]);
 
   // ----- Floating placement, written straight to the DOM after layout.

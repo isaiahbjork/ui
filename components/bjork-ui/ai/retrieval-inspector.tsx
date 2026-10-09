@@ -444,7 +444,7 @@ export function RetrievalInspector({
                 }}
               >
                 <div className="min-h-0 overflow-hidden">
-                  <dl className="mb-3 ml-[calc(3ch+12px)] grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-0.5 rounded-[8px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-field-inset)] px-3 py-2 font-mono text-[11px] leading-5">
+                  <dl className="mb-3 ml-[calc(3ch+12px)] grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 @[560px]:grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] gap-y-0.5 rounded-[8px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-field-inset)] px-3 py-2 font-mono text-[11px] leading-5">
                     <Meta k="id" v={c.id} />
                     <Meta k="retrieved" v={c.retrievedRank !== undefined ? `#${c.retrievedRank} → #${c.rank}` : `#${c.rank}`} />
                     <Meta k="tokens" v={c.tokens.toLocaleString("en-US")} />

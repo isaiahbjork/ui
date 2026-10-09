@@ -346,7 +346,7 @@ export function ToolCallCard({
           transition: reduce ? "none" : `grid-template-rows 280ms ${easeCss.drawer}, opacity 280ms ${easeCss.drawer}`,
         }}
       >
-        <div className="min-h-0 overflow-hidden">
+        <div className="-mx-1 min-h-0 overflow-hidden px-1">
           <div className="flex flex-col gap-3 pb-3 pl-[30px]">
             <Section label="Input" text={toPretty(input)} streaming={status === "input-streaming"} maxLines={maxLines} />
             {status === "success" && output !== undefined && (

@@ -330,7 +330,7 @@ export function DiffReview({
           type="button"
           onClick={() => setOpened((s) => new Set(s).add(bi))}
           className={cn(
-            "flex h-7 w-full cursor-pointer items-center gap-2 bg-[color:var(--bjork-hair)] px-3 text-left font-mono text-[11px] text-[color:var(--bjork-text-faint)] transition-colors hover:text-[color:var(--bjork-text-muted)]",
+            "flex h-7 w-full cursor-pointer items-center gap-2 bg-[color:color-mix(in_srgb,var(--bjork-text)_3%,transparent)] px-3 text-left font-mono text-[11px] text-[color:var(--bjork-text-faint)] transition-colors hover:text-[color:var(--bjork-text-muted)]",
             FOCUS_RING,
             "focus-visible:ring-inset focus-visible:ring-offset-0",
           )}
@@ -352,7 +352,7 @@ export function DiffReview({
       className={cn("@container w-full min-w-0 max-w-[720px] font-bjork-alpha text-[color:var(--bjork-text)]", className)}
     >
       <div className="overflow-hidden rounded-[12px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-surface)]">
-        <header className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-b border-[color:var(--bjork-border)] px-3 py-2">
+        <header className="flex flex-col gap-1 border-b border-[color:var(--bjork-border)] px-3 py-2 @[480px]:flex-row @[480px]:items-center @[480px]:justify-between @[480px]:gap-3">
           <div className="flex min-w-0 flex-1 items-baseline gap-2.5">
             <h3 id={titleId} className="min-w-0 truncate font-mono text-[12px] leading-5 text-[color:var(--bjork-text)]">
               {filename ?? "Suggested edit"}
@@ -362,8 +362,8 @@ export function DiffReview({
               <span className="text-[color:var(--bjork-error)]">−{removed}</span>
             </span>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <span className="mr-1 min-w-[11ch] text-right font-mono text-[11px] leading-5 tabular-nums text-[color:var(--bjork-text-muted)]">
+          <div className="flex shrink-0 items-center justify-end gap-1.5">
+            <span className="mr-auto min-w-[11ch] @[480px]:mr-1 @[480px]:text-right font-mono text-[11px] leading-5 tabular-nums text-[color:var(--bjork-text-muted)]">
               {resolved} of {hunks.length} resolved
             </span>
             <button
