@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { InlineAiEdit, SAMPLE_DOCUMENT, mockRewrite } from "@/components/bjork-ui/ai/inline-ai-edit";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -18,10 +17,17 @@ const POSE = {
   label: "Improve",
 };
 
-function Demo() {
+// A new run value remounts the editor with the text it is given.
+function Demo({
+  doc,
+  setDoc,
+  run,
+}: {
+  doc: string;
+  setDoc: (doc: string) => void;
+  run: number;
+}) {
   const isPreview = usePreviewMode();
-  const [doc, setDoc] = useState(SAMPLE_DOCUMENT);
-  const [run, setRun] = useState(0);
 
   if (isPreview) {
     return (
@@ -36,23 +42,20 @@ function Demo() {
       <InlineAiEdit key={run} value={doc} onValueChange={setDoc} onRewrite={mockRewrite} />
       <div className="flex flex-wrap items-center justify-center gap-3">
         <span className="font-mono text-[11px] text-[color:var(--bjork-text-faint)]">Select text, or click a paragraph and press ⌘K</span>
-        <BjorkButton
-          variant="ghost"
-          size="sm"
-          disabled={doc === SAMPLE_DOCUMENT}
-          onClick={() => {
-            setDoc(SAMPLE_DOCUMENT);
-            setRun((r) => r + 1);
-          }}
-        >
-          Reset text
-        </BjorkButton>
       </div>
     </div>
   );
 }
 
 export default function Page() {
+  const [doc, setDoc] = useState(SAMPLE_DOCUMENT);
+  const [run, setRun] = useState(0);
+
+  const reset = () => {
+    setDoc(SAMPLE_DOCUMENT);
+    setRun((r) => r + 1);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -75,8 +78,10 @@ export function Demo() {
 }`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[600px] scale-[0.95]"
+      optionsDefaultOpen={false}
+      onReset={reset}
     >
-      <Demo />
+      <Demo doc={doc} setDoc={setDoc} run={run} />
     </SimpleComponentDemoPage>
   );
 }

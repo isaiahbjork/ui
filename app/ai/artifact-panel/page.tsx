@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { ArtifactPanel, SAMPLE_ARTIFACT, type ArtifactVersion } from "@/components/bjork-ui/ai/artifact-panel";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { ShellActions, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
@@ -43,16 +43,15 @@ function Chat({ onOpen, open }: { onOpen: () => void; open: boolean }) {
   );
 }
 
-function Demo() {
+function Demo({ chars, setChars }: { chars: number | null; setChars: Dispatch<SetStateAction<number | null>> }) {
   const isPreview = usePreviewMode();
-  const [chars, setChars] = useState<number | null>(null);
   const [open, setOpen] = useState(true);
 
   useEffect(() => {
     if (isPreview || chars === null || chars >= NEXT_CODE.length) return;
     const id = window.setTimeout(() => setChars((c) => Math.min(NEXT_CODE.length, (c ?? 0) + 9)), 30);
     return () => window.clearTimeout(id);
-  }, [isPreview, chars]);
+  }, [isPreview, chars, setChars]);
 
   const shown = isPreview ? POSED_CHARS : chars;
   const streaming = shown !== null && shown < NEXT_CODE.length;
@@ -94,21 +93,14 @@ function Demo() {
           </div>
         </div>
       </div>
-      {!isPreview && (
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <BjorkButton variant="secondary" size="sm" disabled={streaming} onClick={() => setChars(0)}>
-            {chars === null ? "Write v4" : "Rewrite v4"}
-          </BjorkButton>
-          <BjorkButton variant="ghost" size="sm" onClick={() => setChars(null)}>
-            Reset
-          </BjorkButton>
-        </div>
-      )}
     </div>
   );
 }
 
 export default function Page() {
+  const [chars, setChars] = useState<number | null>(null);
+  const streaming = chars !== null && chars < NEXT_CODE.length;
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -130,8 +122,17 @@ export function Demo() {
 }`}
       previewScaleClassName="w-[380px]"
       previewCaptureScaleClassName="w-[720px] scale-[1.05]"
+      optionsDefaultOpen={false}
+      onReset={() => setChars(null)}
+      controls={
+        <ShellActions>
+          <BjorkButton variant="secondary" size="sm" disabled={streaming} onClick={() => setChars(0)}>
+            {chars === null ? "Write v4" : "Rewrite v4"}
+          </BjorkButton>
+        </ShellActions>
+      }
     >
-      <Demo />
+      <Demo chars={chars} setChars={setChars} />
     </SimpleComponentDemoPage>
   );
 }

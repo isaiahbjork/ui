@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { SAMPLE_STREAM_PHASES, StreamStatus, type StreamStatusState } from "@/components/bjork-ui/ai/stream-status";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { ShellActions, ShellSwitch, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -16,13 +15,11 @@ const FAIL_AT = 3; // with "Fail" on, the run errors while reading the changelog
 // Fixed clock for the preview pose.
 const POSE = 1_700_000_000_000;
 
-function Demo() {
+// A new run value remounts the demo, which starts the stream again.
+function Demo({ determinate, fail }: { determinate: boolean; fail: boolean }) {
   const isPreview = usePreviewMode();
   const [stage, setStage] = useState(0);
   const [status, setStatus] = useState<StreamStatusState>("working");
-  const [run, setRun] = useState(0);
-  const [determinate, setDeterminate] = useState(true);
-  const [fail, setFail] = useState(false);
 
   useEffect(() => {
     if (isPreview || status !== "working") return;
@@ -33,12 +30,6 @@ function Demo() {
     }, SAMPLE_STREAM_PHASES[stage].ms);
     return () => window.clearTimeout(id);
   }, [isPreview, status, stage, fail]);
-
-  const restart = () => {
-    setStage(0);
-    setStatus("working");
-    setRun((r) => r + 1);
-  };
 
   if (isPreview) {
     return (
@@ -63,7 +54,6 @@ function Demo() {
   return (
     <div className="flex w-[min(460px,calc(100vw-56px))] flex-col items-stretch gap-7">
       <StreamStatus
-        key={run}
         phase={phase}
         status={status}
         progress={determinate ? (status === "working" ? stage / TOTAL + 0.5 / TOTAL : (stage + 1) / TOTAL) : undefined}
@@ -71,32 +61,15 @@ function Demo() {
         totalSteps={TOTAL}
         onStop={() => setStatus("stopped")}
       />
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <BjorkButton variant="secondary" size="sm" onClick={restart}>
-          Replay
-        </BjorkButton>
-        <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[color:var(--bjork-text-muted)]">
-          <BjorkSwitch aria-label="Determinate" size="sm" checked={determinate} onCheckedChange={setDeterminate} />
-          Determinate
-        </label>
-        <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[color:var(--bjork-text-muted)]">
-          <BjorkSwitch
-            aria-label="Fail"
-            size="sm"
-            checked={fail}
-            onCheckedChange={(checked) => {
-              setFail(checked);
-              restart();
-            }}
-          />
-          Fail
-        </label>
-      </div>
     </div>
   );
 }
 
 export default function Page() {
+  const [run, setRun] = useState(0);
+  const [determinate, setDeterminate] = useState(true);
+  const [fail, setFail] = useState(false);
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -109,8 +82,31 @@ export function Status({ phase, step, stop }: { phase: string; step: number; sto
 }`}
       previewScaleClassName="w-[340px]"
       previewCaptureScaleClassName="w-[460px] scale-[1.35]"
+      onReset={() => {
+        setDeterminate(true);
+        setFail(false);
+        setRun((r) => r + 1);
+      }}
+      controls={
+        <>
+          <ShellActions>
+            <BjorkButton variant="secondary" size="sm" onClick={() => setRun((r) => r + 1)}>
+              Replay
+            </BjorkButton>
+          </ShellActions>
+          <ShellSwitch label="Determinate" checked={determinate} onCheckedChange={setDeterminate} />
+          <ShellSwitch
+            label="Fail"
+            checked={fail}
+            onCheckedChange={(checked) => {
+              setFail(checked);
+              setRun((r) => r + 1);
+            }}
+          />
+        </>
+      }
     >
-      <Demo />
+      <Demo key={run} determinate={determinate} fail={fail} />
     </SimpleComponentDemoPage>
   );
 }

@@ -8,8 +8,7 @@ import {
   type ComposerAttachment,
   type PromptSubmission,
 } from "@/components/bjork-ui/ai/prompt-composer";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
+import { ShellSwitch, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -18,10 +17,9 @@ const item = getGalleryItem("prompt-composer");
 const POSE_ATTACHMENTS: ComposerAttachment[] = [{ id: "pose-1", name: "launch-brief.pdf", size: 1_288_490 }];
 const POSE_TEXT = "Draft a reply to Mara about the launch slip, using the brief.\n/";
 
-function Demo() {
+function Demo({ disabled }: { disabled: boolean }) {
   const isPreview = usePreviewMode();
   const [streaming, setStreaming] = useState(false);
-  const [disabled, setDisabled] = useState(false);
   const [last, setLast] = useState<PromptSubmission | null>(null);
 
   // A pretend reply streams for three seconds after each send.
@@ -66,16 +64,14 @@ function Demo() {
                 }`
               : "Enter sends, Shift+Enter adds a line, drop or paste files"}
         </p>
-        <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[color:var(--bjork-text-muted)]">
-          <BjorkSwitch aria-label="Disabled" size="sm" checked={disabled} onCheckedChange={setDisabled} />
-          Disabled
-        </label>
       </div>
     </div>
   );
 }
 
 export default function Page() {
+  const [disabled, setDisabled] = useState(false);
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -97,8 +93,11 @@ export function Composer({ streaming, send, stop }: { streaming: boolean; send: 
 }`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[560px] scale-[1.0]"
+      optionsDefaultOpen={false}
+      onReset={() => setDisabled(false)}
+      controls={<ShellSwitch label="Disabled" checked={disabled} onCheckedChange={setDisabled} />}
     >
-      <Demo />
+      <Demo disabled={disabled} />
     </SimpleComponentDemoPage>
   );
 }

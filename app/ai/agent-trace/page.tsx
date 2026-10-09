@@ -2,10 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AgentTrace, type AgentStep } from "@/components/bjork-ui/ai/agent-trace";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import {
+  ShellActions,
+  ShellSegmented,
+  ShellSwitch,
+  SimpleComponentDemoPage,
+} from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { BjorkButtonGroup } from "@/components/bjork-ui/primitives/button-group";
-import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -59,12 +62,19 @@ function stepsAt(stage: number, forceError: boolean, startedAt?: number): AgentS
 // Fixed clock for the preview pose, so the captured frame never changes.
 const POSE = 1_700_000_000_000;
 
-function Demo() {
+type Density = "comfortable" | "compact";
+
+function Demo({
+  forceError,
+  density,
+  replay,
+}: {
+  forceError: boolean;
+  density: Density;
+  replay: number;
+}) {
   const isPreview = usePreviewMode();
   const [stage, setStage] = useState(0);
-  const [run, setRun] = useState(0);
-  const [forceError, setForceError] = useState(false);
-  const [density, setDensity] = useState<"comfortable" | "compact">("comfortable");
 
   useEffect(() => {
     if (isPreview || stage >= RUN.length) return;
@@ -75,12 +85,6 @@ function Demo() {
     return () => window.clearTimeout(id);
   }, [isPreview, stage, forceError]);
 
-  // A new run remounts the trace, so a folded trace opens again.
-  const restart = () => {
-    setStage(0);
-    setRun((r) => r + 1);
-  };
-
   // Preview posed frame: steps 1 to 4 are done (draft is amber at 5.2s), and step 5 has run for 1.2s.
   const steps = useMemo(
     () => (isPreview ? stepsAt(4, false, POSE) : stepsAt(stage, forceError)),
@@ -89,44 +93,25 @@ function Demo() {
 
   return (
     <div className="flex w-[min(520px,calc(100vw-56px))] flex-col items-center gap-6">
-      <AgentTrace key={run} steps={steps} density={density} now={isPreview ? POSE + 1200 : undefined} />
-      {!isPreview && (
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <BjorkButton variant="secondary" size="sm" onClick={restart}>
-            Replay
-          </BjorkButton>
-          <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[color:var(--bjork-text-muted)]">
-            <BjorkSwitch
-              aria-label="Force error"
-              size="sm"
-              checked={forceError}
-              onCheckedChange={(checked) => {
-                setForceError(checked);
-                restart();
-              }}
-            />
-            Force error
-          </label>
-          <BjorkButtonGroup role="group" aria-label="Density">
-            {(["comfortable", "compact"] as const).map((value) => (
-              <BjorkButton
-                key={value}
-                aria-pressed={density === value}
-                variant={density === value ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setDensity(value)}
-              >
-                {value}
-              </BjorkButton>
-            ))}
-          </BjorkButtonGroup>
-        </div>
-      )}
+      {/* A new replay value remounts the trace, so a folded trace opens again. */}
+      <AgentTrace key={replay} steps={steps} density={density} now={isPreview ? POSE + 1200 : undefined} />
     </div>
   );
 }
 
+const DEFAULT_DENSITY: Density = "comfortable";
+
 export default function Page() {
+  const [forceError, setForceError] = useState(false);
+  const [density, setDensity] = useState<Density>(DEFAULT_DENSITY);
+  const [replay, setReplay] = useState(0);
+
+  const reset = () => {
+    setForceError(false);
+    setDensity(DEFAULT_DENSITY);
+    setReplay((r) => r + 1);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -139,8 +124,36 @@ export function Demo({ steps }: { steps: AgentStep[] }) {
 }`}
       previewScaleClassName="w-[340px]"
       previewCaptureScaleClassName="w-[520px] scale-[1.3]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellActions>
+            <BjorkButton variant="secondary" size="sm" onClick={() => setReplay((r) => r + 1)}>
+              Replay
+            </BjorkButton>
+          </ShellActions>
+          <ShellSwitch
+            label="Force error"
+            checked={forceError}
+            onCheckedChange={(checked) => {
+              setForceError(checked);
+              setReplay((r) => r + 1);
+            }}
+          />
+          <ShellSegmented
+            label="Density"
+            value={density}
+            onChange={(value) => setDensity(value as Density)}
+            options={[
+              { value: "comfortable", label: "comfortable" },
+              { value: "compact", label: "compact" },
+            ]}
+          />
+        </>
+      }
     >
-      <Demo />
+      <Demo forceError={forceError} density={density} replay={replay} />
     </SimpleComponentDemoPage>
   );
 }

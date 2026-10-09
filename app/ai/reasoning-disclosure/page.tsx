@@ -6,9 +6,8 @@ import {
   SAMPLE_REASONING,
   SAMPLE_REASONING_STEPS,
 } from "@/components/bjork-ui/ai/reasoning-disclosure";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { ShellActions, ShellSwitch, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -32,18 +31,17 @@ function stepsFor(length: number): string[] {
 const POSE = 1_700_000_000_000;
 const POSE_CUT = SAMPLE_REASONING.indexOf("The risk is");
 
-function Demo() {
+// A new run value remounts the demo, which streams the reasoning again from the start.
+function Demo({ autoCollapse }: { autoCollapse: boolean }) {
   const isPreview = usePreviewMode();
   const [count, setCount] = useState(0);
-  const [run, setRun] = useState(0);
-  const [autoCollapse, setAutoCollapse] = useState(true);
 
   const done = count >= CHUNKS.length;
   useEffect(() => {
     if (isPreview || done) return;
     const id = window.setTimeout(() => setCount((c) => c + 1), count === 0 ? 500 : TICK_MS);
     return () => window.clearTimeout(id);
-  }, [isPreview, done, count, run]);
+  }, [isPreview, done, count]);
 
   const text = isPreview ? SAMPLE_REASONING.slice(0, POSE_CUT) : SAMPLE_REASONING.slice(0, count === 0 ? 0 : OFFSETS[count - 1]);
 
@@ -59,36 +57,20 @@ function Demo() {
         />
       ) : (
         <ReasoningDisclosure
-          key={run}
           text={text}
           streaming={!done}
           steps={stepsFor(text.length)}
           autoCollapse={autoCollapse}
         />
       )}
-      {!isPreview && (
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <BjorkButton
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              setCount(0);
-              setRun((r) => r + 1);
-            }}
-          >
-            Replay
-          </BjorkButton>
-          <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[color:var(--bjork-text-muted)]">
-            <BjorkSwitch aria-label="Auto-collapse" size="sm" checked={autoCollapse} onCheckedChange={setAutoCollapse} />
-            Auto-collapse
-          </label>
-        </div>
-      )}
     </div>
   );
 }
 
 export default function Page() {
+  const [run, setRun] = useState(0);
+  const [autoCollapse, setAutoCollapse] = useState(true);
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -101,8 +83,23 @@ export function Reasoning({ text, done, ms }: { text: string; done: boolean; ms?
 }`}
       previewScaleClassName="w-[340px]"
       previewCaptureScaleClassName="w-[520px] scale-[1.3]"
+      optionsDefaultOpen={false}
+      onReset={() => {
+        setAutoCollapse(true);
+        setRun((r) => r + 1);
+      }}
+      controls={
+        <>
+          <ShellActions>
+            <BjorkButton variant="secondary" size="sm" onClick={() => setRun((r) => r + 1)}>
+              Replay
+            </BjorkButton>
+          </ShellActions>
+          <ShellSwitch label="Auto-collapse" checked={autoCollapse} onCheckedChange={setAutoCollapse} />
+        </>
+      }
     >
-      <Demo />
+      <Demo key={run} autoCollapse={autoCollapse} />
     </SimpleComponentDemoPage>
   );
 }

@@ -2,18 +2,18 @@
 
 import { useRef, useState } from "react";
 import { ModelSelector, SAMPLE_MODELS } from "@/components/bjork-ui/ai/model-selector";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { BjorkButtonGroup } from "@/components/bjork-ui/primitives/button-group";
-import { BjorkButton } from "@/components/bjork-ui/primitives/button";
+import { ShellSegmented, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("model-selector");
 
-function Demo() {
+type Side = "top" | "bottom";
+const DEFAULT_SIDE: Side = "bottom";
+
+function Demo({ side }: { side: Side }) {
   const isPreview = usePreviewMode();
   const [model, setModel] = useState("halcyon-3-pro");
-  const [side, setSide] = useState<"top" | "bottom">("bottom");
   const current = SAMPLE_MODELS.find((m) => m.id === model);
   const composerRef = useRef<HTMLDivElement>(null);
 
@@ -43,26 +43,13 @@ function Demo() {
           </span>
         </div>
       </div>
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <BjorkButtonGroup role="group" aria-label="Preferred side">
-          {(["bottom", "top"] as const).map((value) => (
-            <BjorkButton
-              key={value}
-              aria-pressed={side === value}
-              variant={side === value ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setSide(value)}
-            >
-              Opens {value === "bottom" ? "below" : "above"}
-            </BjorkButton>
-          ))}
-        </BjorkButtonGroup>
-      </div>
     </div>
   );
 }
 
 export default function Page() {
+  const [side, setSide] = useState<Side>(DEFAULT_SIDE);
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -77,8 +64,20 @@ export function Demo() {
 }`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[400px] scale-[1.0]"
+      onReset={() => setSide(DEFAULT_SIDE)}
+      controls={
+        <ShellSegmented
+          label="Side"
+          value={side}
+          onChange={(value) => setSide(value as Side)}
+          options={[
+            { value: "bottom", label: "Opens below" },
+            { value: "top", label: "Opens above" },
+          ]}
+        />
+      }
     >
-      <Demo />
+      <Demo side={side} />
     </SimpleComponentDemoPage>
   );
 }

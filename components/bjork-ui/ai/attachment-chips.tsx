@@ -193,10 +193,10 @@ function RowChip({ item, onRemove, onRetry, onOpen }: ChipProps) {
   return (
     <div
       className={cn(
-        "group relative flex h-12 w-[232px] max-w-full items-center gap-1 rounded-[11px] border pl-1.5 pr-1 transition-colors duration-150",
+        "group relative flex h-12 w-[232px] max-w-full items-center gap-1 rounded-[11px] border bg-[color:var(--bjork-surface)] pl-1.5 pr-1 shadow-[var(--bjork-shadow-soft)] transition-colors duration-150",
         failed
           ? "border-[color:color-mix(in_srgb,var(--bjork-error)_45%,transparent)]"
-          : "border-[color:var(--bjork-border)]",
+          : "border-[color:var(--bjork-border-muted)]",
       )}
     >
       <OpenArea item={item} onOpen={onOpen} className="h-10 flex-1 gap-2.5 rounded-[8px] pr-1">
@@ -218,10 +218,10 @@ function GridCard({ item, onRemove, onRetry, onOpen }: ChipProps) {
   return (
     <div
       className={cn(
-        "group relative rounded-[12px] border",
+        "group relative rounded-[12px] border bg-[color:var(--bjork-surface)] shadow-[var(--bjork-shadow-soft)]",
         failed
           ? "border-[color:color-mix(in_srgb,var(--bjork-error)_45%,transparent)]"
-          : "border-[color:var(--bjork-border)]",
+          : "border-[color:var(--bjork-border-muted)]",
       )}
     >
       <OpenArea item={item} onOpen={onOpen} className="w-full flex-col items-stretch rounded-[11px]">

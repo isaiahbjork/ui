@@ -12,6 +12,7 @@ import {
 import { Check, Copy } from "lucide-react";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import {
+  AI_WELL,
   FOCUS_RING,
   PRESS,
   useAiTone,
@@ -538,7 +539,7 @@ function CodeBlock({
 
   const lines = code.split("\n");
   return (
-    <figure className="my-4 overflow-hidden rounded-[10px] border border-[color:var(--bjork-border)] bg-[var(--bjork-field-inset)]">
+    <figure className={cn(AI_WELL, "my-4 overflow-hidden rounded-[10px]")}>
       <figcaption className="flex h-9 items-center justify-between gap-3 border-b border-[color:var(--bjork-border)] pl-3 pr-1">
         <span className="flex min-w-0 items-center gap-2 font-mono text-[10px] uppercase leading-none tracking-[0.08em] text-[color:var(--bjork-text-soft)]">
           {language || "text"}
@@ -560,13 +561,13 @@ function CodeBlock({
             <Copy
               size={13}
               strokeWidth={1.75}
-              className={cn("absolute transition-all duration-150", copied ? "scale-50 opacity-0" : "opacity-100")}
+              className={cn("absolute transition-[background-color,border-color,color,opacity] duration-150", copied ? "scale-50 opacity-0" : "opacity-100")}
             />
             <Check
               size={13}
               strokeWidth={2}
               className={cn(
-                "absolute text-[color:var(--bjork-accent-ink)] transition-all duration-150",
+                "absolute text-[color:var(--bjork-accent-ink)] transition-[background-color,border-color,color,opacity] duration-150",
                 copied ? "opacity-100" : "scale-50 opacity-0",
               )}
             />

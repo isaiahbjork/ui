@@ -379,13 +379,13 @@ export function MessageBranch({
             <Copy
               size={14}
               strokeWidth={1.75}
-              className={cn("absolute transition-all duration-150", copied ? "scale-50 opacity-0" : "opacity-100")}
+              className={cn("absolute transition-[background-color,border-color,color,opacity,transform] duration-150", copied ? "scale-50 opacity-0" : "opacity-100")}
             />
             <Check
               size={14}
               strokeWidth={2}
               className={cn(
-                "absolute text-[color:var(--bjork-accent-ink)] transition-all duration-150",
+                "absolute text-[color:var(--bjork-accent-ink)] transition-[background-color,border-color,color,opacity,transform] duration-150",
                 copied ? "opacity-100" : "scale-50 opacity-0",
               )}
             />
