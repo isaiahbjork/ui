@@ -10,14 +10,13 @@ import {
   chartFocusRing,
   ChartTable,
   LabelPool,
-  placeTooltip,
   HoverTooltip,
   ChartAnnouncer,
   type TooltipHandle,
   type AnnouncerHandle,
   type TooltipContent,
 } from "@/components/bjork-ui/charts/_kit/chrome";
-import { clamp, crisp, damp, niceTicks, withAlpha, formatCompact, formatNumber, formatSigned } from "@/components/bjork-ui/charts/_kit/scale";
+import { clamp, crisp, damp, niceTicks, withAlpha, formatCompact, formatFixed, formatNumber, formatSigned } from "@/components/bjork-ui/charts/_kit/scale";
 
 export interface BookLevel {
   price: number;
@@ -55,7 +54,8 @@ const ATTRACT_STEP_MS = 900;
 const ATTRACT_IDLE_MS = 4000;
 
 const clock = () => performance.now();
-const defaultFormatPrice = (p: number) => formatNumber(p, 2);
+// Fixed decimals so 101.30 and 101.28 line up in the tooltip and table.
+const defaultFormatPrice = (p: number) => formatFixed(p, 2);
 const defaultFormatSize = (s: number) => formatCompact(s, 1);
 
 interface Book {
@@ -91,6 +91,17 @@ function walk(book: Book, side: "bid" | "ask", level: number) {
   const vwap = size ? notional / size : book.mid;
   const last = levels[Math.min(level, levels.length - 1)]?.price ?? book.mid;
   return { size, vwap, price: last, impactBp: ((vwap - book.mid) / book.mid) * 1e4, slipBp: ((last - book.mid) / book.mid) * 1e4 };
+}
+
+// Cumulative depth rises away from mid, so the empty space next to a probe is on the mid side:
+// above-left of an ask point, above-right of a bid point. Fall back to the other side at the edge.
+function placeProbeTooltip(side: "bid" | "ask", x: number, y: number, tw: number, th: number, w: number, h: number, gap = 12) {
+  let tx = side === "ask" ? x - gap - tw : x + gap;
+  if (tx < 0) tx = x + gap;
+  if (tx + tw > w) tx = x - gap - tw;
+  tx = clamp(tx, 0, Math.max(0, w - tw));
+  const ty = clamp(y - th - gap, 0, Math.max(0, h - th));
+  return { x: Math.round(tx), y: Math.round(ty) };
 }
 
 interface Run {
@@ -346,7 +357,7 @@ export function DepthChart({
       ctx.strokeStyle = p.stage;
       ctx.stroke();
       if (tip?.el) {
-        const pos = placeTooltip(x, y, tip.size.w, tip.size.h, w, h, 12);
+        const pos = placeProbeTooltip(s.probe.side, x, y, tip.size.w, tip.size.h, w, h);
         tip.el.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
       }
     }
@@ -452,6 +463,12 @@ export function DepthChart({
       if (cur.side === dir) setProbe({ side: dir, level: Math.min(cur.level + (e.shiftKey ? 5 : 1), (dir === "bid" ? book.bids : book.asks).length - 1) }, "keyboard");
       else if (cur.level > 0) setProbe({ side: cur.side, level: Math.max(0, cur.level - (e.shiftKey ? 5 : 1)) }, "keyboard");
       else setProbe({ side: dir, level: 0 }, "keyboard");
+    } else if (e.key === "Home" || e.key === "End") {
+      e.preventDefault();
+      // Home: the touch on the current side. End: the deepest level on it.
+      const sideNow = cur?.side ?? "ask";
+      const levels = sideNow === "bid" ? book.bids : book.asks;
+      setProbe({ side: sideNow, level: e.key === "Home" ? 0 : Math.max(0, levels.length - 1) }, "keyboard");
     } else if (e.key === "Escape") setProbe(null, null);
   };
 
@@ -473,7 +490,7 @@ export function DepthChart({
         ref={wrapperRef}
         role="group"
         aria-roledescription="chart"
-        aria-label={`${ariaLabel}. Left walks down the bids, right walks up the asks, reading the size, average fill and impact.`}
+        aria-label={`${ariaLabel}. Left walks down the bids, right walks up the asks, Home and End jump to the touch and the deepest level, reading the size, average fill and impact.`}
         tabIndex={0}
         onPointerEnter={() => {
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
