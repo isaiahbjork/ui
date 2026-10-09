@@ -4,6 +4,7 @@ import { useId, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import { easeCss } from "@/components/bjork-ui/_core/motion";
 import {
+  AI_PANEL,
   FOCUS_RING,
   PRESS,
   formatCost,
@@ -158,7 +159,7 @@ export function ResponseCompare({
     <section
       aria-labelledby={`${uid}-prompt`}
       style={style}
-      className={cn("@container w-full min-w-0 max-w-[720px] font-bjork-alpha text-[color:var(--bjork-text)]", className)}
+      className={cn(AI_PANEL, "@container w-full min-w-0 max-w-[720px] font-bjork-alpha text-[color:var(--bjork-text)]", className)}
     >
       <div className="pb-4">
         <span className="font-mono text-[10px] uppercase leading-4 tracking-[0.08em] text-[color:var(--bjork-text-faint)]">
@@ -179,7 +180,7 @@ export function ResponseCompare({
               key={r.id}
               aria-labelledby={`${uid}-r${i}`}
               className={cn(
-                "relative flex min-w-0 flex-col rounded-[12px] border bg-[color:var(--bjork-surface)] px-4 pb-4 pt-3 transition-[opacity,border-color] duration-300",
+                "relative flex min-w-0 flex-col rounded-[12px] border bg-[color:var(--bjork-field)] px-4 pb-4 pt-3 shadow-[var(--bjork-shadow-soft)] transition-[opacity,border-color] duration-300",
                 wins ? "border-[color:var(--bjork-accent-muted)]" : "border-[color:var(--bjork-border)]",
                 loses && "opacity-60",
               )}
@@ -250,7 +251,7 @@ export function ResponseCompare({
           aria-label="Which response is better?"
           aria-disabled={submitted || undefined}
           onKeyDown={onRadioKey}
-          className="grid grid-cols-2 gap-1 rounded-[11px] border border-[color:var(--bjork-border)] p-1 @[480px]:grid-cols-4"
+          className="grid grid-cols-2 gap-1 rounded-[14px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-surface-muted)] p-1 shadow-[var(--bjork-shadow-surface)] @[480px]:grid-cols-4"
         >
           {CHOICES.map((c, i) => {
             const on = (submitted ? vote?.choice : choice) === c.id;
@@ -267,7 +268,7 @@ export function ResponseCompare({
                 tabIndex={i === focusable ? 0 : -1}
                 onClick={() => !submitted && setChoice(c.id)}
                 className={cn(
-                  "h-8 cursor-pointer rounded-[8px] px-2 text-[13px] font-medium transition-colors duration-150 disabled:cursor-default",
+                  "h-8 cursor-pointer rounded-[10px] px-2 text-[13px] font-medium transition-colors duration-150 disabled:cursor-default",
                   on
                     ? c.id === "both-bad"
                       ? "bg-[color:color-mix(in_srgb,var(--bjork-error)_12%,transparent)] text-[color:var(--bjork-error)]"

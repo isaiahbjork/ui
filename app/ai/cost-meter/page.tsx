@@ -2,17 +2,23 @@
 
 import { useState } from "react";
 import { CostMeter, SAMPLE_USAGE, type CostPeriod } from "@/components/bjork-ui/ai/cost-meter";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { ShellActions, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("cost-meter");
 
-function Demo() {
+function Demo({
+  period,
+  extra,
+  onPeriodChange,
+}: {
+  period: CostPeriod;
+  extra: number;
+  onPeriodChange: (period: CostPeriod) => void;
+}) {
   const isPreview = usePreviewMode();
-  const [period, setPeriod] = useState<CostPeriod>("30d");
-  const [extra, setExtra] = useState(0);
   const usage = SAMPLE_USAGE.periods[period];
 
   if (isPreview) {
@@ -40,24 +46,19 @@ function Demo() {
         breakdown={usage.breakdown}
         history={SAMPLE_USAGE.history}
         period={period}
-        onPeriodChange={(p) => {
-          setPeriod(p);
-          setExtra(0);
-        }}
+        onPeriodChange={onPeriodChange}
       />
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <BjorkButton variant="secondary" size="sm" onClick={() => setExtra((x) => x + usage.budget * 0.09)}>
-          Run a long job
-        </BjorkButton>
-        <BjorkButton variant="ghost" size="sm" onClick={() => setExtra(0)}>
-          Reset
-        </BjorkButton>
-      </div>
     </div>
   );
 }
 
 export default function Page() {
+  const [period, setPeriod] = useState<CostPeriod>("30d");
+  const [extra, setExtra] = useState(0);
+  const usage = SAMPLE_USAGE.periods[period];
+
+  const reset = () => setExtra(0);
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -79,8 +80,27 @@ export function Usage() {
 }`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[520px] scale-[0.95]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <ShellActions>
+          <BjorkButton variant="secondary" size="sm" onClick={() => setExtra((x) => x + usage.budget * 0.09)}>
+            Run a long job
+          </BjorkButton>
+          <BjorkButton variant="ghost" size="sm" onClick={reset}>
+            Reset
+          </BjorkButton>
+        </ShellActions>
+      }
     >
-      <Demo />
+      <Demo
+        period={period}
+        extra={extra}
+        onPeriodChange={(p) => {
+          setPeriod(p);
+          setExtra(0);
+        }}
+      />
     </SimpleComponentDemoPage>
   );
 }

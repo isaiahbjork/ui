@@ -4,6 +4,8 @@ import { useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEv
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import { easeCss } from "@/components/bjork-ui/_core/motion";
 import {
+  AI_PANEL,
+  AI_WELL,
   FOCUS_RING,
   PRESS,
   formatDuration,
@@ -236,7 +238,7 @@ export function RetrievalInspector({
     <section
       aria-labelledby={`${uid}-q`}
       style={style}
-      className={cn("@container w-full min-w-0 max-w-[680px] font-bjork-alpha text-[color:var(--bjork-text)]", className)}
+      className={cn(AI_PANEL, "@container w-full min-w-0 max-w-[680px] font-bjork-alpha text-[color:var(--bjork-text)]", className)}
     >
       <header className="pb-3">
         <span className="font-mono text-[10px] uppercase leading-4 tracking-[0.08em] text-[color:var(--bjork-text-faint)]">
@@ -444,7 +446,7 @@ export function RetrievalInspector({
                 }}
               >
                 <div className="min-h-0 overflow-hidden">
-                  <dl className="mb-3 ml-[calc(3ch+12px)] grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 @[560px]:grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] gap-y-0.5 rounded-[8px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-field-inset)] px-3 py-2 font-mono text-[11px] leading-5">
+                  <dl className={cn(AI_WELL, "mb-3 ml-[calc(3ch+12px)] grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 @[560px]:grid-cols-[auto_minmax(0,1fr)_auto_minmax(0,1fr)] gap-y-0.5 px-3 py-2 font-mono text-[11px] leading-5")}>
                     <Meta k="id" v={c.id} />
                     <Meta k="retrieved" v={c.retrievedRank !== undefined ? `#${c.retrievedRank} → #${c.rank}` : `#${c.rank}`} />
                     <Meta k="tokens" v={c.tokens.toLocaleString("en-US")} />

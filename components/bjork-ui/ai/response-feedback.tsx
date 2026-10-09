@@ -6,6 +6,7 @@ import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import { easeCss, springs } from "@/components/bjork-ui/_core/motion";
 import {
+  AI_TILE,
   FOCUS_RING,
   PRESS,
   useAiTone,
@@ -224,7 +225,7 @@ export function ResponseFeedback({
         <div className="min-h-0 overflow-hidden">
           <form
             aria-label="Feedback details"
-            className="mt-2 rounded-[12px] border border-[color:var(--bjork-border)] p-3"
+            className={cn(AI_TILE, "mt-2 p-3")}
             onSubmit={(e) => {
               e.preventDefault();
               submit();

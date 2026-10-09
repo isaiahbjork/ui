@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import { easeCss } from "@/components/bjork-ui/_core/motion";
 import {
+  AI_PANEL,
   FOCUS_RING,
   PRESS,
   formatTokens,
@@ -132,7 +133,7 @@ export function ContextMeter({
       className={cn(
         "relative font-bjork-alpha text-[color:var(--bjork-text)]",
         // Size containment would collapse the inline compact trigger to zero width, so only the full meter is a container.
-        variant === "full" ? "@container w-full max-w-[520px]" : "inline-flex shrink-0",
+        variant === "full" ? cn(AI_PANEL, "@container w-full max-w-[520px]") : "inline-flex shrink-0",
         className,
       )}
       style={style}

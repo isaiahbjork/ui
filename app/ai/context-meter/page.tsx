@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ContextMeter, SAMPLE_CONTEXT, type ContextSegment } from "@/components/bjork-ui/ai/context-meter";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { ShellActions, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
@@ -14,10 +14,7 @@ function bump(segments: ContextSegment[], id: string, delta: number): ContextSeg
   return segments.map((s) => (s.id === id ? { ...s, tokens: Math.max(0, s.tokens + delta) } : s));
 }
 
-function Demo() {
-  const isPreview = usePreviewMode();
-  const [segments, setSegments] = useState<ContextSegment[]>(SAMPLE_CONTEXT);
-
+function Demo({ segments }: { segments: ContextSegment[] }) {
   return (
     <div className="flex w-[min(460px,calc(100vw-56px))] flex-col items-stretch gap-7">
       <ContextMeter segments={segments} limit={LIMIT} />
@@ -28,35 +25,14 @@ function Demo() {
         </span>
         <ContextMeter segments={segments} limit={LIMIT} variant="compact" />
       </div>
-
-      {!isPreview && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <BjorkButton variant="secondary" size="sm" onClick={() => setSegments((s) => bump(s, "conversation", 9_000))}>
-            Add turn
-          </BjorkButton>
-          <BjorkButton variant="secondary" size="sm" onClick={() => setSegments((s) => bump(s, "files", 14_000))}>
-            Attach file
-          </BjorkButton>
-          <BjorkButton variant="secondary" size="sm" onClick={() => setSegments((s) => bump(s, "tools", 6_000))}>
-            Tool call
-          </BjorkButton>
-          <BjorkButton
-            variant="ghost"
-            size="sm"
-            onClick={() => setSegments((s) => bump(bump(s, "conversation", -48_000), "tools", -10_000))}
-          >
-            Summarize
-          </BjorkButton>
-          <BjorkButton variant="ghost" size="sm" onClick={() => setSegments(SAMPLE_CONTEXT)}>
-            Reset
-          </BjorkButton>
-        </div>
-      )}
     </div>
   );
 }
 
 export default function Page() {
+  const [segments, setSegments] = useState<ContextSegment[]>(SAMPLE_CONTEXT);
+  const isPreview = usePreviewMode();
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -74,8 +50,34 @@ export function Demo() {
 }`}
       previewScaleClassName="w-[340px]"
       previewCaptureScaleClassName="w-[460px] scale-[1.05]"
+      onReset={() => setSegments(SAMPLE_CONTEXT)}
+      controls={
+        isPreview ? undefined : (
+          <ShellActions>
+            <BjorkButton variant="secondary" size="sm" onClick={() => setSegments((s) => bump(s, "conversation", 9_000))}>
+              Add turn
+            </BjorkButton>
+            <BjorkButton variant="secondary" size="sm" onClick={() => setSegments((s) => bump(s, "files", 14_000))}>
+              Attach file
+            </BjorkButton>
+            <BjorkButton variant="secondary" size="sm" onClick={() => setSegments((s) => bump(s, "tools", 6_000))}>
+              Tool call
+            </BjorkButton>
+            <BjorkButton
+              variant="ghost"
+              size="sm"
+              onClick={() => setSegments((s) => bump(bump(s, "conversation", -48_000), "tools", -10_000))}
+            >
+              Summarize
+            </BjorkButton>
+            <BjorkButton variant="ghost" size="sm" onClick={() => setSegments(SAMPLE_CONTEXT)}>
+              Reset
+            </BjorkButton>
+          </ShellActions>
+        )
+      }
     >
-      <Demo />
+      <Demo segments={segments} />
     </SimpleComponentDemoPage>
   );
 }
