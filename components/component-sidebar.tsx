@@ -148,7 +148,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Chromatic Text", path: "/text/chromatic-text" },
       // @slot plane-type
 
-      // @slot scatter-rewind
+      { name: "Scatter Rewind", path: "/text/scatter-rewind" },
 
     ],
   },

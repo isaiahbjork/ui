@@ -1190,7 +1190,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork111 scatter-rewind
+  {
+    id: "bjork111",
+    slug: "scatter-rewind",
+    title: "Scatter rewind",
+    route: "/text/scatter-rewind",
+    sourcePath: "components/bjork-ui/text/scatter-rewind.tsx",
+    tier: "lab",
+    collection: "Text",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   {
     id: "bjork112",
