@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { galleryItems, type GalleryItem } from "@/lib/bjork-gallery";
 import { SiteHeader } from "@/components/site-header";
 import { WebsiteShaderCanvas } from "@/components/bjork-ui/shaders/website-shader";
+import { LiveLine } from "@/components/bjork-ui/charts/live-line";
 
 const collectionCount = galleryItems.length;
 type CollectionFilter = "all" | (typeof galleryItems)[number]["collection"];
@@ -141,7 +142,13 @@ export default function Page() {
     );
   }, [filteredItems, sortDirection]);
 
-  const shouldAnimate = !shouldReduceMotion;
+  // Reduced motion is read only after mount, so SSR and the first client render agree.
+  const isHydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const shouldAnimate = !isHydrated || !shouldReduceMotion;
   const isLight =
     mounted && (theme === "system" ? resolvedTheme : theme) === "light";
 
@@ -166,6 +173,7 @@ export default function Page() {
       <SiteHeader />
 
       <main className="mx-auto flex w-full max-w-[744px] flex-col px-5 pb-44 pt-36 md:px-0 lg:pt-40">
+        <HeroLive isLight={isLight} animate={shouldAnimate} />
         <HeroQuickStart isLight={isLight} animate={shouldAnimate} />
 
         <section id="components" className="w-full">
@@ -261,6 +269,76 @@ export default function Page() {
         isLight={isLight}
       />
     </div>
+  );
+}
+
+// One live component above the fold. It runs in attract mode and LiveLine pauses its
+// frame loop while it is off screen or the tab is hidden.
+function HeroLive({
+  isLight,
+  animate,
+}: {
+  isLight: boolean;
+  animate: boolean;
+}) {
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
+  const introTransition = animate
+    ? { type: "spring" as const, stiffness: 360, damping: 34, mass: 0.75 }
+    : { duration: 0 };
+
+  return (
+    <motion.section
+      aria-label="Live component"
+      initial={animate ? { opacity: 0, y: 14, filter: "blur(4px)" } : false}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={introTransition}
+      className="pb-16"
+    >
+      <div
+        className={cn(
+          "rounded-[20px] border p-3 md:p-4",
+          isLight
+            ? "border-[#f5ede2] bg-[#fffcf6] shadow-[inset_0_7px_14px_rgba(88,72,49,0.045),0_14px_22px_-9px_rgba(66,52,33,0.11)]"
+            : "border-white/[0.045] bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_16px_34px_-24px_rgba(0,0,0,0.88)]"
+        )}
+      >
+        <div className="mb-3 flex items-center justify-between gap-3 px-1">
+          <p
+            className={cn(
+              "min-w-0 truncate font-mono text-[12px] uppercase leading-none tracking-[0.14em]",
+              isLight ? "text-[#171717]/60" : "text-[#ededed]/38"
+            )}
+          >
+            Live line
+          </p>
+          <Link
+            href="/charts/live-line"
+            prefetch={false}
+            className={cn(
+              "shrink-0 whitespace-nowrap font-mono text-[12px] uppercase leading-none tracking-[0.14em] transition",
+              isLight ? "text-[#171717]/70 hover:text-[#171717]" : "text-[#ededed]/60 hover:text-[#ededed]"
+            )}
+          >
+            Open component
+          </Link>
+        </div>
+        {mounted ? (
+          <LiveLine
+            attract
+            height={232}
+            threshold={{ value: 250, label: "SLO 250ms" }}
+            ariaLabel="Live latency line chart"
+          />
+        ) : (
+          // Reserve the chart height during SSR; LiveLine reads reduced motion on the client only.
+          <div aria-hidden="true" style={{ height: 232 }} />
+        )}
+      </div>
+    </motion.section>
   );
 }
 

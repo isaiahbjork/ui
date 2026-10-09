@@ -398,14 +398,16 @@ export function ComponentDemoShell({
               isListPreview
                 ? "hide-scrollbar h-auto min-h-0 items-start justify-center overflow-visible rounded-none bg-transparent p-0 lg:h-full lg:overflow-y-auto"
                 : cn(
-                    "h-full min-h-0 items-center justify-center overflow-hidden rounded-[24px] p-2",
+                    // Phones: the toolbar sits in flow above the demo (flex-wrap), so it never covers it.
+                    // Desktop (lg+): the toolbar floats top-right over the pane and the demo fills it.
+                    "min-h-0 flex-wrap items-center justify-center overflow-hidden rounded-[24px] p-2 lg:h-full",
                     isLightPreview ? shellPalettes.light.preview : palette.preview,
                   ),
               previewClassName
             )}
           >
             {!isListPreview && (
-              <div className={cn("absolute right-6 top-6 z-30 flex rounded-[18px] border p-1.5 backdrop-blur-sm", palette.toolbar)}>
+              <div className={cn("relative z-30 mb-3 ml-auto flex w-fit rounded-[18px] border p-1.5 backdrop-blur-sm lg:absolute lg:right-6 lg:top-6 lg:mb-0 lg:ml-0", palette.toolbar)}>
                 <ToolbarButton
                   label={isFocusMode ? "Minimize preview" : "Maximize preview"}
                   onClick={() => setIsFocusMode((value) => !value)}
@@ -471,7 +473,7 @@ export function ComponentDemoShell({
                 isListPreview
                   ? "h-auto items-start justify-center overflow-visible p-0 lg:h-full"
                   : cn(
-                      "h-full items-center justify-center overflow-hidden rounded-[18px] p-3 sm:p-6",
+                      "items-center justify-center overflow-hidden rounded-[18px] p-3 sm:p-6 lg:h-full",
                       isLightPreview ? "bg-[#f7f5ef]" : palette.previewInner,
                     ),
                 previewInnerClassName
@@ -481,8 +483,9 @@ export function ComponentDemoShell({
                 key={previewKey}
                 className={cn(
                   "bjork-shell-preview-stage relative flex w-full min-w-0",
+                  // Desktop list previews sit centred in the pane; auto margins never clip tall content.
                   isListPreview
-                    ? "h-auto items-start justify-center overflow-visible"
+                    ? "h-auto items-start justify-center overflow-visible lg:my-auto"
                     : "h-full min-h-[520px] items-center justify-center overflow-hidden",
                 )}
               >
