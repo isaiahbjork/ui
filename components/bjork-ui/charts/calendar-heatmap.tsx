@@ -443,6 +443,11 @@ export function CalendarHeatmap({
   });
 
   const layout = layoutFor(size.width, model.nWeeks, minCell, maxCell);
+  // Before the first measure, the same cell maths in CSS against the container width, so the
+  // server paint already has the measured height and nothing shifts on hydration.
+  const cellLo = Math.max(4, Math.round(minCell));
+  const cellHi = Math.max(cellLo, Math.round(maxCell));
+  const ssrHeight = `calc(${MONTH_H + PAD_B - GAP}px + 7 * (clamp(${cellLo}px, round(down, (100cqw - ${GUTTER_L}px) / ${Math.max(1, model.nWeeks)} - ${GAP}px, 1px), ${cellHi}px) + ${GAP}px))`;
 
   const tooltipFor = (i: number): TooltipContent | null => {
     if (i < 0 || i >= model.nDays) return null;
@@ -648,7 +653,7 @@ export function CalendarHeatmap({
   const boxW = layout.x0 + Math.min(layout.gridW, layout.viewW || layout.gridW);
 
   return (
-    <div ref={rootRef} data-loop="idle" className={cn("relative flex w-full min-w-0 select-none flex-col gap-3 text-[color:var(--bjork-text)]", className)} style={vars}>
+    <div ref={rootRef} data-loop="idle" className={cn("@container relative flex w-full min-w-0 select-none flex-col gap-3 text-[color:var(--bjork-text)]", className)} style={vars}>
       {summary && (
         <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2" style={{ paddingLeft: GUTTER_L }}>
           {model.active ? (
@@ -664,7 +669,7 @@ export function CalendarHeatmap({
           )}
         </div>
       )}
-      <div className="relative w-full" style={{ height: layout.height }}>
+      <div className="relative w-full" style={{ height: size.width > 0 ? layout.height : ssrHeight }}>
         <div
           ref={wrapperRef}
           role="group"
@@ -704,7 +709,7 @@ export function CalendarHeatmap({
           <LabelPool
             count={model.months.length}
             pool={monthPool}
-            className="font-mono text-[10px] leading-none text-[color:var(--bjork-text-muted)] [text-box:trim-both_cap_alphabetic]"
+            className="font-mono text-[10px] leading-none tabular-nums text-[color:var(--bjork-text-muted)] [text-box:trim-both_cap_alphabetic]"
           />
           <div
             ref={scrollerRef}
