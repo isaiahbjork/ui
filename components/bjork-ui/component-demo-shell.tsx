@@ -31,6 +31,7 @@ import {
 import { cn } from "@/lib/utils";
 import { galleryItems, type GalleryItem } from "@/lib/bjork-gallery";
 import { BjorkSlider } from "@/components/bjork-ui/primitives/slider";
+import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
 import { WebsiteShaderCanvas } from "@/components/bjork-ui/shaders/website-shader";
 import {
   Drawer,
@@ -58,6 +59,7 @@ interface ComponentDemoShellProps {
   note?: ReactNode;
   onReset?: () => void;
   showOptionsReset?: boolean;
+  optionsDefaultOpen?: boolean;
   previewTone?: "dark" | "light";
   previewClassName?: string;
   previewInnerClassName?: string;
@@ -67,6 +69,10 @@ interface ComponentDemoShellProps {
 interface SimpleComponentDemoPageProps {
   item: GalleryItem | undefined;
   children: ReactNode;
+  controls?: ReactNode;
+  onReset?: () => void;
+  showOptionsReset?: boolean;
+  optionsDefaultOpen?: boolean;
   description?: string;
   dependencies?: string[];
   interactionRows?: InfoRow[];
@@ -92,7 +98,7 @@ const shellPalettes = {
     toolbar:
       "border-[#232323] bg-[#181818]/90 shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_14px_20px_-6px_rgba(0,0,0,0.45)]",
     options:
-      "border-[#202020] bg-[linear-gradient(180deg,rgba(24,24,24,0.96),rgba(15,15,15,0.94))]",
+      "border-[#202020] bg-[linear-gradient(180deg,rgba(24,24,24,0.96),rgba(15,15,15,0.94))] shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_14px_20px_-6px_rgba(0,0,0,0.45)]",
     optionsMuted: "text-[#ededed]/35 hover:bg-[#232323] hover:text-[#ededed]/65",
     optionsText: "text-[#ededed]/50",
     optionsButton: "text-[#ededed]/35 hover:text-[#ededed]",
@@ -167,11 +173,13 @@ export function ComponentDemoShell({
   note,
   onReset,
   showOptionsReset = true,
+  optionsDefaultOpen = true,
   previewTone = "dark",
   previewClassName,
   previewInnerClassName,
   previewLayout = "single",
 }: ComponentDemoShellProps) {
+  const [optionsOpen, setOptionsOpen] = useState(optionsDefaultOpen);
   const [sidebarOpen, setSidebarOpenState] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<GalleryItem | null>(null);
   const [showCode, setShowCode] = useState(false);
@@ -384,7 +392,7 @@ export function ComponentDemoShell({
             "order-2 w-full min-w-0 max-w-full lg:order-2 lg:min-h-0",
             isListPreview
               ? "min-h-0 overflow-visible lg:overflow-hidden"
-              : "min-h-[520px] overflow-hidden",
+              : "min-h-[520px] overflow-hidden max-lg:overflow-visible",
             isFocusMode && "lg:col-start-2"
           )}
         >
@@ -438,9 +446,9 @@ export function ComponentDemoShell({
                 dragElastic={0.04}
                 dragListener={false}
                 dragMomentum={false}
-                className={cn("absolute right-7 top-[104px] z-20 hidden w-[286px] rounded-[22px] border p-3 backdrop-blur-sm xl:block", palette.options)}
+                className={cn("absolute right-7 top-[104px] z-20 hidden rounded-[22px] border p-3 backdrop-blur-sm lg:block", optionsOpen ? "w-[286px]" : "w-auto", palette.options)}
               >
-                <div className="mb-4 flex items-center justify-between text-sm">
+                <div className={cn("flex items-center justify-between gap-3 text-sm", optionsOpen && "mb-4")}>
                   <button
                     type="button"
                     aria-label="Drag options panel"
@@ -450,7 +458,15 @@ export function ComponentDemoShell({
                     <Grip className="size-4" />
                   </button>
                   <div className={cn("flex items-center gap-2", palette.optionsText)}>
-                    <span>Options</span>
+                    <button
+                      type="button"
+                      aria-expanded={optionsOpen}
+                      onClick={() => setOptionsOpen((v) => !v)}
+                      className={cn("flex items-center gap-1 rounded-md transition active:scale-95", palette.optionsButton)}
+                    >
+                      Options
+                      <ChevronDown className={cn("size-3.5 transition-transform duration-200", !optionsOpen && "-rotate-90")} />
+                    </button>
                     {showOptionsReset && (
                       <button
                         type="button"
@@ -463,7 +479,7 @@ export function ComponentDemoShell({
                     )}
                   </div>
                 </div>
-                <div className="space-y-4">{controls}</div>
+                {optionsOpen && <div className="space-y-4">{controls}</div>}
               </motion.aside>
             )}
 
@@ -473,7 +489,7 @@ export function ComponentDemoShell({
                 isListPreview
                   ? "h-auto items-start justify-center overflow-visible p-0 lg:h-full"
                   : cn(
-                      "items-center justify-center overflow-hidden rounded-[18px] p-3 sm:p-6 lg:h-full",
+                      "items-center justify-center overflow-hidden rounded-[16px] p-3 sm:p-6 lg:h-full",
                       isLightPreview ? "bg-[#f7f5ef]" : palette.previewInner,
                     ),
                 previewInnerClassName
@@ -493,6 +509,20 @@ export function ComponentDemoShell({
               </div>
             </div>
           </motion.div>
+
+          {controls && !isListPreview && (
+            <div className={cn("mt-2 rounded-[22px] border p-3 lg:hidden", palette.options)}>
+              <div className="mb-4 flex items-center justify-between text-sm">
+                <span className={palette.optionsText}>Options</span>
+                {showOptionsReset && (
+                  <button type="button" aria-label="Reset options" onClick={resetPreview} className={cn("rounded-md transition active:scale-95", palette.optionsButton)}>
+                    <RefreshCcw className="size-3.5" />
+                  </button>
+                )}
+              </div>
+              <div className="space-y-4">{controls}</div>
+            </div>
+          )}
         </motion.section>
       </motion.main>
 
@@ -520,6 +550,10 @@ export function SimpleComponentDemoPage({
 function SimpleComponentDemoPageContent({
   item,
   children,
+  controls,
+  onReset,
+  showOptionsReset,
+  optionsDefaultOpen,
   description,
   dependencies = ["framer-motion", "clsx"],
   interactionRows,
@@ -607,6 +641,10 @@ function SimpleComponentDemoPageContent({
       }
       details={details}
       note={note}
+      controls={controls}
+      onReset={onReset}
+      showOptionsReset={showOptionsReset}
+      optionsDefaultOpen={optionsDefaultOpen}
       previewClassName={previewClassName}
       previewInnerClassName={previewInnerClassName}
       previewLayout={previewLayout}
@@ -1626,7 +1664,7 @@ function ToolbarButton({
       aria-label={label}
       onClick={onClick}
       className={cn(
-        "flex size-9 items-center justify-center rounded-[13px] transition active:scale-95",
+        "flex size-9 items-center justify-center rounded-[12px] transition active:scale-95",
         isLight ? "text-[#171717]/68 hover:bg-[#f1ece3] hover:text-[#171717]/78" : "text-[#ededed] hover:bg-[#232323]",
         active && (isLight
           ? "bg-[#f1ece3] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] hover:bg-[#ece5d9]"
@@ -1658,7 +1696,7 @@ export function ShellRange({
   const isLight = useShellIsLight();
 
   return (
-    <label className="grid grid-cols-[62px_minmax(0,1fr)] items-center gap-3 text-sm">
+    <label className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3 text-sm">
       <span className={cn(isLight ? "text-[#171717]/60" : "text-[#ededed]/48")}>{label}</span>
       <BjorkSlider
         min={min}
@@ -1672,27 +1710,28 @@ export function ShellRange({
   );
 }
 
-export function ShellSegmented({
+export function ShellSegmented<T extends string | number>({
   label,
   value,
   options,
   onChange,
 }: {
   label: string;
-  value: string;
-  options: Array<{ value: string; label: string }>;
-  onChange: (value: string) => void;
+  value: T;
+  options: Array<{ value: T; label: string }>;
+  onChange: (value: T) => void;
 }) {
   const isLight = useShellIsLight();
 
   return (
-    <div className="grid grid-cols-[62px_1fr] items-center gap-3 text-sm">
+    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3 text-sm">
       <span className={cn(isLight ? "text-[#171717]/60" : "text-[#ededed]/48")}>{label}</span>
-      <div className="flex justify-end gap-1">
+      <div className="flex flex-wrap justify-end gap-1">
         {options.map((option) => (
           <button
-            key={option.value}
+            key={String(option.value)}
             type="button"
+            aria-pressed={option.value === value}
             onClick={() => onChange(option.value)}
             className={cn(
               "rounded-[10px] border px-2.5 py-1 text-sm transition active:scale-95",
@@ -1709,6 +1748,26 @@ export function ShellSegmented({
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+export function ShellSwitch({ label, checked, onCheckedChange }: { label: string; checked: boolean; onCheckedChange: (checked: boolean) => void }) {
+  const isLight = useShellIsLight();
+  return (
+    <label className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 text-sm">
+      <span className={cn("truncate", isLight ? "text-[#171717]/60" : "text-[#ededed]/48")}>{label}</span>
+      <BjorkSwitch size="sm" checked={checked} onCheckedChange={onCheckedChange} aria-label={label} />
+    </label>
+  );
+}
+
+export function ShellActions({ label, children }: { label?: string; children: ReactNode }) {
+  const isLight = useShellIsLight();
+  return (
+    <div className="grid grid-cols-[72px_minmax(0,1fr)] items-center gap-3 text-sm">
+      <span className={cn(isLight ? "text-[#171717]/60" : "text-[#ededed]/48")}>{label ?? ""}</span>
+      <div className="flex flex-wrap justify-end gap-1.5">{children}</div>
     </div>
   );
 }
