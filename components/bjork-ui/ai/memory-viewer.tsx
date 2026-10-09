@@ -231,7 +231,7 @@ export function MemoryViewer({
                 {group.category}
                 <span className="tabular-nums">{group.items.filter((m) => !pending.includes(m.id)).length}</span>
               </h3>
-              <ul className="flex flex-col">
+              <ul className="-mx-1 flex flex-col">
                 <AnimatePresence initial={false}>
                   {group.items.map((m) => (
                     <motion.li
@@ -241,7 +241,8 @@ export function MemoryViewer({
                       animate={{ opacity: 1, height: "auto" }}
                       exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0, height: 0, filter: "blur(3px)" }}
                       transition={reduce ? { duration: 0 } : { duration: 0.24, ease: ease.out }}
-                      className="overflow-hidden border-b border-[color:var(--bjork-border)] last:border-b-0"
+                      // The 4px side padding keeps focus rings and the edit glow clear of the clip used by the height animation.
+                      className="overflow-hidden border-b border-[color:var(--bjork-border)] px-1 last:border-b-0"
                     >
                       {pending.includes(m.id) ? (
                         <UndoReceipt memory={m} text={textOf(m)} onUndo={() => undo(m)} onExpire={() => expire(m)} />

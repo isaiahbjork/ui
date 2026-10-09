@@ -218,14 +218,14 @@ function GridCard({ item, onRemove, onRetry, onOpen }: ChipProps) {
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-[12px] border",
+        "group relative rounded-[12px] border",
         failed
           ? "border-[color:color-mix(in_srgb,var(--bjork-error)_45%,transparent)]"
           : "border-[color:var(--bjork-border)]",
       )}
     >
       <OpenArea item={item} onOpen={onOpen} className="w-full flex-col items-stretch rounded-[11px]">
-        <span className="relative block aspect-[4/3] w-full border-b border-[color:var(--bjork-border)]">
+        <span className="relative block aspect-[4/3] w-full overflow-hidden rounded-t-[11px] border-b border-[color:var(--bjork-border)]">
           <Tile item={item} fill />
         </span>
         <span className="flex min-w-0 flex-col px-2.5 pb-2 pt-1.5">
