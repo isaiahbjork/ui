@@ -530,7 +530,7 @@ export function ResizableTable({
                 onResize={(e, data) => handleResize('name', data)}
                 minConstraints={[80, 0]}
                 maxConstraints={[400, 0]}
-                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-all hover:w-1.5 hover:bg-[#ec5c13]/45" />}
+                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-[background-color,border-color,color,opacity,transform] hover:w-1.5 hover:bg-[#ec5c13]/45" />}
               >
                 <div className={`relative flex items-center border-r px-3 ${palette.divider}`} style={{ width: columnWidths.name }}>
                   <span>{title}</span>
@@ -543,7 +543,7 @@ export function ResizableTable({
                 onResize={(e, data) => handleResize('email', data)}
                 minConstraints={[80, 0]}
                 maxConstraints={[400, 0]}
-                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-all hover:w-1.5 hover:bg-[#ec5c13]/45" />}
+                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-[background-color,border-color,color,opacity,transform] hover:w-1.5 hover:bg-[#ec5c13]/45" />}
               >
                 <div className={`relative flex items-center border-r px-3 ${palette.divider}`} style={{ width: columnWidths.email }}>
                   <span>Email</span>
@@ -556,7 +556,7 @@ export function ResizableTable({
                 onResize={(e, data) => handleResize('department', data)}
                 minConstraints={[80, 0]}
                 maxConstraints={[400, 0]}
-                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-all hover:w-1.5 hover:bg-[#ec5c13]/45" />}
+                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-[background-color,border-color,color,opacity,transform] hover:w-1.5 hover:bg-[#ec5c13]/45" />}
               >
                 <div className={`relative flex items-center border-r px-3 ${palette.divider}`} style={{ width: columnWidths.department }}>
                   <span>Department</span>
@@ -569,7 +569,7 @@ export function ResizableTable({
                 onResize={(e, data) => handleResize('position', data)}
                 minConstraints={[80, 0]}
                 maxConstraints={[400, 0]}
-                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-all hover:w-1.5 hover:bg-[#ec5c13]/45" />}
+                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-[background-color,border-color,color,opacity,transform] hover:w-1.5 hover:bg-[#ec5c13]/45" />}
               >
                 <div className={`relative flex items-center border-r px-3 ${palette.divider}`} style={{ width: columnWidths.position }}>
                   <span>Position</span>
@@ -582,7 +582,7 @@ export function ResizableTable({
                 onResize={(e, data) => handleResize('salary', data)}
                 minConstraints={[80, 0]}
                 maxConstraints={[400, 0]}
-                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-all hover:w-1.5 hover:bg-[#ec5c13]/45" />}
+                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-[background-color,border-color,color,opacity,transform] hover:w-1.5 hover:bg-[#ec5c13]/45" />}
               >
                 <div className={`relative flex items-center border-r px-3 ${palette.divider}`} style={{ width: columnWidths.salary }}>
                   <span>Salary</span>
@@ -595,7 +595,7 @@ export function ResizableTable({
                 onResize={(e, data) => handleResize('hireDate', data)}
                 minConstraints={[80, 0]}
                 maxConstraints={[400, 0]}
-                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-all hover:w-1.5 hover:bg-[#ec5c13]/45" />}
+                handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-[background-color,border-color,color,opacity,transform] hover:w-1.5 hover:bg-[#ec5c13]/45" />}
               >
                 <div className={`relative flex items-center border-r px-3 ${palette.divider}`} style={{ width: columnWidths.hireDate }}>
                   <span>Hire Date</span>
@@ -619,7 +619,7 @@ export function ResizableTable({
                 {paginatedEmployees.map((employee) => (
                   <motion.div key={employee.id} variants={shouldAnimate ? rowVariants : {}}>
                     <div
-                      className={`group relative flex border-b py-3.5 transition-all duration-150 ${
+                      className={`group relative flex border-b py-3.5 transition-[background-color,border-color,color,opacity,transform] duration-150 ${
                         selectedEmployees.includes(employee.id)
                           ? palette.selectedRow
                           : palette.row

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { X, Power, Pause, Play, RotateCcw } from "lucide-react";
 import {
@@ -111,6 +111,7 @@ export function ServerManagementTable({
   const isDark = useBjorkTableIsDark(resolvedTheme, forcedTheme);
   const palette = getBjorkTablePalette(isDark);
   const shouldAnimate = enableAnimations;
+  const reduce = useReducedMotion();
 
   const handleStatusChange = (serverId: string, newStatus: Server["status"]) => {
     if (onStatusChange) {
@@ -247,7 +248,7 @@ export function ServerManagementTable({
           {Array.from({ length: 10 }).map((_, index) => (
             <div
               key={index}
-              className={`w-1.5 h-5 rounded-full transition-all duration-500 ${getBarColor(index)}`}
+              className={`w-1.5 h-5 rounded-full transition-[background-color,border-color,color,opacity,transform] duration-500 ${getBarColor(index)}`}
             />
           ))}
         </div>
@@ -328,7 +329,7 @@ export function ServerManagementTable({
               }
             }
           } : {}}
-          initial={shouldAnimate ? "hidden" : false}
+          initial={reduce ? false : shouldAnimate ? "hidden" : false}
           animate="visible"
         >
           {/* Headers */}
@@ -449,7 +450,7 @@ export function ServerManagementTable({
         <AnimatePresence>
           {selectedServer && (
             <motion.div
-              initial={{ opacity: 0 }}
+              initial={reduce ? false : { opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}

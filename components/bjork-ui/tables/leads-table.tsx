@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { ChevronDown, MoreHorizontal } from "lucide-react";
 import {
@@ -333,6 +333,7 @@ export function LeadsTable({
   };
 
   const shouldAnimate = enableAnimations;
+  const reduce = useReducedMotion();
 
   const containerVariants = {
     visible: {
@@ -406,7 +407,7 @@ export function LeadsTable({
         {/* Table Rows */}
         <motion.div
           variants={shouldAnimate ? containerVariants : {}}
-          initial={shouldAnimate ? "hidden" : false}
+          initial={reduce ? false : shouldAnimate ? "hidden" : false}
           animate="visible"
         >
           {leads.map((lead, index) => (
@@ -477,7 +478,7 @@ export function LeadsTable({
                     <AnimatePresence mode="wait">
                       {hoveredAction === lead.id ? (
                         <motion.button
-                          initial={shouldAnimate ? { opacity: 0, x: -10, filter: "blur(4px)" } : false}
+                          initial={reduce ? false : shouldAnimate ? { opacity: 0, x: -10, filter: "blur(4px)" } : false}
                           animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
                           exit={{ opacity: 0, x: -10, filter: "blur(4px)" }}
                           transition={{ 
@@ -487,7 +488,7 @@ export function LeadsTable({
                             duration: 0.1
                           }}
                           onClick={() => handleLeadAction(lead.id, "engage")}
-                            className={`flex max-w-full cursor-pointer items-center gap-2 rounded-lg border px-2 py-1 text-xs font-medium transition-all duration-200 ${palette.accentBg} ${palette.accentBorder} ${palette.accent}`}
+                            className={`flex max-w-full cursor-pointer items-center gap-2 rounded-lg border px-2 py-1 text-xs font-medium transition-[background-color,border-color,color,opacity,transform] duration-200 ${palette.accentBg} ${palette.accentBorder} ${palette.accent}`}
                         >
                           Engage
                           <div className="w-px h-3 bg-primary/30 mx-1" />
@@ -495,7 +496,7 @@ export function LeadsTable({
                         </motion.button>
                       ) : (
                         <motion.span
-                          initial={shouldAnimate ? { opacity: 0, x: 10 } : false}
+                          initial={reduce ? false : shouldAnimate ? { opacity: 0, x: 10 } : false}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 10 }}
                           transition={{ duration: 0.05 }}
@@ -518,7 +519,7 @@ export function LeadsTable({
       <AnimatePresence>
         {selectedLeads.size > 0 && (
           <motion.div
-            initial={{ y: 100, opacity: 0, filter: "blur(8px)" }}
+            initial={reduce ? false : { y: 100, opacity: 0, filter: "blur(8px)" }}
             animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
             exit={{ y: 100, opacity: 0, filter: "blur(8px)" }}
             transition={{ 

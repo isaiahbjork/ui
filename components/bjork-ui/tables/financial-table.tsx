@@ -393,7 +393,7 @@ export function FinancialTable({
                 <motion.div key={index.id} variants={shouldAnimate ? rowVariants : {}}>
                   <div
                     className={cn(
-                      "group relative cursor-pointer px-8 py-3 transition-all duration-200",
+                      "group relative cursor-pointer px-8 py-3 transition-[background-color,border-color,color,opacity,transform] duration-200",
                       selectedIndex === index.id ? palette.selectedRow : palette.row,
                       indexNum < indices.length - 1 && "border-b"
                     )}
