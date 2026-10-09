@@ -39,13 +39,13 @@ function Pieces({
   const seed = (name: string) => (preview ? name : `${seedKey}-${name}`);
 
   return (
-    <div className="flex w-[min(860px,calc(100vw-56px))] max-w-full flex-col items-center gap-10 sm:flex-row sm:justify-center sm:gap-5">
+    <div className="flex w-[min(860px,calc(100vw-56px))] max-w-full flex-col items-center gap-10 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-5">
       <TornEdgeReveal
         seed={seed("ember")}
         edges={heroEdges}
         tearDepth={depth}
         reveal={reveal}
-        className="w-full max-w-[200px]"
+        className="w-full max-w-[200px] sm:w-[200px] sm:shrink-0"
       >
         <div className="relative aspect-[4/5] w-full">
           <Image src="/images/plates/plate-03.webp" alt="" fill priority sizes="200px" className="object-cover" />
@@ -57,7 +57,7 @@ function Pieces({
         edges={["top", "right"]}
         tearDepth={depth}
         reveal={reveal}
-        className="w-full max-w-[220px]"
+        className="w-full max-w-[220px] sm:w-[220px] sm:shrink-0"
       >
         <div className="relative aspect-[4/3] w-full">
           <Image src="/images/plates/plate-05.webp" alt="" fill priority sizes="220px" className="object-cover" />
@@ -69,13 +69,13 @@ function Pieces({
         edges={["left"]}
         tearDepth={depth}
         reveal={reveal}
-        className="w-full max-w-[220px]"
+        className="w-full max-w-[220px] sm:w-[220px] sm:shrink-0"
       >
         <div className="flex min-h-[240px] flex-col justify-between bg-[color:var(--bjork-surface,#121212)] p-6">
           <p className="font-bjork-display text-[28px] leading-[1.1] text-[color:var(--bjork-text,#ededed)]">
             Field notes
           </p>
-          <p className="mt-6 font-mono text-[12px] text-[color:var(--bjork-text-muted,rgba(237,237,237,0.52))]">
+          <p className="mt-6 whitespace-nowrap font-mono text-[12px] text-[color:var(--bjork-text-muted,rgba(237,237,237,0.52))]">
             08.10.26 · plate study
           </p>
         </div>
