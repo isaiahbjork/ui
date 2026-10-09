@@ -67,6 +67,9 @@ interface ComponentDemoShellProps {
 interface SimpleComponentDemoPageProps {
   item: GalleryItem | undefined;
   children: ReactNode;
+  /** Options for the floating controller. Hidden in preview captures. */
+  controls?: ReactNode;
+  onReset?: () => void;
   description?: string;
   dependencies?: string[];
   interactionRows?: InfoRow[];
@@ -520,6 +523,8 @@ export function SimpleComponentDemoPage({
 function SimpleComponentDemoPageContent({
   item,
   children,
+  controls,
+  onReset,
   description,
   dependencies = ["framer-motion", "clsx"],
   interactionRows,
@@ -607,6 +612,8 @@ function SimpleComponentDemoPageContent({
       }
       details={details}
       note={note}
+      controls={controls}
+      onReset={onReset}
       previewClassName={previewClassName}
       previewInnerClassName={previewInnerClassName}
       previewLayout={previewLayout}

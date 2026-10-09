@@ -2,9 +2,8 @@
 
 import { useCallback, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { useVisibleLoop } from "@/components/bjork-ui/_core/loop";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { ShellSegmented, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
-import { BjorkButton, BjorkButtonGroup } from "@/components/bjork-ui/primitives";
 import {
   FLAP_LEDGER_SAMPLE_ROWS,
   FlapLedger,
@@ -48,6 +47,8 @@ function useNarrowViewport() {
 
 const sizes = ["sm", "md", "lg"] as const;
 const cascades = ["changed", "left", "right"] as const;
+const sizeOptions = sizes.map((value) => ({ value, label: value }));
+const cascadeOptions = cascades.map((value) => ({ value, label: value }));
 
 export default function FlapLedgerDemo() {
   const isPreview = usePreviewMode();
@@ -98,37 +99,27 @@ const columns: FlapColumn[] = [
 />`}
       previewScaleClassName="w-[1012px] scale-[0.78]"
       previewLayout={isPreview ? "single" : "list"}
+      onReset={() => {
+        setSizeChoice("sm");
+        setCascade("changed");
+      }}
+      controls={
+        <>
+          <ShellSegmented
+            label="Size"
+            value={sizeChoice}
+            options={sizeOptions}
+            onChange={(value) => setSizeChoice(value as (typeof sizes)[number])}
+          />
+          <ShellSegmented
+            label="Cascade"
+            value={cascade}
+            options={cascadeOptions}
+            onChange={(value) => setCascade(value as (typeof cascades)[number])}
+          />
+        </>
+      }
     >
-      {!isPreview ? (
-        <div className="mb-6 flex flex-wrap items-center justify-center gap-3">
-          <BjorkButtonGroup aria-label="Board size">
-            {sizes.map((value) => (
-              <BjorkButton
-                key={value}
-                size="sm"
-                variant={sizeChoice === value ? "secondary" : "ghost"}
-                aria-pressed={sizeChoice === value}
-                onClick={() => setSizeChoice(value)}
-              >
-                {value}
-              </BjorkButton>
-            ))}
-          </BjorkButtonGroup>
-          <BjorkButtonGroup aria-label="Cascade origin">
-            {cascades.map((value) => (
-              <BjorkButton
-                key={value}
-                size="sm"
-                variant={cascade === value ? "secondary" : "ghost"}
-                aria-pressed={cascade === value}
-                onClick={() => setCascade(value)}
-              >
-                {value}
-              </BjorkButton>
-            ))}
-          </BjorkButtonGroup>
-        </div>
-      ) : null}
       <div ref={setWrapEl} className="w-full min-w-0">
         <FlapLedger
           columns={columns}
