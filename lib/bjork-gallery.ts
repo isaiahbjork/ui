@@ -1110,7 +1110,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork104 handoff-beam
+  {
+    id: "bjork104",
+    slug: "handoff-beam",
+    title: "Handoff beam",
+    route: "/ai/handoff-beam",
+    sourcePath: "components/bjork-ui/ai/handoff-beam.tsx",
+    tier: "lab",
+    collection: "AI",
+    preview: "orb",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   {
     id: "bjork105",
