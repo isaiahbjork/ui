@@ -19,7 +19,7 @@ export default function Page() {
   return (
     <SimpleComponentDemoPage
       item={item}
-      description="A correlation heatmap where intensity follows a power curve, positive in the accent and negative in ink. Hover lights the row and column and dims the rest. Switch to cluster order and every row and column slides into place, so the blocks of things that move together appear."
+      description="A correlation heatmap on a diverging scale: positive in the accent, negative in blue, fading to the background at zero, with intensity on a power curve. Where cells get too small for numbers, negative ones keep a minus bar so sign never rests on colour alone. Hover lights the row and column and dims the rest. Switch to cluster order and every row and column slides into place, so the blocks of things that move together appear."
       dependencies={["framer-motion"]}
       usageCode={`import { CorrelationMatrix } from "@/components/bjork-ui/charts/correlation-matrix";
 

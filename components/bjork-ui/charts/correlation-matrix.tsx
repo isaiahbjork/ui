@@ -17,7 +17,8 @@ import {
   type AnnouncerHandle,
   type TooltipContent,
 } from "@/components/bjork-ui/charts/_kit/chrome";
-import { clamp, damp, mixColor, gaussian } from "@/components/bjork-ui/charts/_kit/scale";
+import { clamp, damp, mixColor, parseColor, gaussian } from "@/components/bjork-ui/charts/_kit/scale";
+import { seriesColor } from "@/components/bjork-ui/charts/_kit/series";
 
 export interface CorrelationMatrixProps {
   labels: string[];
@@ -40,6 +41,7 @@ const LABEL_W = 84;
 const BOTTOM_LABELS = 64;
 const TOP = 26;
 const GAP = 2;
+const VALUE_MIN_CELL = 30; // cells narrower than this hide their numbers
 const MOVE_TAU = 0.15;
 const ENTER_MS = 900;
 const CELL_MS = 360;
@@ -87,11 +89,32 @@ export function clusterOrder(matrix: number[][]): number[] {
   return clusters[0]?.items ?? [];
 }
 
-function cellFill(pal: ChartPalette, r: number): { fill: string; strong: boolean } {
+// Diverging scale: two poles (accent for positive, the series blue for negative, a CVD-safe pair)
+// meeting at the stage colour at zero.
+function poles(pal: ChartPalette, tone: BjorkTone) {
+  return { pos: pal.accent, neg: seriesColor(tone, 1), mid: pal.stage };
+}
+
+function cellFill(pal: ChartPalette, tone: BjorkTone, r: number): { fill: string; ink: string } {
   // Power-curve intensity, capped below full so the grid never turns into solid blocks.
   const a = 0.05 + 0.7 * Math.pow(clamp(Math.abs(r), 0, 1), 0.8);
-  if (r >= 0) return { fill: mixColor(pal.stage, pal.accent, a), strong: a > 0.5 };
-  return { fill: mixColor(pal.stage, pal.text, a * 0.62), strong: false };
+  const { pos, neg, mid } = poles(pal, tone);
+  const fill = mixColor(mid, r >= 0 ? pos : neg, a);
+  return { fill, ink: inkOn(fill) };
+}
+
+// Dark or light text for a cell, from the fill's relative luminance.
+const INK_DARK = "rgba(23,23,23,0.86)";
+const INK_LIGHT = "rgba(237,237,237,0.9)";
+function inkOn(fill: string): string {
+  const [r, g, b] = parseColor(fill);
+  const lin = (c: number) => {
+    const v = c / 255;
+    return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+  };
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  // The crossover where both inks give the same contrast ratio.
+  return L > 0.18 ? INK_DARK : INK_LIGHT;
 }
 
 function describeR(r: number): string {
@@ -115,8 +138,8 @@ interface Run {
 
 // Style writes from the draw loop only when the value changes: a hover frame touches ~90 spans,
 // and rewriting identical styles still costs a recalc on each of them.
-const written = new WeakMap<HTMLElement, { opacity?: string; transform?: string }>();
-function put(el: HTMLElement, prop: "opacity" | "transform", value: string) {
+const written = new WeakMap<HTMLElement, { opacity?: string; transform?: string; color?: string }>();
+function put(el: HTMLElement, prop: "opacity" | "transform" | "color", value: string) {
   let w = written.get(el);
   if (!w) written.set(el, (w = {}));
   if (w[prop] === value) return;
@@ -138,7 +161,7 @@ export function CorrelationMatrix({
   attract = false,
   className,
 }: CorrelationMatrixProps) {
-  const { pal, reduce, vars } = useChartTheme(toneProp);
+  const { tone, pal, reduce, vars } = useChartTheme(toneProp);
   const announcer = useRef<AnnouncerHandle>(null);
   const tipRef = useRef<TooltipHandle>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -159,9 +182,9 @@ export function CorrelationMatrix({
     return s;
   }, [order, n]);
 
-  const cfg = useRef({ matrix, slot, triangle, reduce, pal, formatValue, attract, n });
+  const cfg = useRef({ matrix, slot, triangle, reduce, pal, tone, formatValue, attract, n });
   useEffect(() => {
-    cfg.current = { matrix, slot, triangle, reduce, pal, formatValue, attract, n };
+    cfg.current = { matrix, slot, triangle, reduce, pal, tone, formatValue, attract, n };
   });
 
   const st = useRef<Run>({ pos: [], ready: false, enter: 0, hover: null, source: null, cell: 20, ox: LABEL_W, oy: TOP, lastInput: 0, attractAt: 0 });
@@ -229,9 +252,15 @@ export function CorrelationMatrix({
             ctx.fill();
           }
         } else {
-          const { fill } = cellFill(p, r);
+          const { fill, ink } = cellFill(p, c.tone, r);
           ctx.fillStyle = fill;
           ctx.fill();
+          // Without numbers, sign must not rest on hue alone: negative cells carry a minus bar.
+          if (cell < VALUE_MIN_CELL && r < 0 && g > 0.6) {
+            const bw = Math.max(4, Math.round(cell * 0.34));
+            ctx.fillStyle = ink;
+            ctx.fillRect(Math.round(x + cell / 2 - bw / 2), Math.round(y + cell / 2) - 0.75, bw, 1.5);
+          }
         }
         if (isHov) {
           ctx.globalAlpha = 1;
@@ -241,13 +270,12 @@ export function CorrelationMatrix({
         }
         ctx.globalAlpha = 1;
         // Values inside cells big enough to hold them.
-        if (i !== j && cell >= 30) {
+        if (i !== j && cell >= VALUE_MIN_CELL) {
           const el = valueRefs.current[vi++];
           if (el) {
             const text = c.formatValue(r);
             if (el.textContent !== text) el.textContent = text;
-            const strong = cellFill(p, r).strong ? "1" : "0";
-            if (el.dataset.strong !== strong) el.dataset.strong = strong;
+            put(el, "color", cellFill(p, c.tone, r).ink);
             put(el, "opacity", String(clamp((g - 0.6) / 0.4, 0, 1) * dim));
             put(el, "transform", `translate3d(${(x + cell / 2).toFixed(1)}px, ${(y + cell / 2).toFixed(1)}px, 0) translate(-50%, -50%)`);
           }
@@ -308,7 +336,7 @@ export function CorrelationMatrix({
     return {
       key: `${i}|${j}|${pal.text}`,
       title: `${labels[i]} × ${labels[j]}`,
-      rows: [{ key: "r", label: i === j ? "self" : describeR(r), value: `r ${formatValue(r)}`, color: i === j ? undefined : cellFill(pal, r).fill }],
+      rows: [{ key: "r", label: i === j ? "self" : describeR(r), value: `r ${formatValue(r)}`, color: i === j ? undefined : cellFill(pal, tone, r).fill }],
     };
   };
 
@@ -366,12 +394,14 @@ export function CorrelationMatrix({
       setHover(null, null);
       return;
     }
-    if (!e.key.startsWith("Arrow")) return;
+    if (!e.key.startsWith("Arrow") && e.key !== "Home" && e.key !== "End") return;
     e.preventDefault();
-    // Navigate in displayed slots.
+    // Navigate in displayed slots. Home and End jump to the ends of the current row.
     let ry = s.hover ? slot[s.hover[0]] : n - 1;
     let cx = s.hover ? slot[s.hover[1]] : 0;
-    if (s.hover && s.source !== "attract") {
+    if (e.key === "Home") cx = 0;
+    else if (e.key === "End") cx = triangle === "lower" ? ry : n - 1;
+    else if (s.hover && s.source !== "attract") {
       if (e.key === "ArrowUp") ry--;
       if (e.key === "ArrowDown") ry++;
       if (e.key === "ArrowLeft") cx--;
@@ -389,22 +419,37 @@ export function CorrelationMatrix({
   const tableRows = useMemo(() => labels.map((l, i) => [l, ...labels.map((_, j) => formatValue(matrix[i]?.[j] ?? 0))]), [labels, matrix, formatValue]);
   const tableCols = useMemo(() => ["", ...labels], [labels]);
   const valueSlots = triangle === "lower" ? (n * (n - 1)) / 2 : n * (n - 1);
+  const legendRamp = useMemo(() => {
+    const stops = [-1, -0.5, -0.15, 0, 0.15, 0.5, 1].map((r) => `${cellFill(pal, tone, r).fill} ${((r + 1) / 2) * 100}%`);
+    return `linear-gradient(90deg, ${stops.join(", ")})`;
+  }, [pal, tone]);
+  const summary = useMemo(() => {
+    let best: [number, number, number] | null = null;
+    let worst: [number, number, number] | null = null;
+    for (let i = 0; i < n; i++)
+      for (let j = 0; j < i; j++) {
+        const r = matrix[i]?.[j] ?? 0;
+        if (!best || r > best[2]) best = [i, j, r];
+        if (!worst || r < worst[2]) worst = [i, j, r];
+      }
+    const say = (t: [number, number, number] | null) => (t ? `${labels[t[0]]} and ${labels[t[1]]} at ${formatValue(t[2])}` : "none");
+    return `${ariaLabel}: ${n} variables, ${orderMode === "cluster" ? "clustered" : "original"} order. Strongest positive ${say(best)}; most negative ${say(worst)}.`;
+  }, [matrix, n, labels, formatValue, ariaLabel, orderMode]);
 
   return (
     <div ref={rootRef} data-loop="idle" className={cn("relative w-full select-none text-[color:var(--bjork-text)]", className)} style={{ ...vars, height }}>
       <div aria-hidden="true" className="pointer-events-none absolute right-0 top-[3px] flex items-center gap-1.5 font-mono text-[10px] leading-none tabular-nums text-[color:var(--bjork-text-soft)]">
-        <span className="[text-box:trim-both_cap_alphabetic]">{"−"}1</span>
-        <span
-          className="inline-block h-[6px] w-24 rounded-full"
-          style={{ background: `linear-gradient(90deg, ${mixColor(pal.stage, pal.text, 0.48)}, ${mixColor(pal.stage, pal.text, 0.03)} 50%, ${mixColor(pal.stage, pal.accent, 0.05)} 50%, ${mixColor(pal.stage, pal.accent, 0.75)})` }}
-        />
-        <span className="[text-box:trim-both_cap_alphabetic]">+1</span>
+        <span className="[text-box:trim-both_cap_alphabetic]">{"−"}1 negative</span>
+        <span className="relative inline-block h-[6px] w-24 rounded-full shadow-[inset_0_0_0_1px_var(--bjork-hair)]" style={{ background: legendRamp }}>
+          <span className="absolute -bottom-[3px] -top-[3px] left-1/2 w-px -translate-x-1/2 bg-[color:var(--bjork-text-faint)]" />
+        </span>
+        <span className="[text-box:trim-both_cap_alphabetic]">positive +1</span>
       </div>
       <div
         ref={wrapperRef}
         role="group"
         aria-roledescription="chart"
-        aria-label={`${ariaLabel}. Arrow keys move between cells, O switches between the original and clustered order.`}
+        aria-label={`${ariaLabel}. Arrow keys move between cells, Home and End jump along the row, O switches between the original and clustered order, Escape clears.`}
         tabIndex={0}
         onPointerEnter={() => {
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
@@ -419,11 +464,11 @@ export function CorrelationMatrix({
         className={cn("absolute inset-0 cursor-crosshair touch-pan-y rounded-[10px]", chartFocusRing)}
       >
         <div ref={hostRef} className="absolute inset-0">
-          <canvas ref={canvasRef} role="img" aria-label={`${ariaLabel}: ${n} variables, ${orderMode === "cluster" ? "clustered" : "original"} order`} className="pointer-events-none absolute left-0 top-0" />
+          <canvas ref={canvasRef} role="img" aria-label={summary} className="pointer-events-none absolute left-0 top-0" />
         </div>
         {labels.map((l, i) => (
           <span
-            key={`r-${l}`}
+            key={`r-${i}`}
             ref={(el) => {
               rowRefs.current[i] = el;
             }}
@@ -435,7 +480,7 @@ export function CorrelationMatrix({
         ))}
         {labels.map((l, i) => (
           <span
-            key={`c-${l}`}
+            key={`c-${i}`}
             ref={(el) => {
               colRefs.current[i] = el;
             }}
@@ -452,7 +497,7 @@ export function CorrelationMatrix({
               valueRefs.current[k] = el;
             }}
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 font-mono text-[10px] leading-none tabular-nums text-[color:var(--bjork-text-medium)] opacity-0 [text-box:trim-both_cap_alphabetic] data-[strong=1]:text-[color:var(--bjork-accent-foreground)]"
+            className="pointer-events-none absolute left-0 top-0 font-mono text-[10px] leading-none tabular-nums opacity-0 [text-box:trim-both_cap_alphabetic]"
           />
         ))}
         <HoverTooltip ref={tipRef} onMeasure={wake} />
