@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
-import { BjorkButton, BjorkButtonGroup } from "@/components/bjork-ui/primitives";
 import { LiquidText } from "@/components/bjork-ui/text/liquid-text";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -26,6 +25,12 @@ export default function LiquidTextDemo() {
   const [viscosity, setViscosity] = useState<number>(0.55);
   const [trail, setTrail] = useState<number>(8);
 
+  const reset = () => {
+    setWord("Liquid");
+    setViscosity(0.55);
+    setTrail(8);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -42,51 +47,32 @@ export default function LiquidTextDemo() {
 />`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[860px] scale-[1]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Word"
+            value={word}
+            options={words.map((value) => ({ value, label: value }))}
+            onChange={setWord}
+          />
+          <ShellSegmented
+            label="Viscous"
+            value={viscosity}
+            options={viscosities.map((v) => ({ value: v.value, label: v.label }))}
+            onChange={setViscosity}
+          />
+          <ShellSegmented
+            label="Trail"
+            value={trail}
+            options={trails.map((value) => ({ value, label: `${value} blobs` }))}
+            onChange={setTrail}
+          />
+        </>
+      }
     >
       <div className="flex w-[min(860px,calc(100vw-72px))] flex-col items-center gap-6">
-        {!isPreview ? (
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <BjorkButtonGroup aria-label="Word">
-              {words.map((value) => (
-                <BjorkButton
-                  key={value}
-                  size="sm"
-                  variant={word === value ? "secondary" : "ghost"}
-                  aria-pressed={word === value}
-                  onClick={() => setWord(value)}
-                >
-                  {value}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-            <BjorkButtonGroup aria-label="Viscosity">
-              {viscosities.map((v) => (
-                <BjorkButton
-                  key={v.label}
-                  size="sm"
-                  variant={viscosity === v.value ? "secondary" : "ghost"}
-                  aria-pressed={viscosity === v.value}
-                  onClick={() => setViscosity(v.value)}
-                >
-                  {v.label}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-            <BjorkButtonGroup aria-label="Trail length">
-              {trails.map((value) => (
-                <BjorkButton
-                  key={value}
-                  size="sm"
-                  variant={trail === value ? "secondary" : "ghost"}
-                  aria-pressed={trail === value}
-                  onClick={() => setTrail(value)}
-                >
-                  {value} blobs
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-          </div>
-        ) : null}
         <LiquidText
           text={isPreview ? "Liquid" : word}
           viscosity={viscosity}

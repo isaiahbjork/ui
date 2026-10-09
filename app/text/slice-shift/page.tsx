@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
-import { BjorkButton, BjorkButtonGroup } from "@/components/bjork-ui/primitives";
 import { SliceShift, type SliceShiftTrigger } from "@/components/bjork-ui/text/slice-shift";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -23,6 +22,11 @@ export default function SliceShiftDemo() {
   const words = mode === "words";
   const trigger: SliceShiftTrigger = words ? "loop" : mode;
 
+  const reset = () => {
+    setMode("hover");
+    setSlices(7);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -35,38 +39,26 @@ export default function SliceShiftDemo() {
 // Venetian-blind word swap
 <SliceShift words={["Shear", "Shift", "Register"]} interval={2600} duration={720} />`}
       previewScaleClassName="w-[900px] scale-[0.8]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Trigger"
+            value={mode}
+            options={modes.map((value) => ({ value, label: value }))}
+            onChange={setMode}
+          />
+          <ShellSegmented
+            label="Slices"
+            value={slices}
+            options={sliceCounts.map((value) => ({ value, label: `${value} slices` }))}
+            onChange={setSlices}
+          />
+        </>
+      }
     >
       <div className="flex w-[860px] max-w-full min-w-0 flex-col items-center gap-8">
-        {!isPreview ? (
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <BjorkButtonGroup aria-label="Trigger">
-              {modes.map((value) => (
-                <BjorkButton
-                  key={value}
-                  size="sm"
-                  variant={mode === value ? "secondary" : "ghost"}
-                  aria-pressed={mode === value}
-                  onClick={() => setMode(value)}
-                >
-                  {value}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-            <BjorkButtonGroup aria-label="Slices">
-              {sliceCounts.map((value) => (
-                <BjorkButton
-                  key={value}
-                  size="sm"
-                  variant={slices === value ? "secondary" : "ghost"}
-                  aria-pressed={slices === value}
-                  onClick={() => setSlices(value)}
-                >
-                  {value} slices
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-          </div>
-        ) : null}
         <div className="w-full min-w-0 px-2">
           <SliceShift
             key={`${mode}-${slices}`}

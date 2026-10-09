@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
-import { BjorkButton, BjorkButtonGroup } from "@/components/bjork-ui/primitives";
 import { WeightWave } from "@/components/bjork-ui/text/weight-wave";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -24,6 +23,12 @@ export default function WeightWaveDemo() {
   const [idle, setIdle] = useState(true);
   const [slant, setSlant] = useState(false);
 
+  const reset = () => {
+    setRadius(0.95);
+    setIdle(true);
+    setSlant(false);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -42,33 +47,22 @@ export default function WeightWaveDemo() {
 />`}
       previewScaleClassName="w-[344px]"
       previewCaptureScaleClassName="w-[860px] scale-[0.98]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Falloff"
+            value={radius}
+            options={radii.map((r) => ({ value: r.value, label: r.label }))}
+            onChange={setRadius}
+          />
+          <ShellSwitch label="Idle wave" checked={idle} onCheckedChange={setIdle} />
+          <ShellSwitch label="Slant" checked={slant} onCheckedChange={setSlant} />
+        </>
+      }
     >
       <div className="flex w-[min(880px,calc(100vw-72px))] max-w-full flex-col items-center gap-8">
-        {!isPreview ? (
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <BjorkButtonGroup aria-label="Falloff radius">
-              {radii.map((r) => (
-                <BjorkButton
-                  key={r.label}
-                  size="sm"
-                  variant={radius === r.value ? "secondary" : "ghost"}
-                  aria-pressed={radius === r.value}
-                  onClick={() => setRadius(r.value)}
-                >
-                  {r.label}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-            <BjorkButtonGroup aria-label="Options">
-              <BjorkButton size="sm" variant={idle ? "secondary" : "ghost"} aria-pressed={idle} onClick={() => setIdle((v) => !v)}>
-                idle wave
-              </BjorkButton>
-              <BjorkButton size="sm" variant={slant ? "secondary" : "ghost"} aria-pressed={slant} onClick={() => setSlant((v) => !v)}>
-                slant
-              </BjorkButton>
-            </BjorkButtonGroup>
-          </div>
-        ) : null}
         <WeightWave
           tone={tone}
           radius={radius}

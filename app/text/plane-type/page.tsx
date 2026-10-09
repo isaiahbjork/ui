@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import {
   PlaneType,
   type PlaneTypePointerSource,
   type PlaneTypeVariant,
 } from "@/components/bjork-ui/text/plane-type";
-import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -23,6 +22,14 @@ export default function Page() {
   const [tilt, setTilt] = useState("8");
   const [knockout, setKnockout] = useState(false);
   const [pointerSource, setPointerSource] = useState<PlaneTypePointerSource>("self");
+
+  const reset = () => {
+    setVariant("mixed");
+    setDepth("48");
+    setTilt("8");
+    setKnockout(false);
+    setPointerSource("self");
+  };
 
   return (
     <SimpleComponentDemoPage
@@ -42,6 +49,54 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[560px] scale-[1.3]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Depth"
+            value={depth}
+            options={[
+              { value: "24", label: "24" },
+              { value: "48", label: "48" },
+              { value: "96", label: "96" },
+            ]}
+            onChange={setDepth}
+          />
+          <ShellSegmented
+            label="Tilt"
+            value={tilt}
+            options={[
+              { value: "4", label: "4" },
+              { value: "8", label: "8" },
+              { value: "14", label: "14" },
+            ]}
+            onChange={setTilt}
+          />
+          <ShellSegmented
+            label="Variant"
+            value={variant}
+            options={[
+              { value: "solid", label: "Solid" },
+              { value: "mixed", label: "Mixed" },
+              { value: "outline", label: "Outline" },
+            ]}
+            onChange={(value) => setVariant(value as PlaneTypeVariant)}
+          />
+          <ShellSegmented
+            label="Pointer"
+            value={pointerSource}
+            options={[
+              { value: "self", label: "Self" },
+              { value: "window", label: "Window" },
+              { value: "scroll", label: "Scroll" },
+              { value: "none", label: "None" },
+            ]}
+            onChange={(value) => setPointerSource(value as PlaneTypePointerSource)}
+          />
+          <ShellSwitch label="Knockout" checked={knockout} onCheckedChange={setKnockout} />
+        </>
+      }
     >
       {isPreview ? (
         <PlaneType
@@ -63,53 +118,6 @@ export default function Page() {
             pointerSource={pointerSource}
           />
           <PlaneType lines={SECOND} align="center" knockout size="clamp(40px, 7vw, 104px)" pointerSource={pointerSource} />
-          <div className="flex w-full min-w-0 flex-col gap-3">
-            <ShellSegmented
-              label="Depth"
-              value={depth}
-              options={[
-                { value: "24", label: "24" },
-                { value: "48", label: "48" },
-                { value: "96", label: "96" },
-              ]}
-              onChange={setDepth}
-            />
-            <ShellSegmented
-              label="Tilt"
-              value={tilt}
-              options={[
-                { value: "4", label: "4" },
-                { value: "8", label: "8" },
-                { value: "14", label: "14" },
-              ]}
-              onChange={setTilt}
-            />
-            <ShellSegmented
-              label="Variant"
-              value={variant}
-              options={[
-                { value: "solid", label: "Solid" },
-                { value: "mixed", label: "Mixed" },
-                { value: "outline", label: "Outline" },
-              ]}
-              onChange={(value) => setVariant(value as PlaneTypeVariant)}
-            />
-            <ShellSegmented
-              label="Pointer"
-              value={pointerSource}
-              options={[
-                { value: "self", label: "Self" },
-                { value: "window", label: "Window" },
-                { value: "scroll", label: "Scroll" },
-                { value: "none", label: "None" },
-              ]}
-              onChange={(value) => setPointerSource(value as PlaneTypePointerSource)}
-            />
-            <label className="flex items-center justify-between gap-3 text-sm">
-              <span>Knockout</span>
-              <BjorkSwitch checked={knockout} onCheckedChange={setKnockout} aria-label="Knockout" />
-            </label>
-          </div>
         </div>
       )}
     </SimpleComponentDemoPage>

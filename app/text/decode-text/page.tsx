@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellActions, ShellSegmented, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
-import { BjorkButton, BjorkButtonGroup } from "@/components/bjork-ui/primitives";
+import { BjorkButton } from "@/components/bjork-ui/primitives";
 import {
   DecodeText,
   type DecodeCharsetName,
@@ -28,6 +28,12 @@ export default function DecodeTextDemo() {
   const [cycle, setCycle] = useState(true);
   const ref = useRef<DecodeTextHandle>(null);
 
+  const reset = () => {
+    setCharset("blocks");
+    setOrder("left");
+    setCycle(true);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -50,54 +56,38 @@ const ref = useRef<DecodeTextHandle>(null);
 ref.current?.replay();`}
       previewScaleClassName="w-[344px]"
       previewCaptureScaleClassName="w-[860px] scale-[0.98]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Glyphs"
+            value={charset}
+            options={charsets.map((c) => ({ value: c, label: c }))}
+            onChange={(value) => {
+              setCharset(value);
+              requestAnimationFrame(() => ref.current?.replay());
+            }}
+          />
+          <ShellSegmented
+            label="Order"
+            value={order}
+            options={orders.map((o) => ({ value: o, label: o }))}
+            onChange={(value) => {
+              setOrder(value);
+              requestAnimationFrame(() => ref.current?.replay());
+            }}
+          />
+          <ShellSwitch label="Cycle words" checked={cycle} onCheckedChange={setCycle} />
+          <ShellActions>
+            <BjorkButton size="sm" variant="secondary" onClick={() => ref.current?.replay()}>
+              Replay
+            </BjorkButton>
+          </ShellActions>
+        </>
+      }
     >
       <div className="flex w-[min(880px,calc(100vw-72px))] max-w-full flex-col items-center gap-8">
-        {!isPreview ? (
-          <div className="flex flex-col items-center gap-3">
-            <BjorkButtonGroup aria-label="Glyph set" className="flex-wrap justify-center">
-              {charsets.map((c) => (
-                <BjorkButton
-                  key={c}
-                  size="sm"
-                  variant={charset === c ? "secondary" : "ghost"}
-                  aria-pressed={charset === c}
-                  onClick={() => {
-                    setCharset(c);
-                    requestAnimationFrame(() => ref.current?.replay());
-                  }}
-                >
-                  {c}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              <BjorkButtonGroup aria-label="Resolve order">
-                {orders.map((o) => (
-                  <BjorkButton
-                    key={o}
-                    size="sm"
-                    variant={order === o ? "secondary" : "ghost"}
-                    aria-pressed={order === o}
-                    onClick={() => {
-                      setOrder(o);
-                      requestAnimationFrame(() => ref.current?.replay());
-                    }}
-                  >
-                    {o}
-                  </BjorkButton>
-                ))}
-              </BjorkButtonGroup>
-              <BjorkButtonGroup aria-label="Playback">
-                <BjorkButton size="sm" variant={cycle ? "secondary" : "ghost"} aria-pressed={cycle} onClick={() => setCycle((v) => !v)}>
-                  cycle words
-                </BjorkButton>
-                <BjorkButton size="sm" variant="ghost" onClick={() => ref.current?.replay()}>
-                  replay
-                </BjorkButton>
-              </BjorkButtonGroup>
-            </div>
-          </div>
-        ) : null}
         <DecodeText
           ref={ref}
           key={cycle ? "cycle" : "single"}

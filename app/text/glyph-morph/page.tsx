@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
-import { BjorkButton, BjorkButtonGroup } from "@/components/bjork-ui/primitives";
 import { GlyphMorph } from "@/components/bjork-ui/text/glyph-morph";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -44,6 +43,12 @@ export default function GlyphMorphDemo() {
   const activeSpeed = speeds.find((s) => s.label === speed) ?? speeds[1];
   const words = wordSets[Number.isInteger(setParam) && wordSets[setParam] ? setParam : isPreview ? 0 : setIndex].words;
 
+  const reset = () => {
+    setSetIndex(0);
+    setSpeed("normal");
+    setWeight(640);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -63,51 +68,32 @@ export default function GlyphMorphDemo() {
 />`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[860px] scale-[1]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Words"
+            value={setIndex}
+            options={wordSets.map((set, i) => ({ value: i, label: set.label }))}
+            onChange={setSetIndex}
+          />
+          <ShellSegmented
+            label="Speed"
+            value={speed}
+            options={speeds.map((s) => ({ value: s.label, label: s.label }))}
+            onChange={setSpeed}
+          />
+          <ShellSegmented
+            label="Weight"
+            value={weight}
+            options={weights.map((w) => ({ value: w.value, label: w.label }))}
+            onChange={setWeight}
+          />
+        </>
+      }
     >
       <div className="flex w-[min(880px,calc(100vw-72px))] flex-col items-center gap-6">
-        {!isPreview ? (
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <BjorkButtonGroup aria-label="Word set">
-              {wordSets.map((set, i) => (
-                <BjorkButton
-                  key={set.label}
-                  size="sm"
-                  variant={setIndex === i ? "secondary" : "ghost"}
-                  aria-pressed={setIndex === i}
-                  onClick={() => setSetIndex(i)}
-                >
-                  {set.label}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-            <BjorkButtonGroup aria-label="Speed">
-              {speeds.map((s) => (
-                <BjorkButton
-                  key={s.label}
-                  size="sm"
-                  variant={speed === s.label ? "secondary" : "ghost"}
-                  aria-pressed={speed === s.label}
-                  onClick={() => setSpeed(s.label)}
-                >
-                  {s.label}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-            <BjorkButtonGroup aria-label="Weight">
-              {weights.map((w) => (
-                <BjorkButton
-                  key={w.label}
-                  size="sm"
-                  variant={weight === w.value ? "secondary" : "ghost"}
-                  aria-pressed={weight === w.value}
-                  onClick={() => setWeight(w.value)}
-                >
-                  {w.label}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-          </div>
-        ) : null}
         <GlyphMorph
           words={[...words]}
           interval={activeSpeed.interval}
