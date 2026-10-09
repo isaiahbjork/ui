@@ -308,8 +308,11 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Settings Page", path: "/blocks/app-settings" },
       { name: "Inbox", path: "/blocks/app-inbox" },
       { name: "AI Chat App", path: "/blocks/app-ai-chat" },
-      // @slot marketing-blocks
-
+      { name: "Marketing Hero", path: "/blocks/marketing-hero-product" },
+      { name: "Marketing Feature Bento", path: "/blocks/marketing-feature-bento" },
+      { name: "Marketing Pricing", path: "/blocks/marketing-pricing" },
+      { name: "Marketing Testimonials Wall", path: "/blocks/marketing-testimonials-wall" },
+      { name: "Marketing CTA and Footer", path: "/blocks/marketing-cta-footer" },
     ],
   },
   {
