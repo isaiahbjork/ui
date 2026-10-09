@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { CohortRetention, type RetentionCohort } from "@/components/bjork-ui/charts/cohort-retention";
 import { mulberry32 } from "@/components/bjork-ui/_core/random";
 import { gaussian } from "@/components/bjork-ui/charts/_kit/scale";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("cohort-retention");
 
@@ -60,6 +60,11 @@ export default function Page() {
   const isPreview = usePreviewMode();
   const [display, setDisplay] = useState<"percent" | "count">("percent");
   const [cadence, setCadence] = useState<"monthly" | "weekly">("monthly");
+  function reset() {
+    setDisplay("percent");
+    setCadence("monthly");
+  }
+
   const per = PERIODS[cadence];
 
   return (
@@ -81,6 +86,30 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[700px]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSegmented
+            label="Cells"
+            value={display}
+            onChange={setDisplay}
+            options={[
+              { label: "Percent", value: "percent" },
+              { label: "Users", value: "count" },
+            ]}
+          />
+          <ShellSegmented
+            label="Cohorts"
+            value={cadence}
+            onChange={setCadence}
+            options={[
+              { label: "Monthly", value: "monthly" },
+              { label: "Weekly", value: "weekly" },
+            ]}
+          />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[700px]">
@@ -102,26 +131,6 @@ export default function Page() {
             display={display}
             ariaLabel={cadence === "monthly" ? "Monthly signup cohort retention" : "Weekly signup cohort retention"}
           />
-          <ControlRow>
-            <OptionGroup
-              label="Cells show"
-              value={display}
-              onChange={setDisplay}
-              options={[
-                { label: "Percent", value: "percent" },
-                { label: "Users", value: "count" },
-              ]}
-            />
-            <OptionGroup
-              label="Cohorts"
-              value={cadence}
-              onChange={setCadence}
-              options={[
-                { label: "Monthly", value: "monthly" },
-                { label: "Weekly", value: "weekly" },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

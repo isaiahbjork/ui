@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { CorrelationMatrix, createCorrelationDemo } from "@/components/bjork-ui/charts/correlation-matrix";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("correlation-matrix");
 // Illustrative factor-model correlations. Not market data.
@@ -15,6 +15,11 @@ export default function Page() {
   const isPreview = usePreviewMode();
   const [order, setOrder] = useState<"input" | "cluster">("input");
   const [triangle, setTriangle] = useState<"lower" | "full">("lower");
+  function reset() {
+    setOrder("input");
+    setTriangle("lower");
+  }
+
 
   return (
     <SimpleComponentDemoPage
@@ -34,6 +39,30 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[560px] scale-[0.92]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSegmented
+            label="Order"
+            value={order}
+            onChange={setOrder}
+            options={[
+              { label: "Original", value: "input" },
+              { label: "Clustered", value: "cluster" },
+            ]}
+          />
+          <ShellSegmented
+            label="Shape"
+            value={triangle}
+            onChange={setTriangle}
+            options={[
+              { label: "Lower", value: "lower" },
+              { label: "Full", value: "full" },
+            ]}
+          />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[540px]">
@@ -42,26 +71,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={600}>
           <CorrelationMatrix {...DEMO} order={order} onOrderChange={setOrder} triangle={triangle} ariaLabel="Asset correlations" />
-          <ControlRow>
-            <OptionGroup
-              label="Order"
-              value={order}
-              onChange={setOrder}
-              options={[
-                { label: "Original", value: "input" },
-                { label: "Clustered", value: "cluster" },
-              ]}
-            />
-            <OptionGroup
-              label="Shape"
-              value={triangle}
-              onChange={setTriangle}
-              options={[
-                { label: "Lower", value: "lower" },
-                { label: "Full", value: "full" },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

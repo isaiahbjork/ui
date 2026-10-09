@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { DonutChart, type DonutSlice } from "@/components/bjork-ui/charts/donut-chart";
 import { formatCompact } from "@/components/bjork-ui/charts/_kit/scale";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup, ToggleButton } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("donut-chart");
 const money = (v: number) => `$${formatCompact(v, 1)}`;
@@ -43,6 +43,12 @@ export default function Page() {
   const [dataset, setDataset] = useState<"revenue" | "traffic">("revenue");
   const [sort, setSort] = useState<"value" | "data">("value");
   const [compare, setCompare] = useState(true);
+  function reset() {
+    setDataset("revenue");
+    setSort("value");
+    setCompare(true);
+  }
+
   const revenue = dataset === "revenue";
   const data = revenue ? (compare ? REVENUE : REVENUE_NOW) : compare ? TRAFFIC : TRAFFIC_NOW;
 
@@ -68,6 +74,31 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[720px] scale-[1.12]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSegmented
+            label="Dataset"
+            value={dataset}
+            onChange={setDataset}
+            options={[
+              { label: "Revenue by plan", value: "revenue" },
+              { label: "Traffic by source", value: "traffic" },
+            ]}
+          />
+          <ShellSegmented
+            label="Order"
+            value={sort}
+            onChange={setSort}
+            options={[
+              { label: "Largest first", value: "value" },
+              { label: "Data order", value: "data" },
+            ]}
+          />
+          <ShellSwitch label="Comparison" checked={compare} onCheckedChange={setCompare} />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[700px]">
@@ -85,29 +116,6 @@ export default function Page() {
             height={260}
             ariaLabel={revenue ? "Revenue by plan" : "Sessions by source, last 30 days"}
           />
-          <ControlRow>
-            <OptionGroup
-              label="Dataset"
-              value={dataset}
-              onChange={setDataset}
-              options={[
-                { label: "Revenue by plan", value: "revenue" },
-                { label: "Traffic by source", value: "traffic" },
-              ]}
-            />
-            <OptionGroup
-              label="Order"
-              value={sort}
-              onChange={setSort}
-              options={[
-                { label: "Largest first", value: "value" },
-                { label: "Data order", value: "data" },
-              ]}
-            />
-            <ToggleButton pressed={compare} onClick={() => setCompare((v) => !v)}>
-              Comparison
-            </ToggleButton>
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { ForecastFan, createForecastSeries } from "@/components/bjork-ui/charts/forecast-fan";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, ToggleButton } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("forecast-fan");
 const SERIES = createForecastSeries(4, { weeks: 52, horizon: 26, base: 180 });
@@ -18,6 +18,12 @@ export default function Page() {
   const [show80, setShow80] = useState(true);
   const [show95, setShow95] = useState(true);
   const [target, setTarget] = useState(true);
+  function reset() {
+    setShow80(true);
+    setShow95(true);
+    setTarget(true);
+  }
+
 
   return (
     <SimpleComponentDemoPage
@@ -35,6 +41,15 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[800px] scale-[1.06]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSwitch label="80% band" checked={show80} onCheckedChange={setShow80} />
+          <ShellSwitch label="95% band" checked={show95} onCheckedChange={setShow95} />
+          <ShellSwitch label="Target" checked={target} onCheckedChange={setTarget} />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[760px]">
@@ -50,17 +65,6 @@ export default function Page() {
             height={360}
             ariaLabel="Weekly revenue"
           />
-          <ControlRow>
-            <ToggleButton pressed={show80} onClick={() => setShow80((v) => !v)}>
-              80% band
-            </ToggleButton>
-            <ToggleButton pressed={show95} onClick={() => setShow95((v) => !v)}>
-              95% band
-            </ToggleButton>
-            <ToggleButton pressed={target} onClick={() => setTarget((v) => !v)}>
-              Target
-            </ToggleButton>
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

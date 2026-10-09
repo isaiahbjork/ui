@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { BulletChart, type BulletRow, type BulletScale } from "@/components/bjork-ui/charts/bullet-chart";
 import { formatCompact, formatNumber, formatPercent } from "@/components/bjork-ui/charts/_kit/scale";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("bullet-chart");
 
@@ -44,6 +44,11 @@ export default function Page() {
   const isPreview = usePreviewMode();
   const [period, setPeriod] = useState<Period>("mid");
   const [scale, setScale] = useState<BulletScale>("row");
+  function reset() {
+    setPeriod("mid");
+    setScale("row");
+  }
+
 
   return (
     <SimpleComponentDemoPage
@@ -77,6 +82,30 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[720px] scale-[1.12]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSegmented
+            label="Period"
+            value={period}
+            onChange={setPeriod}
+            options={[
+              { label: "Mid-quarter", value: "mid" },
+              { label: "Quarter end", value: "end" },
+            ]}
+          />
+          <ShellSegmented
+            label="Scale"
+            value={scale}
+            onChange={setScale}
+            options={[
+              { label: "Per row", value: "row" },
+              { label: "% of target", value: "target" },
+            ]}
+          />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[700px]">
@@ -85,26 +114,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={760}>
           <BulletChart rows={KPIS[period]} scale={scale} ariaLabel={period === "mid" ? "Q3 KPIs, week 7 of 13" : "Q3 KPIs, quarter end"} />
-          <ControlRow>
-            <OptionGroup
-              label="Period"
-              value={period}
-              onChange={setPeriod}
-              options={[
-                { label: "Mid-quarter", value: "mid" },
-                { label: "Quarter end", value: "end" },
-              ]}
-            />
-            <OptionGroup
-              label="Scale"
-              value={scale}
-              onChange={setScale}
-              options={[
-                { label: "Per row", value: "row" },
-                { label: "% of target", value: "target" },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

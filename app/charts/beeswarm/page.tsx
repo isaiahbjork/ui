@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { Beeswarm, createSwarmItems, type SwarmBand } from "@/components/bjork-ui/charts/beeswarm";
 import { formatCompact } from "@/components/bjork-ui/charts/_kit/scale";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("beeswarm");
 const EDGE = createSwarmItems(31, "edge");
@@ -23,6 +23,11 @@ export default function Page() {
   const isPreview = usePreviewMode();
   const [kind, setKind] = useState<"edge" | "deals">("edge");
   const [scale, setScale] = useState<"linear" | "log">("log");
+  function reset() {
+    setKind("edge");
+    setScale("log");
+  }
+
 
   return (
     <SimpleComponentDemoPage
@@ -41,6 +46,32 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[780px] scale-[1.08]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSegmented
+            label="Dataset"
+            value={kind}
+            onChange={setKind}
+            options={[
+              { label: "Bet edge", value: "edge" },
+              { label: "Deal size", value: "deals" },
+            ]}
+          />
+          {kind === "deals" && (
+            <ShellSegmented
+              label="Scale"
+              value={scale}
+              onChange={setScale}
+              options={[
+                { label: "Log", value: "log" },
+                { label: "Linear", value: "linear" },
+              ]}
+            />
+          )}
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[740px]">
@@ -53,28 +84,6 @@ export default function Page() {
           ) : (
             <Beeswarm key="deals" items={DEALS} scale={scale} formatValue={formatDeal} height={320} ariaLabel="Deal size" />
           )}
-          <ControlRow>
-            <OptionGroup
-              label="Dataset"
-              value={kind}
-              onChange={setKind}
-              options={[
-                { label: "Bet edge", value: "edge" },
-                { label: "Deal size", value: "deals" },
-              ]}
-            />
-            {kind === "deals" && (
-              <OptionGroup
-                label="Scale"
-                value={scale}
-                onChange={setScale}
-                options={[
-                  { label: "Log", value: "log" },
-                  { label: "Linear", value: "linear" },
-                ]}
-              />
-            )}
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { DrawdownChart, createEquityCurve } from "@/components/bjork-ui/charts/drawdown-chart";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, ToggleButton } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("drawdown-chart");
 const CURVE = createEquityCurve(17);
@@ -13,6 +13,10 @@ const CURVE = createEquityCurve(17);
 export default function Page() {
   const isPreview = usePreviewMode();
   const [showBench, setShowBench] = useState(false);
+  function reset() {
+    setShowBench(false);
+  }
+
 
   return (
     <SimpleComponentDemoPage
@@ -24,6 +28,13 @@ export default function Page() {
 <DrawdownChart data={equity} topN={3} formatValue={(v) => \`$\${Math.round(v / 1000)}K\`} />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[780px] scale-[1.08]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSwitch label="Benchmark" checked={showBench} onCheckedChange={setShowBench} />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[740px]">
@@ -32,11 +43,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={860}>
           <DrawdownChart data={CURVE.equity} benchmark={showBench ? CURVE.benchmark : undefined} height={420} ariaLabel="Strategy equity" />
-          <ControlRow>
-            <ToggleButton pressed={showBench} onClick={() => setShowBench((v) => !v)}>
-              Benchmark
-            </ToggleButton>
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

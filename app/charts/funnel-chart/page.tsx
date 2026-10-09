@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { FunnelChart, type FunnelStep } from "@/components/bjork-ui/charts/funnel-chart";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup, ToggleButton } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("funnel-chart");
 
@@ -41,6 +41,11 @@ export default function Page() {
   const isPreview = usePreviewMode();
   const [platform, setPlatform] = useState<Platform>("web");
   const [compare, setCompare] = useState(true);
+  function reset() {
+    setPlatform("web");
+    setCompare(true);
+  }
+
   const f = FUNNELS[platform];
 
   return (
@@ -63,6 +68,22 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[720px] scale-[1.12]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSegmented
+            label="Platform"
+            value={platform}
+            onChange={setPlatform}
+            options={[
+              { label: "Web", value: "web" },
+              { label: "Mobile", value: "mobile" },
+            ]}
+          />
+          <ShellSwitch label="Compare to August" checked={compare} onCheckedChange={setCompare} />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[680px]">
@@ -85,20 +106,6 @@ export default function Page() {
             valueLabel="Accounts"
             ariaLabel={`September signup funnel, ${platform}`}
           />
-          <ControlRow>
-            <OptionGroup
-              label="Platform"
-              value={platform}
-              onChange={setPlatform}
-              options={[
-                { label: "Web", value: "web" },
-                { label: "Mobile", value: "mobile" },
-              ]}
-            />
-            <ToggleButton pressed={compare} onClick={() => setCompare((v) => !v)}>
-              Compare to August
-            </ToggleButton>
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>
