@@ -9,12 +9,14 @@ import { cn } from "@/lib/utils";
 import { BJORK_PALETTE, type BjorkTone } from "@/components/bjork-ui/_core/palette";
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
+import { surfaceVars } from "@/components/bjork-ui/_core/surface";
 
 export type ChartPalette = (typeof BJORK_PALETTE)[BjorkTone];
 
 // Tokens a chart root writes so DOM overlays follow `tone` even outside a themed page.
 export function chartVars(pal: ChartPalette): CSSProperties {
   return {
+    ...surfaceVars(pal === BJORK_PALETTE.light ? "light" : "dark"),
     "--bjork-accent": pal.accent,
     "--bjork-accent-ink": pal.accentInk,
     "--bjork-accent-fill": pal.accentFill,
@@ -76,7 +78,7 @@ export const ChartTooltip = forwardRef<
       role="presentation"
       aria-hidden="true"
       className={cn(
-        "pointer-events-none absolute left-0 top-0 z-10 min-w-[120px] rounded-[10px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-surface-hover)] px-2.5 py-2 shadow-[0_14px_28px_-12px_rgba(0,0,0,0.45)] transition-opacity duration-150 ease-out",
+        "pointer-events-none absolute left-0 top-0 z-10 min-w-[120px] rounded-[10px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-menu)] px-2.5 py-2 shadow-[var(--bjork-shadow-menu)] transition-opacity duration-150 ease-out",
         visible ? "opacity-100" : "opacity-0",
         className,
       )}

@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useReducedMotion } from "framer-motion";
 import type { BjorkTone } from "@/components/bjork-ui/_core/palette";
+import { surfaceVars } from "@/components/bjork-ui/_core/surface";
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
 import { cn } from "@/lib/utils";
 
@@ -92,6 +93,7 @@ export function cardVars(tone: BjorkTone): CSSProperties {
   const t = CARD_TOKENS[tone];
   return {
     colorScheme: tone,
+    ...surfaceVars(tone),
     "--bjork-card": t.card,
     "--bjork-card-raised": t.raised,
     "--bjork-card-inset": t.inset,
@@ -194,7 +196,7 @@ export const CardFrame = forwardRef<HTMLElement, CardFrameProps>(function CardFr
     <Tag
       ref={ref as never}
       className={cn(
-        "@container relative max-w-full overflow-hidden rounded-[20px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-card)] font-bjork-alpha text-[color:var(--bjork-text)] shadow-[var(--bjork-card-shadow)] [font-variant-numeric:tabular-nums]",
+        "@container relative max-w-full overflow-hidden rounded-[20px] border border-[color:var(--bjork-border-muted)] bg-[color:var(--bjork-card)] font-bjork-alpha text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-surface)] [font-variant-numeric:tabular-nums]",
         className,
       )}
       // A fixed width capped at the container: fills narrow columns, and keeps its size inside
