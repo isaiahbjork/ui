@@ -36,7 +36,7 @@ export interface StreakCardProps {
   today?: string;
   best?: number;
   milestones?: number[];
-  /** Weeks in the heatmap. Default 12. */
+  /** Weeks in the heatmap. Default 18. */
   weeks?: number;
   onCheckIn?: (date: string) => void;
   locale?: string;
@@ -103,7 +103,7 @@ export function StreakCard({
   today = STREAK_SAMPLE.today,
   best = STREAK_SAMPLE.best,
   milestones = STREAK_SAMPLE.milestones,
-  weeks = 12,
+  weeks = 18,
   onCheckIn,
   locale = "en-US",
   theme = "auto",

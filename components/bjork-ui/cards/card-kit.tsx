@@ -180,7 +180,7 @@ export const focusRing =
 
 export interface CardFrameProps extends HTMLAttributes<HTMLElement> {
   style?: CSSProperties;
-  /** Max width in px. Default 420. */
+  /** Width in px, capped at the container width. Default 420. */
   maxWidth?: number;
   as?: "section" | "article" | "div";
 }
@@ -194,10 +194,12 @@ export const CardFrame = forwardRef<HTMLElement, CardFrameProps>(function CardFr
     <Tag
       ref={ref as never}
       className={cn(
-        "@container relative w-full overflow-hidden rounded-[20px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-card)] font-bjork-alpha text-[color:var(--bjork-text)] shadow-[var(--bjork-card-shadow)] [font-variant-numeric:tabular-nums]",
+        "@container relative max-w-full overflow-hidden rounded-[20px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-card)] font-bjork-alpha text-[color:var(--bjork-text)] shadow-[var(--bjork-card-shadow)] [font-variant-numeric:tabular-nums]",
         className,
       )}
-      style={{ maxWidth, ...style }}
+      // A fixed width capped at the container: fills narrow columns, and keeps its size inside
+      // shrink-to-fit parents (flex centring, popovers) where a percentage width would collapse.
+      style={{ width: maxWidth, ...style }}
       {...rest}
     >
       {children}

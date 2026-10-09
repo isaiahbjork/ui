@@ -150,7 +150,14 @@ export function IntegrationCard({
   const [autoSync, setAutoSync] = useState(true);
   const [message, setMessage] = useState("");
   const attempt = useRef(0);
-  const primaryRef = useRef<HTMLButtonElement>(null);
+  // After a disconnect the Connect button mounts once the exit animation ends; focus it then.
+  const refocus = useRef(false);
+  const primaryRef = (el: HTMLButtonElement | null) => {
+    if (el && refocus.current) {
+      refocus.current = false;
+      el.focus();
+    }
+  };
 
   useEffect(() => () => void (attempt.current += 1), []);
 
@@ -191,7 +198,7 @@ export function IntegrationCard({
     setInnerStatus("disconnected");
     setInnerAccount(undefined);
     setMessage(`Disconnected ${app.name}`);
-    requestAnimationFrame(() => primaryRef.current?.focus());
+    refocus.current = true;
   };
 
   const sync = async () => {
