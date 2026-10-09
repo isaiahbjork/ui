@@ -253,7 +253,9 @@ function parseBlocks(src: string): MdBlock[] {
   return blocks;
 }
 
-function Inline({ text }: { text: string }) {
+function Inline({ text: raw }: { text: string }) {
+  // Close a bold run that is still streaming, so a half-sent "**word" never shows raw asterisks.
+  const text = (raw.split("**").length - 1) % 2 === 1 ? `${raw}**` : raw;
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*\s][^*]*\*)/g);
   return (
     <>
@@ -994,7 +996,7 @@ function Thread({
     const el = scrollRef.current;
     if (!el || !pinned.current) return;
     el.scrollTop = el.scrollHeight;
-  }, [messages.length, lastContent]);
+  }, [messages.length, lastContent, streamingId]);
 
   const onScroll = () => {
     const el = scrollRef.current;

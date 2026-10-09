@@ -663,7 +663,7 @@ export function AppInbox({
   const folderTitle = label ? (labels.find((l) => l.id === label)?.name ?? "Label") : FOLDERS.find((f) => f.id === folder)?.label;
 
   return (
-    <div ref={rootRef} className={cn(blockRoot, "h-full", className)} style={style} onKeyDown={onRootKeyDown}>
+    <div ref={rootRef} tabIndex={-1} className={cn(blockRoot, "h-full outline-none", className)} style={style} onKeyDown={onRootKeyDown}>
       {wide && (
         <aside aria-label="Mailboxes" inert={modalOpen} className="flex h-full w-[220px] shrink-0 flex-col border-r border-[color:var(--bjork-border)] bg-[var(--bjork-panel)]">
           {folderNav}
