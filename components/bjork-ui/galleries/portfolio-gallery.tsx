@@ -2,7 +2,7 @@
 
 import { ArrowRight } from "lucide-react"
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { motion, useReducedMotion } from "framer-motion"
 import { useEffect, useState } from "react"
 import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
@@ -54,6 +54,7 @@ export function PortfolioGallery({
 }: PortfolioGalleryProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const [mounted, setMounted] = useState(false)
+  const reduce = useReducedMotion()
   const { resolvedTheme } = useTheme()
   const isLight = tone ? tone === "light" : mounted && resolvedTheme === "light"
   const palette = {
@@ -228,17 +229,21 @@ export function PortfolioGallery({
                   style={{
                     zIndex: zIndex,
                   }}
-                  initial={{
-                    transform: `perspective(5000px) rotateY(-45deg) translateY(200px)`,
-                    opacity: 0,
-                  }}
+                  initial={
+                    reduce
+                      ? false
+                      : {
+                          transform: `perspective(5000px) rotateY(-45deg) translateY(200px)`,
+                          opacity: 0,
+                        }
+                  }
                   animate={{
                     transform: `perspective(5000px) rotateY(-45deg) translateY(${yOffset}px)`,
                     opacity: 1,
                   }}
                   transition={{
-                    duration: 0.2, // Much faster hover animation
-                    delay: index * 0.05, // Faster entrance stagger
+                    duration: reduce ? 0 : 0.2, // Much faster hover animation
+                    delay: reduce ? 0 : index * 0.05, // Faster entrance stagger
                     ease: [0.25, 0.1, 0.25, 1],
                   }}
                   onHoverStart={() => setHoveredIndex(index)}
@@ -283,7 +288,7 @@ export function PortfolioGallery({
                   key={i}
                   className={cn(
                     "flex shrink-0 justify-around [gap:var(--gap)]",
-                    "animate-marquee flex-row",
+                    "animate-marquee flex-row motion-reduce:animate-none",
                     {
                       "group-hover:[animation-play-state:paused]": pauseOnHover,
                     }

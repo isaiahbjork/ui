@@ -1,24 +1,44 @@
 "use client";
 import { useState } from "react";
 
+// Abstract generated tiles (gradient and rings in Björk tones). No photographs.
+const TILE_TONES: [string, string][] = [
+  ["#fffcf6", "#e9dfcc"],
+  ["#f7f3ea", "#c9b99c"],
+  ["#efe7d8", "#2b2a26"],
+  ["#14532d", "#4ade80"],
+  ["#166534", "#fffcf6"],
+  ["#2b2a26", "#d9cdb8"],
+  ["#121212", "#3f3a30"],
+  ["#f5efe3", "#166534"],
+  ["#d9cdb8", "#14532d"],
+  ["#fffcf6", "#15803d"],
+  ["#c9b99c", "#121212"],
+];
+
+const tileImage = (index: number) => {
+  const [from, to] = TILE_TONES[index % TILE_TONES.length];
+  const angle = (index * 33) % 180;
+  const cx = 180 + ((index * 37) % 190);
+  const cy = 160 + ((index * 53) % 230);
+  const rings = [0.25, 0.5, 0.75, 1]
+    .map(
+      (k) =>
+        `<circle cx="${cx}" cy="${cy}" r="${Math.round(60 + k * 260)}" fill="none" stroke="${to}" stroke-opacity="${(0.12 + k * 0.2).toFixed(2)}" stroke-width="1.5"/>`
+    )
+    .join("");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 550 550"><defs><linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="550" y2="550" gradientTransform="rotate(${angle} 275 275)"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs><rect width="550" height="550" fill="url(#g)"/>${rings}</svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+};
+
+const GENERATED_IMAGES = Array.from({ length: 11 }, (_, i) => tileImage(i));
+
 interface HoverImageGalleryProps {
   images?: string[];
 }
 
 export function HoverImageGallery({
-  images = [
-    "https://images.masterworksfineart.com/product/marilyn-monroe-marilyn-1967-copy/andy-warhol-screenprint-marilyn-30-for-sale-not-ours-550x547.jpg",
-    "https://images.masterworksfineart.com/product/marilyn-monroe-marilyn-1967-fs30/warholmarilynfs30-548x550.jpg",
-    "https://images.masterworksfineart.com/product/marilyn-monroe-marilyn-1967-8/andy-warhol-screenprint-marilyn-monroe-for-sale-use-548x550.jpg",
-    "https://images.masterworksfineart.com/product/marilyn-monroe-marilyn-1967-3/warhol-screenprint-marilyn-monroe-marilyn-1967-for-sale-543x550.jpg",
-    "https://images.masterworksfineart.com/warhol-screenprint-marilyn-monroe-marilyn-1967-for-sale-3-550x550.jpg",
-    "https://images.masterworksfineart.com/product/marilyn-monroe-marilyn-1967-5/andy-warhol-screenprint-warhol-marilyn-monroe-for-sale-550x550.jpeg",
-    "https://images.masterworksfineart.com/product/marilyn-monroe-marilyn-1967-4/warhol-screenprint-marilyn-monroe-marilyn-1967-for-sale-550x550.jpg",
-    "https://images.masterworksfineart.com/product/marilyn-monroe-marilyn-1967-10/marilyn-28-550x527.jpg",
-    "https://images.masterworksfineart.com/product/marilyn-monroe-marilyn-1967-9/warhol-screenprint-marilyn-monroe-marilyn-1967-fs-22-for-sale-550x550.jpg",
-    "https://images.masterworksfineart.com/product/marilyn-monroe-marilyn-1967-1-2/andy-warhol-screenprint-marilyn-monroe-marilyn-1967-for-sale-2-547x550.jpg",
-    "https://images.masterworksfineart.com/product/marilyn-monroe-marilyn-1967-12/warholmary1-1-547x550.jpg"
-  ],
+  images = GENERATED_IMAGES,
 }: HoverImageGalleryProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -60,7 +80,7 @@ export function HoverImageGallery({
         <img
           src={images[currentImageIndex]}
           alt={`Gallery image ${currentImageIndex + 1}`}
-          className="w-full h-full object-cover transition-all duration-150 ease-out"
+          className="w-full h-full object-cover transition-[transform,opacity,filter] duration-150 ease-out motion-reduce:transition-none"
         />
 
         {/* Glassmorphic Tooltip with Both Chevrons */}

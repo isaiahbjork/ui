@@ -320,6 +320,11 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
     let glContext: Renderer["gl"] | null = null;
     let rafId: number;
     let program: Program | null = null;
+    // Reduced motion draws one frame and stops; otherwise the loop pauses off screen.
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let isVisible = true;
+    let isPaused = false;
+    let observer: IntersectionObserver | null = null;
 
     try {
       rendererInstance = new Renderer({
@@ -404,8 +409,17 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
         isMicrophoneInitialized = false;
       }
 
-      const update = (t: number) => {
+      const scheduleNext = () => {
+        if (reduceMotion) return;
+        if (!isVisible) {
+          isPaused = true;
+          return;
+        }
         rafId = requestAnimationFrame(update);
+      };
+
+      const update = (t: number) => {
+        scheduleNext();
         if (!program) return;
 
         const dt = (t - lastTime) * 0.001;
@@ -452,9 +466,21 @@ export const VoicePoweredOrb: FC<VoicePoweredOrbProps> = ({
         }
       };
 
+      if (typeof IntersectionObserver !== "undefined") {
+        observer = new IntersectionObserver(([entry]) => {
+          isVisible = entry.isIntersecting;
+          if (isVisible && isPaused) {
+            isPaused = false;
+            rafId = requestAnimationFrame(update);
+          }
+        });
+        observer.observe(container);
+      }
+
       rafId = requestAnimationFrame(update);
 
       return () => {
+        observer?.disconnect();
         cancelAnimationFrame(rafId);
         window.removeEventListener("resize", resize);
 

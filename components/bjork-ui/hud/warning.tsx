@@ -145,11 +145,11 @@ export function WarningGraphic({
   const exclamationVariants = {
     hidden: {
       opacity: 0,
-      scale: 0,
+      scale: 0.9,
     },
     visible: {
       opacity: 1,
-      scale: [0, 1.3, 1], // Overshoot: 0 -> 1.3 -> 1
+      scale: [0.9, 1.08, 1], // Overshoot: 0.9 -> 1.08 -> 1
       transition: {
         type: "spring",
         stiffness: 500,

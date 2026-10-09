@@ -1,68 +1,30 @@
 "use client";
 
 import * as React from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef } from "react";
 
-const shakeVariants1 = {
-  shake: {
-    x: [0, -2, 2, -1, 1, 0],
-    transition: {
-      duration: 0.8,
-      repeat: Infinity,
-      repeatType: "loop" as const,
-      ease: "easeInOut",
-    },
-  },
-};
+// Calmer loop: each shake runs about twice as slowly and moves about 40% less.
+const CALM_SPEED = 2.2;
+const CALM_AMPLITUDE = 0.6;
 
-const shakeVariants2 = {
+const makeShake = (x: number[], duration: number) => ({
   shake: {
-    x: [0, 1.5, -1.5, 2, -2, 0],
+    x: x.map((n) => n * CALM_AMPLITUDE),
     transition: {
-      duration: 1.2,
+      duration: duration * CALM_SPEED,
       repeat: Infinity,
       repeatType: "loop" as const,
       ease: "easeInOut",
     },
   },
-};
+});
 
-const shakeVariants3 = {
-  shake: {
-    x: [0, -1, 1, -2, 2, -1, 0],
-    transition: {
-      duration: 0.5,
-      repeat: Infinity,
-      repeatType: "loop" as const,
-      ease: "easeInOut",
-    },
-  },
-};
-
-const shakeVariants4 = {
-  shake: {
-    x: [0, 2, -1, 1.5, -2, 0],
-    transition: {
-      duration: 1.5,
-      repeat: Infinity,
-      repeatType: "loop" as const,
-      ease: "easeInOut",
-    },
-  },
-};
-
-const shakeVariants5 = {
-  shake: {
-    x: [0, -1.5, 1, -1, 2, -2, 0],
-    transition: {
-      duration: 0.7,
-      repeat: Infinity,
-      repeatType: "loop" as const,
-      ease: "easeInOut",
-    },
-  },
-};
+const shakeVariants1 = makeShake([0, -2, 2, -1, 1, 0], 0.8);
+const shakeVariants2 = makeShake([0, 1.5, -1.5, 2, -2, 0], 1.2);
+const shakeVariants3 = makeShake([0, -1, 1, -2, 2, -1, 0], 0.5);
+const shakeVariants4 = makeShake([0, 2, -1, 1.5, -2, 0], 1.5);
+const shakeVariants5 = makeShake([0, -1.5, 1, -1, 2, -2, 0], 0.7);
 
 const getVariants = (index: number) => {
   const variants = [
@@ -94,15 +56,36 @@ const FuzzyWrapper = ({
   useEffect(() => {
     let animationFrameId: number;
     let isCancelled = false;
+    let isVisible = true;
+    let isPaused = false;
+    let resumeLoop: (() => void) | null = null;
     const canvas = canvasRef.current;
     const svgContainer = svgContainerRef.current;
 
     if (!canvas || !svgContainer) return;
 
+    // Under reduced motion, draw one fuzzed frame and stop.
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
     // Clean up previous animation if it exists
     if (canvas.cleanupFuzzy) {
       canvas.cleanupFuzzy();
     }
+
+    // Pause the loop while the canvas is off screen
+    const observer =
+      typeof IntersectionObserver !== "undefined"
+        ? new IntersectionObserver(([entry]) => {
+            isVisible = entry.isIntersecting;
+            if (isVisible && isPaused) {
+              isPaused = false;
+              resumeLoop?.();
+            }
+          })
+        : null;
+    observer?.observe(canvas);
 
     const init = async () => {
       if (isCancelled) return;
@@ -158,9 +141,27 @@ const FuzzyWrapper = ({
       canvas.height = svgHeight + verticalMargin * 2;
 
       const fuzzRange = 20;
+      // Cap the fuzz at 15fps so the static flickers instead of strobing
+      const FRAME_MS = 1000 / 15;
+      let lastFrame = -Infinity;
 
-      const run = async () => {
+      const scheduleNext = () => {
+        if (reducedMotion) return;
+        if (!isVisible) {
+          isPaused = true;
+          return;
+        }
+        animationFrameId = window.requestAnimationFrame(run);
+      };
+
+      const run = async (now = 0) => {
         if (isCancelled) return;
+
+        if (now - lastFrame < FRAME_MS) {
+          scheduleNext();
+          return;
+        }
+        lastFrame = now;
 
         // Re-render SVG to capture animation changes
         await convertSvgToCanvas();
@@ -178,6 +179,10 @@ const FuzzyWrapper = ({
         }
 
         ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+        scheduleNext();
+      };
+
+      resumeLoop = () => {
         animationFrameId = window.requestAnimationFrame(run);
       };
 
@@ -194,6 +199,7 @@ const FuzzyWrapper = ({
 
     return () => {
       isCancelled = true;
+      observer?.disconnect();
       window.cancelAnimationFrame(animationFrameId);
       if (canvas && canvas.cleanupFuzzy) {
         canvas.cleanupFuzzy();
@@ -229,8 +235,10 @@ interface Glitchy404Props {
 }
 
 export function Glitchy404({ width = 860, height = 232, color = "currentColor" }: Glitchy404Props) {
+  const reduce = useReducedMotion();
+
   return (
-    <FuzzyWrapper baseIntensity={0.4} className="cursor-pointer">
+    <FuzzyWrapper baseIntensity={0.25} className="cursor-pointer">
       <div className="relative">
         <svg
           width={width}
@@ -244,7 +252,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
           {/* First "4" - Multiple chunks for variety */}
           <motion.g
             variants={getVariants(0)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -255,7 +263,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
 
           <motion.g
             variants={getVariants(1)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -266,7 +274,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
 
           <motion.g
             variants={getVariants(2)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -278,7 +286,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
           {/* "0" - Center piece, broken into chunks */}
           <motion.g
             variants={getVariants(3)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -289,7 +297,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
 
           <motion.g
             variants={getVariants(4)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -300,7 +308,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
 
           <motion.g
             variants={getVariants(5)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -312,7 +320,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
           {/* Second "4" - Right side, multiple chunks */}
           <motion.g
             variants={getVariants(6)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -323,7 +331,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
 
           <motion.g
             variants={getVariants(7)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -334,7 +342,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
 
           <motion.g
             variants={getVariants(8)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -346,7 +354,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
           {/* Additional smaller chunks for extra detail */}
           <motion.g
             variants={getVariants(9)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -357,7 +365,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
 
           <motion.g
             variants={getVariants(10)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -369,7 +377,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
           {/* Smaller detail chunks */}
           <motion.g
             variants={getVariants(11)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -380,7 +388,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
 
           <motion.g
             variants={getVariants(12)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -392,7 +400,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
           {/* Tiny detail chunks */}
           <motion.g
             variants={getVariants(13)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -403,7 +411,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
 
           <motion.g
             variants={getVariants(14)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -414,7 +422,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
 
           <motion.g
             variants={getVariants(15)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path
@@ -425,7 +433,7 @@ export function Glitchy404({ width = 860, height = 232, color = "currentColor" }
 
           <motion.g
             variants={getVariants(16)}
-            animate="shake"
+            animate={reduce ? undefined : "shake"}
             transition={{ delay: getRandomDelay() }}
           >
             <path

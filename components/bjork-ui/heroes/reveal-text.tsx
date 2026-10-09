@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useState, useEffect } from "react";
 
 interface RevealTextProps {
@@ -37,6 +37,7 @@ export function RevealText({
 }: RevealTextProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [showRedText, setShowRedText] = useState(false);
+  const reduce = useReducedMotion();
   
   useEffect(() => {
     // Calculate when the last letter animation completes
@@ -61,10 +62,7 @@ export function RevealText({
             onMouseEnter={() => setHoveredIndex(index)}
             onMouseLeave={() => setHoveredIndex(null)}
             className={`${fontSize} font-black tracking-tight cursor-pointer relative overflow-hidden`}
-            initial={{ 
-              scale: 0,
-              opacity: 0,
-            }}
+            initial={reduce ? false : { scale: 0.9, opacity: 0 }}
             animate={{ 
               scale: 1,
               opacity: 1,

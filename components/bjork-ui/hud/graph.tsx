@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { AreaChart, Area, YAxis, ResponsiveContainer } from "recharts";
+import { useReducedMotion } from "framer-motion";
 
 interface HudAreaChartProps {
   showYAxis: boolean;
@@ -25,6 +26,7 @@ export function HudAreaChart({
   dotOpacity = 0.1,
   scale = 1,
 }: HudAreaChartProps) {
+  const reduce = useReducedMotion();
   const [hoveredData, setHoveredData] = useState<{
     time: string;
     value: number;
@@ -127,6 +129,7 @@ export function HudAreaChart({
               strokeWidth={1.5}
               fill="url(#gradient)"
               fillOpacity={0.8}
+              isAnimationActive={!reduce}
             />
           </AreaChart>
         </ResponsiveContainer>

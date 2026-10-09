@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { HyperText } from "@/components/ui/hyper-text";
@@ -28,6 +28,7 @@ export function Status({
 }: StatusProps) {
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const reduce = useReducedMotion();
 
   // Prevent hydration mismatch by waiting for client-side mount
   useEffect(() => {
@@ -114,7 +115,7 @@ export function Status({
     <motion.div
       className={`relative ${className}`}
       variants={containerVariants}
-      initial="hidden"
+      initial={reduce ? false : "hidden"}
       animate="visible"
       style={{ transformOrigin: "left center" }}
     >

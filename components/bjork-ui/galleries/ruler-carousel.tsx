@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Rewind, FastForward } from "lucide-react";
 import { useIsDarkTheme } from "@/hooks/use-is-dark-theme";
 import { cn } from "@/lib/utils";
@@ -102,6 +102,7 @@ export function RulerCarousel({
   const [activeIndex, setActiveIndex] = useState(startIndex);
   const [isResetting, setIsResetting] = useState(false);
   const previousIndexRef = useRef(startIndex);
+  const reduce = useReducedMotion();
 
   const handleItemClick = (newIndex: number) => {
     if (isResetting) return;
@@ -206,7 +207,7 @@ export function RulerCarousel({
               x: isResetting ? targetX : targetX,
             }}
             transition={
-              isResetting
+              isResetting || reduce
                 ? { duration: 0 }
                 : {
                     type: "spring",
@@ -238,7 +239,7 @@ export function RulerCarousel({
                     opacity: isActive ? 1 : 0.4,
                   }}
                   transition={
-                    isResetting
+                    isResetting || reduce
                       ? { duration: 0 }
                       : {
                           type: "spring",

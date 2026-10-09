@@ -123,7 +123,7 @@ export function HudButton({
 
   const dotVariants = {
     hidden: { 
-      scale: 0, 
+      scale: 0.9, 
       opacity: 0,
       filter: "blur(2px)"
     },

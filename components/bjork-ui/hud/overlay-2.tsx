@@ -129,8 +129,8 @@ export function Overlay2({ className, compact = false }: Overlay2Props) {
       >
         <motion.div
           className={cn(compact ? "h-20 w-80" : "h-24 w-96")}
-          initial={shouldReduceMotion ? false : { scale: 0 }}
-          animate={{ scale: 1 }}
+          initial={shouldReduceMotion ? false : { scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
           transition={{
             delay: shouldReduceMotion ? 0 : 1.2,
             duration: shouldReduceMotion ? 0 : 0.8,
