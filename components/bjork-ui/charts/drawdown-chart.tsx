@@ -17,7 +17,7 @@ import {
   type AnnouncerHandle,
   type TooltipContent,
 } from "@/components/bjork-ui/charts/_kit/chrome";
-import { clamp, crisp, damp, niceDomain, niceTicks, timeTicks, withAlpha, formatCompact, formatPercent, formatDateUTC, gaussian } from "@/components/bjork-ui/charts/_kit/scale";
+import { clamp, crisp, damp, niceDomain, niceTicks, timeTicks, withAlpha, formatCompact, formatPercent, gaussian } from "@/components/bjork-ui/charts/_kit/scale";
 
 export interface EquityPoint {
   t: number;
@@ -68,8 +68,11 @@ const ATTRACT_STEP_MS = 3000;
 const ATTRACT_IDLE_MS = 4000;
 
 const clock = () => performance.now();
-const defaultFormatValue = (v: number) => `$${formatCompact(v, 1)}`;
-const defaultFormatTime = (t: number) => formatDateUTC(t);
+// Sign before the currency: −$1.2K, never $−1.2K.
+const defaultFormatValue = (v: number) => `${v < 0 ? "−" : ""}$${formatCompact(Math.abs(v), 1)}`;
+// Multi-year series: the tooltip and table need the year.
+const dateYear = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
+const defaultFormatTime = (t: number) => dateYear.format(t);
 
 // Running drawdown and the distinct episodes, deepest first.
 export function computeDrawdowns(data: EquityPoint[]): { dd: number[]; peak: number[]; episodes: DrawdownEpisode[] } {
@@ -150,10 +153,12 @@ export function DrawdownChart({
 
   const dd = useMemo(() => computeDrawdowns(data), [data]);
   const top = useMemo(() => dd.episodes.slice(0, topN), [dd, topN]);
+  // Deepest point, once per data change rather than spread over the array every frame.
+  const minDD = useMemo(() => dd.dd.reduce((m, d) => (d < m ? d : m), -0.01), [dd]);
 
-  const cfg = useRef({ data, benchmark, dd, top, selected, reduce, pal, formatValue, formatTime, attract });
+  const cfg = useRef({ data, benchmark, dd, minDD, top, selected, reduce, pal, formatValue, formatTime, attract });
   useEffect(() => {
-    cfg.current = { data, benchmark, dd, top, selected, reduce, pal, formatValue, formatTime, attract };
+    cfg.current = { data, benchmark, dd, minDD, top, selected, reduce, pal, formatValue, formatTime, attract };
   });
 
   const st = useRef<Run>({
@@ -201,8 +206,7 @@ export function DrawdownChart({
     }
     const [y0, y1] = niceDomain(lo, hi, 5);
     const yOf = (v: number) => plot.b - ((v - y0) / Math.max(1e-12, y1 - y0)) * (plot.b - plot.t);
-    const minDD = Math.min(...c.dd.dd, -0.01);
-    const [u0] = niceDomain(minDD * 1.05, 0, 3);
+    const [u0] = niceDomain(c.minDD * 1.05, 0, 3);
     const uOf = (d: number) => plot.ut + (d / Math.min(-1e-9, u0)) * (plot.ub - plot.ut);
 
     s.enter = c.reduce ? 1 : Math.min(1, s.enter + (dt * 1000) / ENTER_MS);
@@ -226,7 +230,8 @@ export function DrawdownChart({
     ctx.stroke();
     writeLabels(yPool.current, s.yCache, yt.map((v) => ({ text: c.formatValue(v), x: plot.l - 8, y: yOf(v), ax: -100 })));
     writeLabels(uPool.current, s.uCache, ut.map((v) => ({ text: Math.abs(v) < 1e-12 ? "0%" : formatPercent(v, 0), x: plot.l - 8, y: uOf(v), ax: -100 })));
-    const xt = timeTicks(t0, t1, plot.r - plot.l, 80);
+    // Tighter spacing on narrow plots, so a two-year series keeps more than one year label.
+    const xt = timeTicks(t0, t1, plot.r - plot.l, plot.r - plot.l < 480 ? 48 : 80);
     writeLabels(
       xPool.current,
       s.xCache,
