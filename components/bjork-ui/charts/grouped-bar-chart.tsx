@@ -17,8 +17,8 @@ import {
   type TooltipContent,
   type TooltipRow,
 } from "@/components/bjork-ui/charts/_kit/chrome";
-import { clamp, crisp, damp, niceDomain, niceTicks, parseColor, withAlpha, formatCompact, formatPercent } from "@/components/bjork-ui/charts/_kit/scale";
-import { seriesColor, foldSeries, CHART_OTHER, MAX_SERIES } from "@/components/bjork-ui/charts/_kit/series";
+import { clamp, crisp, damp, niceDomain, niceTicks, withAlpha, formatCompact, formatPercent } from "@/components/bjork-ui/charts/_kit/scale";
+import { seriesColor, foldSeries, inkOn, CHART_OTHER, MAX_SERIES } from "@/components/bjork-ui/charts/_kit/series";
 
 export interface BarCategory {
   id: string;
@@ -82,7 +82,7 @@ const BAR_STEP = 30;
 const CAT_FALLBACK = "500 11px system-ui, sans-serif";
 const MONO_FALLBACK = "400 10px ui-monospace, monospace";
 const INK_DARK = BJORK_PALETTE.light.text;
-const INK_LIGHT = "#ffffff";
+const INK_LIGHT = BJORK_PALETTE.dark.text;
 
 const defaultFormatValue = (v: number) => formatCompact(v, 1);
 
@@ -349,9 +349,7 @@ export function GroupedBarChart({
     }));
     return folded.map((s, i) => {
       const color = s.idx < 0 ? CHART_OTHER[tone] : seriesColor(tone, i);
-      const [r, g, b] = parseColor(color);
-      const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-      return { id: s.id, label: s.label, color, ink: lum > 0.5 ? INK_DARK : INK_LIGHT, values: s.values };
+      return { id: s.id, label: s.label, color, ink: inkOn(color) === "dark" ? INK_DARK : INK_LIGHT, values: s.values };
     });
   }, [series, n, tone]);
   const m = ser.length;
