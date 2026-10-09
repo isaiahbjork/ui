@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { ReactNode, useState } from "react";
 import { BjorkCard } from "@/components/bjork-ui/primitives/card";
 import { cn } from "@/lib/utils";
@@ -24,16 +24,17 @@ export function AnimatedCardOptions({
 }: AnimatedCardOptionsProps) {
   const [selectedCard, setSelectedCard] = useState<string | null>(null);
   const [fadingCards, setFadingCards] = useState<Set<string>>(new Set());
+  const reduce = useReducedMotion();
 
   const cardVariants = {
     initial: {
       opacity: 0,
-      scale: 0.8,
-      y: 20,
+      scale: reduce ? 1 : 0.8,
+      y: reduce ? 0 : 20,
     },
     animate: (index: number) => ({
       opacity: 1,
-      scale: [0.8, 1.01, 1], // Overshoot then settle
+      scale: reduce ? 1 : [0.8, 1.01, 1], // Overshoot then settle
       y: 0,
       transition: {
         duration: 0.5,
@@ -120,8 +121,8 @@ export function AnimatedCardOptions({
                     padding="none"
                     className={cn(
                       "h-24 w-full rounded-[18px]",
-                      "border-[#d8d3c7] bg-[#f4f1e9] text-[#171717] shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_14px_24px_-18px_rgba(55,47,36,0.28)] hover:border-[#cfc6b8] hover:bg-[#eee9df]",
-                      "dark:border-[#161616] dark:bg-[#121212] dark:text-[#ededed] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_14px_24px_-18px_rgba(0,0,0,0.85)] dark:hover:border-[#232323] dark:hover:bg-[#161616]",
+                      "border-[color:var(--bjork-border-muted)] bg-[#f4f1e9] text-[#171717] shadow-[var(--bjork-shadow-surface)] hover:border-[#cfc6b8] hover:bg-[#eee9df]",
+                      "dark:border-[#161616] dark:bg-[#121212] dark:text-[#ededed] dark:hover:border-[#232323] dark:hover:bg-[#161616]",
                       selectedCard === option.id && "border-[#ec5c13]/40 bg-[#ec5c13]/10 dark:border-[#ec5c13]/34 dark:bg-[#ec5c13]/10"
                     )}
                   >

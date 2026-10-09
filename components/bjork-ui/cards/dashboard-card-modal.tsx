@@ -163,7 +163,7 @@ export function DashboardCardModal({
       padding="none"
       className={cn(
         "mx-auto w-full max-w-md rounded-[20px]",
-        "border-[#d8d3c7] bg-[#f4f1e9] text-[#171717] shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_18px_34px_-16px_rgba(55,47,36,0.28)] dark:border-[#161616] dark:bg-[#121212] dark:text-[#ededed] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_18px_34px_-16px_rgba(0,0,0,0.9)]",
+        "border-[color:var(--bjork-border-muted)] bg-[#f4f1e9] text-[#171717] shadow-[var(--bjork-shadow-surface)] dark:bg-[#121212] dark:text-[#ededed]",
         className
       )}
       initial={false}
@@ -207,7 +207,7 @@ export function DashboardCardModal({
                     isExpiringSoon && "border-[#ec5c13]/28 bg-[#ec5c13]/12 text-[#bd4514] dark:text-[#d86a2c]"
                   )}
                 >
-                  {isExpiringSoon ? `Expires in ${daysUntilExpiry} days` : "Active Policy"}
+                  {daysUntilExpiry < 0 ? `Expired ${-daysUntilExpiry} days ago` : isExpiringSoon ? `Expires in ${daysUntilExpiry} days` : "Active Policy"}
                 </BjorkBadge>
                 <p className="text-sm text-muted-foreground">{expiryDate}</p>
               </div>
@@ -362,7 +362,7 @@ export function DashboardCardModal({
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.8, opacity: 0, y: 20 }}
                 transition={{ type: "spring", stiffness: 300, damping: 30, mass: 0.8 }}
-                className="relative mx-6 rounded-[18px] border border-[#d8d3c7] bg-[#f4f1e9] p-6 shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_18px_34px_-16px_rgba(55,47,36,0.36)] dark:border-[#232323] dark:bg-[#121212] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_18px_34px_-16px_rgba(0,0,0,0.9)]"
+                className="relative mx-6 rounded-[18px] border border-[color:var(--bjork-border-muted)] bg-[#f4f1e9] p-6 shadow-[var(--bjork-shadow-surface)] dark:bg-[#121212]"
               >
                 {/* Close button */}
                 <button
