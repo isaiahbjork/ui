@@ -55,11 +55,11 @@ export default function Page() {
     >
       {isPreview ? (
         <div className="w-[760px]">
-          <StateTimeline lanes={LANES} states={STATES} domain={DOMAIN} view={PREVIEW_VIEW} now={END - 2 * HOUR} focus={PREVIEW_FOCUS} laneHeight={26} ariaLabel="Service health" />
+          <StateTimeline lanes={LANES} states={STATES} domain={DOMAIN} view={PREVIEW_VIEW} now={END} focus={PREVIEW_FOCUS} laneHeight={26} ariaLabel="Service health" />
         </div>
       ) : (
         <DemoColumn width={860}>
-          <StateTimeline lanes={LANES} states={STATES} domain={DOMAIN} view={view} now={END - 2 * HOUR} ariaLabel="Service health" />
+          <StateTimeline lanes={LANES} states={STATES} domain={DOMAIN} view={view} now={END} ariaLabel="Service health" />
           <ControlRow>
             <OptionGroup
               label="Range"

@@ -113,6 +113,14 @@ function toneColor(pal: ChartPalette, tone: StateTone): string {
   }
 }
 
+// Severity is also drawn as height, so it survives colour-vision deficiency and 2px slivers:
+// outages and planned work fill the lane, degraded periods sit as a shorter centred band.
+const WARN_INSET = 0.22;
+const insetOf = (tone: StateTone | undefined, laneH: number) => (tone === "warn" ? Math.round(laneH * WARN_INSET) : 0);
+// Overview stroke weight per tone, the same cue at overview scale.
+const overviewWidth = (tone: StateTone) => (tone === "down" ? 3.5 : tone === "warn" ? 1.5 : 2.5);
+const DAY_MS = 86400000;
+
 interface Run {
   vs: number;
   ve: number;
@@ -210,7 +218,13 @@ export function StateTimeline({
       title: l.label,
       rows: [
         { key: "s", label: formatDuration(sg.end - sg.start), value: stt?.label ?? sg.state, color: stt ? (stt.tone === "ok" ? withAlpha(pal.text, 0.5) : toneColor(pal, stt.tone)) : undefined },
-        { key: "t", label: "", value: `${formatTime(sg.start, "full")} – ${formatTime(sg.end, "axis")}`, strong: false },
+        {
+          key: "t",
+          label: "",
+          // The short end form only when it shares the start's (UTC) day, so multi-day spans keep their date.
+          value: `${formatTime(sg.start, "full")} – ${formatTime(sg.end, Math.floor(sg.start / DAY_MS) === Math.floor((sg.end - 1) / DAY_MS) ? "axis" : "full")}`,
+          strong: false,
+        },
         ...(sg.note ? [{ key: "n", label: "", value: sg.note, strong: false }] : []),
       ],
     };
@@ -346,10 +360,11 @@ export function StateTimeline({
           x0 += 1;
           x1 -= 1;
         }
-        const sw = Math.max(1.5, x1 - x0);
+        const sw = Math.max(2, x1 - x0);
         const isHover = !!hov && hov.lane === i && hov.seg === k;
+        const inset = insetOf(stt?.tone, laneH);
         ctx.beginPath();
-        roundRectPath(ctx, x0, y, sw, laneH, Math.min(3, sw / 2), Math.min(3, sw / 2));
+        roundRectPath(ctx, x0, y + inset, sw, laneH - inset * 2, Math.min(3, sw / 2), Math.min(3, sw / 2));
         const isPlanned = stt?.tone === "accent" && !!planned;
         ctx.fillStyle = isPlanned ? withAlpha(p.accent, 0.3) : stt ? toneColor(p, stt.tone) : withAlpha(p.text, 0.1);
         ctx.globalAlpha = hov && !isHover ? 0.78 : 1;
@@ -367,7 +382,7 @@ export function StateTimeline({
           ctx.lineWidth = 1.5;
           ctx.strokeStyle = p.text;
           ctx.beginPath();
-          roundRectPath(ctx, x0 - 1.5, y - 1.5, sw + 3, laneH + 3, 4, 4);
+          roundRectPath(ctx, x0 - 1.5, y + inset - 1.5, sw + 3, laneH - inset * 2 + 3, 4, 4);
           ctx.stroke();
         }
       }
@@ -442,12 +457,12 @@ export function StateTimeline({
         ctx.moveTo(plot.l + 4, y);
         ctx.lineTo(plot.r - 4, y);
         ctx.stroke();
-        ctx.lineWidth = 3;
         ctx.lineCap = "round";
         for (const sg of L[i].segments) {
           const stt = c.stateMap.get(sg.state);
           if (!stt || stt.tone === "ok") continue;
           ctx.strokeStyle = stt.tone === "accent" ? withAlpha(p.accent, 0.5) : toneColor(p, stt.tone);
+          ctx.lineWidth = overviewWidth(stt.tone);
           ctx.beginPath();
           const a = oxOf(sg.start);
           const b = Math.max(a + 0.5, oxOf(sg.end));
@@ -740,7 +755,10 @@ export function StateTimeline({
             ? withAlpha(pal.text, 0.3)
             : s2.tone === "accent"
               ? `repeating-linear-gradient(135deg, ${pal.accent} 0 1px, ${withAlpha(pal.accent, 0.3)} 1px 3px)`
-              : toneColor(pal, s2.tone),
+              : s2.tone === "warn"
+                ? // The shorter band the lanes use for this state.
+                  `linear-gradient(transparent 0 25%, ${toneColor(pal, s2.tone)} 25% 75%, transparent 75%)`
+                : toneColor(pal, s2.tone),
         shape: "rect" as const,
       })),
     [states, pal],
