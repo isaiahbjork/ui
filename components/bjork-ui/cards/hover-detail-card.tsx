@@ -218,7 +218,7 @@ export function HoverDetailCard({
       variants={shouldAnimate ? containerVariants : {}}
     >
       <motion.div 
-        className="overflow-hidden rounded-[20px] border border-[#d8d3c7] bg-[#f4f1e9] text-[#171717] shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_18px_34px_-16px_rgba(55,47,36,0.28)] transition-shadow duration-300 hover:shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_22px_38px_-18px_rgba(55,47,36,0.34)] dark:border-[#161616] dark:bg-[#121212] dark:text-[#ededed] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_18px_34px_-16px_rgba(0,0,0,0.9)] dark:hover:shadow-[inset_0_7px_14px_rgba(255,255,255,0.04),inset_0_0.5px_0.5px_rgba(255,255,255,0.08),0_22px_38px_-18px_rgba(0,0,0,0.95)]"
+        className="overflow-hidden rounded-[20px] border border-[color:var(--bjork-border-muted)] bg-[#f4f1e9] text-[#171717] shadow-[var(--bjork-shadow-surface)] dark:bg-[#121212] dark:text-[#ededed]"
         variants={shouldAnimate ? contentVariants : {}}
       >
         {/* Top Image Section */}

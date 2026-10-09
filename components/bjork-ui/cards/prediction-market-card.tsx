@@ -168,7 +168,7 @@ export function PredictionMarketCard({
   };
 
   const badgeVariants = {
-    hidden: { scale: 0, opacity: 0, filter: "blur(2px)" },
+    hidden: { scale: 0.9, opacity: 0, filter: "blur(2px)" },
     visible: {
       scale: 1,
       opacity: 1,
@@ -211,7 +211,7 @@ export function PredictionMarketCard({
     <BjorkCard
       variant="elevated"
       padding="none"
-      className="mx-auto w-full max-w-md rounded-[20px] border-[#d8d3c7] bg-[#f4f1e9] text-[#171717] shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_18px_34px_-16px_rgba(55,47,36,0.28)] dark:border-[#161616] dark:bg-[#121212] dark:text-[#ededed] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_18px_34px_-16px_rgba(0,0,0,0.9)]"
+      className="mx-auto w-full max-w-md rounded-[20px] border-[color:var(--bjork-border-muted)] bg-[#f4f1e9] text-[#171717] shadow-[var(--bjork-shadow-surface)] dark:bg-[#121212] dark:text-[#ededed]"
       initial={shouldAnimate ? "hidden" : "visible"}
       animate="visible"
       variants={shouldAnimate ? containerVariants : {}}
@@ -341,7 +341,7 @@ export function PredictionMarketCard({
             variants={shouldAnimate ? progressBarVariants : {}}
           >
             <div
-              className="absolute left-0 top-0 h-full bg-[#7c8f5d] transition-all duration-500 ease-out"
+              className="absolute left-0 top-0 h-full bg-[#7c8f5d] transition-[background-color,border-color,color,opacity,transform] duration-500 ease-out"
               style={{ width: `${progressValue}%` }}
             />
             {/* Diagonal separator */}
@@ -379,7 +379,7 @@ export function PredictionMarketCard({
           >
             <BjorkButton
               onClick={handleBetYes}
-              className="group relative w-full cursor-pointer overflow-hidden rounded-xl border border-[#7c8f5d]/35 bg-[#7c8f5d] py-3 font-semibold text-[#080808] transition-all duration-300 hover:bg-[#8fa36b]"
+              className="group relative w-full cursor-pointer overflow-hidden rounded-xl border border-[#7c8f5d]/35 bg-[#7c8f5d] py-3 font-semibold text-[#080808] transition-[background-color,border-color,color,opacity,transform] duration-300 hover:bg-[#8fa36b]"
             >
               <span className="relative z-10">BET YES ↗</span>
               {/* Gradient shine effect */}
@@ -396,7 +396,7 @@ export function PredictionMarketCard({
           >
             <BjorkButton
               onClick={handleBetNo}
-              className="group relative w-full cursor-pointer overflow-hidden rounded-xl border border-[#b45f50]/35 bg-[#b45f50] py-3 font-semibold text-white transition-all duration-300 hover:bg-[#c66d5d]"
+              className="group relative w-full cursor-pointer overflow-hidden rounded-xl border border-[#b45f50]/35 bg-[#b45f50] py-3 font-semibold text-white transition-[background-color,border-color,color,opacity,transform] duration-300 hover:bg-[#c66d5d]"
             >
               <span className="relative z-10">BET NO ↘</span>
               {/* Gradient shine effect */}
@@ -493,7 +493,7 @@ export function PredictionMarketCard({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => handleQuickAmount(amount)}
-                    className="rounded-lg border border-[#d8d3c7] bg-[#eee9df] py-2 text-sm font-medium text-[#171717]/60 transition-all duration-200 hover:bg-[#e7e1d5] dark:border-[#232323] dark:bg-[#090909] dark:text-[#ededed]/45 dark:hover:bg-[#141414]"
+                    className="rounded-lg border border-[#d8d3c7] bg-[#eee9df] py-2 text-sm font-medium text-[#171717]/60 transition-[background-color,border-color,color,opacity,transform] duration-200 hover:bg-[#e7e1d5] dark:border-[#232323] dark:bg-[#090909] dark:text-[#ededed]/45 dark:hover:bg-[#141414]"
                   >
                     +${amount}
                   </motion.button>
@@ -507,7 +507,7 @@ export function PredictionMarketCard({
               whileTap={betAmount ? { scale: 0.98 } : {}}
               onClick={handleConfirmBet}
               disabled={!betAmount}
-              className={`w-full relative overflow-hidden py-3 rounded-full font-semibold transition-all duration-300 ${
+              className={`w-full relative overflow-hidden py-3 rounded-full font-semibold transition-[background-color,border-color,color,opacity,transform] duration-300 ${
                 betAmount
                   ? `${betType === 'yes' ? 'border-[#7c8f5d]/35 bg-[#7c8f5d] hover:bg-[#8fa36b] text-[#080808]' : 'border-[#b45f50]/35 bg-[#b45f50] hover:bg-[#c66d5d] text-white'} border cursor-pointer group`
                   : 'cursor-not-allowed border border-[#d8d3c7] bg-[#eee9df] text-[#171717]/60 dark:border-[#232323] dark:bg-[#090909] dark:text-[#ededed]/30'
@@ -541,7 +541,7 @@ export function PredictionMarketCard({
       >
         <div className="h-1 dark:bg-gray-700 bg-gray-300 overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-[#bd4514] to-[#ec5c13] transition-all duration-1000 ease-linear"
+            className="h-full bg-gradient-to-r from-[#bd4514] to-[#ec5c13] transition-[background-color,border-color,color,opacity,transform] duration-1000 ease-linear"
             style={{ width: `${timerProgress}%` }}
           />
         </div>

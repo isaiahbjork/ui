@@ -177,7 +177,7 @@ export function GradientSelector({
     <div 
       ref={containerRef}
       className={cn(
-        "relative flex flex-col items-center gap-8 overflow-hidden rounded-[20px] border border-[#d8d3c7] bg-[#f4f1e9] p-8 text-[#171717] shadow-[inset_0_7px_14px_rgba(255,255,255,0.62),inset_0_0.5px_0.5px_rgba(255,255,255,0.9),0_18px_34px_-16px_rgba(55,47,36,0.28)] dark:border-[#161616] dark:bg-[#121212] dark:text-[#ededed] dark:shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_18px_34px_-16px_rgba(0,0,0,0.9)]",
+        "relative flex flex-col items-center gap-8 overflow-hidden rounded-[20px] border border-[color:var(--bjork-border-muted)] bg-[#f4f1e9] p-8 text-[#171717] shadow-[var(--bjork-shadow-surface)] dark:bg-[#121212] dark:text-[#ededed]",
         className
       )}
     >
@@ -198,7 +198,7 @@ export function GradientSelector({
             <div 
               ref={(el) => { circleRefs.current[index] = el; }}
               className={cn(
-                "relative cursor-pointer transition-all duration-200 hover:scale-110",
+                "relative cursor-pointer transition-[background-color,border-color,color,opacity,transform] duration-200 hover:scale-110",
                 getCircleSize(index),
                 "rounded-full border-2 border-transparent"
               )}
@@ -216,7 +216,7 @@ export function GradientSelector({
             {/* Line (don't render after last circle) */}
             {index < validOptions.length - 1 && (
               <div 
-                className={cn("w-24 rounded-full transition-all duration-300", 
+                className={cn("w-24 rounded-full transition-[background-color,border-color,color,opacity,transform] duration-300", 
                   index === 0 ? "h-1.5" : 
                   index === 1 ? "h-1.75" : 
                   index === 2 ? "h-2" : "h-2.25"
