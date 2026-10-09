@@ -461,7 +461,6 @@ export function ServerManagementTable({
                   <div className={`text-2xl font-bold ${palette.secondaryText}`}>
                     {selectedServer.number}
                   </div>
-                  {getOSIcon(selectedServer.osType)}
                   <div>
                     <h3 className={`text-lg font-bold ${palette.primaryText}`}>
                       {selectedServer.serviceName}

@@ -586,36 +586,19 @@ export function ContactsTable({
                   onChange={handleSelectAll}
                 />
               </div>
-              <div className={`flex items-center gap-1.5 border-r px-3 ${palette.divider}`}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-40">
-                  <circle cx="8" cy="6" r="3" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                  <path d="M3 14C3 11.5 5 10 8 10C11 10 13 11.5 13 14" stroke="currentColor" strokeWidth="1.5"/>
-                </svg>
+              <div className={`flex items-center border-r px-3 ${palette.divider}`}>
                 <span>{title}</span>
               </div>
-              <div className={`flex items-center gap-1.5 border-r px-3 ${palette.divider}`}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-40">
-                  <path d="M3 8L6 5L10 9L13 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+              <div className={`flex items-center border-r px-3 ${palette.divider}`}>
                 <span>Connection Streng...</span>
               </div>
-              <div className={`flex items-center gap-1.5 border-r px-3 ${palette.divider}`}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-40">
-                  <path d="M2 2H4M2 8H6M2 14H8M10 2V14M14 4V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+              <div className={`flex items-center border-r px-3 ${palette.divider}`}>
                 <span>Twitter Follo...</span>
               </div>
-              <div className={`flex items-center gap-1.5 border-r px-3 ${palette.divider}`}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-40">
-                  <rect x="2" y="4" width="12" height="8" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                  <path d="M2 6L8 9L14 6" stroke="currentColor" strokeWidth="1.5"/>
-                </svg>
+              <div className={`flex items-center border-r px-3 ${palette.divider}`}>
                 <span>Email Addresses</span>
               </div>
-              <div className={`flex items-center gap-1.5 border-r px-3 ${palette.divider}`}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-40">
-                  <path d="M3 3H13M3 8H13M3 13H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+              <div className={`flex items-center border-r px-3 ${palette.divider}`}>
                 <span>Description</span>
               </div>
               <div className="flex items-center justify-center px-3">

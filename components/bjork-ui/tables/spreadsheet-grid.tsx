@@ -12,7 +12,7 @@ import {
 } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTheme } from "next-themes";
-import { Sheet, SquareFunction } from "lucide-react";
+import { SquareFunction } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   type BjorkTableThemeMode,
@@ -965,17 +965,6 @@ export function SpreadsheetGrid({
     >
       {/* Title + formula bar */}
       <div className={cn("flex items-center gap-2.5 border-b px-4 py-2.5", palette.divider)}>
-        <span
-          aria-hidden
-          className={cn(
-            "grid size-7 shrink-0 place-items-center rounded-[8px] border",
-            palette.accentBg,
-            palette.accentBorder,
-            palette.accent,
-          )}
-        >
-          <Sheet size={14} strokeWidth={1.8} />
-        </span>
         <div className={cn("min-w-0 truncate font-medium", palette.primaryText)}>{title}</div>
         <span className={cn("ml-auto hidden shrink-0 text-[12px] sm:inline", palette.secondaryText)}>
           {readOnly ? "View only" : "Autosaved"}

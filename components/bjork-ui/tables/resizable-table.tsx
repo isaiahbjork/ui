@@ -545,11 +545,7 @@ export function ResizableTable({
                 maxConstraints={[400, 0]}
                 handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-all hover:w-1.5 hover:bg-[#ec5c13]/45" />}
               >
-                <div className={`relative flex items-center gap-1.5 border-r px-3 ${palette.divider}`} style={{ width: columnWidths.email }}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-40">
-                    <rect x="2" y="4" width="12" height="8" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                    <path d="M2 6L8 9L14 6" stroke="currentColor" strokeWidth="1.5"/>
-                  </svg>
+                <div className={`relative flex items-center border-r px-3 ${palette.divider}`} style={{ width: columnWidths.email }}>
                   <span>Email</span>
                 </div>
               </Resizable>
@@ -562,10 +558,7 @@ export function ResizableTable({
                 maxConstraints={[400, 0]}
                 handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-all hover:w-1.5 hover:bg-[#ec5c13]/45" />}
               >
-                <div className={`relative flex items-center gap-1.5 border-r px-3 ${palette.divider}`} style={{ width: columnWidths.department }}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-40">
-                    <path d="M2 2H4M2 8H6M2 14H8M10 2V14M14 4V14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
+                <div className={`relative flex items-center border-r px-3 ${palette.divider}`} style={{ width: columnWidths.department }}>
                   <span>Department</span>
                 </div>
               </Resizable>
@@ -578,10 +571,7 @@ export function ResizableTable({
                 maxConstraints={[400, 0]}
                 handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-all hover:w-1.5 hover:bg-[#ec5c13]/45" />}
               >
-                <div className={`relative flex items-center gap-1.5 border-r px-3 ${palette.divider}`} style={{ width: columnWidths.position }}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-40">
-                    <path d="M3 3H13M3 8H13M3 13H9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
+                <div className={`relative flex items-center border-r px-3 ${palette.divider}`} style={{ width: columnWidths.position }}>
                   <span>Position</span>
                 </div>
               </Resizable>
@@ -594,10 +584,7 @@ export function ResizableTable({
                 maxConstraints={[400, 0]}
                 handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-all hover:w-1.5 hover:bg-[#ec5c13]/45" />}
               >
-                <div className={`relative flex items-center gap-1.5 border-r px-3 ${palette.divider}`} style={{ width: columnWidths.salary }}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-40">
-                    <path d="M8 1L3 9H7L8 15L13 7H9L8 1Z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
+                <div className={`relative flex items-center border-r px-3 ${palette.divider}`} style={{ width: columnWidths.salary }}>
                   <span>Salary</span>
                 </div>
               </Resizable>
@@ -610,20 +597,12 @@ export function ResizableTable({
                 maxConstraints={[400, 0]}
                 handle={<div className="absolute bottom-0 right-0 top-0 w-1 cursor-col-resize bg-transparent transition-all hover:w-1.5 hover:bg-[#ec5c13]/45" />}
               >
-                <div className={`relative flex items-center gap-1.5 border-r px-3 ${palette.divider}`} style={{ width: columnWidths.hireDate }}>
-                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-40">
-                    <rect x="2" y="3" width="12" height="10" rx="1" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                    <path d="M6 1V3M10 1V3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                  </svg>
+                <div className={`relative flex items-center border-r px-3 ${palette.divider}`} style={{ width: columnWidths.hireDate }}>
                   <span>Hire Date</span>
                 </div>
               </Resizable>
 
-              <div className="flex items-center gap-1.5 px-3" style={{ width: columnWidths.status }}>
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" className="opacity-40">
-                  <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.5" fill="none"/>
-                  <path d="M8 4V8L10 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                </svg>
+              <div className="flex items-center px-3" style={{ width: columnWidths.status }}>
                 <span>Status</span>
               </div>
 

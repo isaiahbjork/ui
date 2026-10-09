@@ -12,7 +12,7 @@ import {
 } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTheme } from "next-themes";
-import { FileText, Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useElementSize } from "../_core/canvas";
 import {
@@ -339,18 +339,8 @@ export function InvoiceTable({
         {meta ? (
           <header className={cn("grid gap-4 border-b px-5 pb-4 pt-5", palette.divider, compact ? "grid-cols-1" : "grid-cols-[1.2fr_1fr_1fr]")}>
             <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <span
-                  aria-hidden
-                  className={cn("flex h-7 w-7 items-center justify-center rounded-[8px] print:hidden", palette.accentBg)}
-                >
-                  <FileText className={cn("h-3.5 w-3.5", palette.accent)} />
-                </span>
-                <div className="min-w-0">
-                  <p className={cn("text-[11px] font-medium uppercase tracking-[0.08em]", palette.secondaryText)}>Invoice</p>
-                  <p className={cn("font-mono text-[13px]", palette.primaryText)}>{meta.number}</p>
-                </div>
-              </div>
+              <p className={cn("text-[11px] font-medium uppercase tracking-[0.08em]", palette.secondaryText)}>Invoice</p>
+              <p className={cn("font-mono text-[13px]", palette.primaryText)}>{meta.number}</p>
               <dl className="mt-3 flex gap-5 text-[12px]">
                 <div>
                   <dt className={palette.secondaryText}>Issued</dt>
