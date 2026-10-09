@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { Treemap, type TreeNode } from "@/components/bjork-ui/charts/treemap";
 import { mulberry32 } from "@/components/bjork-ui/_core/random";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("treemap");
 
@@ -44,6 +44,10 @@ export default function Page() {
   const isPreview = usePreviewMode();
   const [colorBy, setColorBy] = useState<"change" | "value">("change");
 
+  const reset = () => {
+    setColorBy("change");
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -62,6 +66,19 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[760px] scale-[1.08]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <ShellSegmented
+          label="Colour"
+          value={colorBy}
+          onChange={setColorBy}
+          options={[
+            { label: "Change", value: "change" },
+            { label: "Value", value: "value" },
+          ]}
+        />
+      }
     >
       {isPreview ? (
         <div className="w-[720px]">
@@ -70,17 +87,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={860}>
           <Treemap data={DATA} colorBy={colorBy} height={440} ariaLabel="Portfolio by sector" />
-          <ControlRow>
-            <OptionGroup
-              label="Colour"
-              value={colorBy}
-              onChange={setColorBy}
-              options={[
-                { label: "Change", value: "change" },
-                { label: "Value", value: "value" },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

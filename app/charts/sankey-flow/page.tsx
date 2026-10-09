@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { SankeyFlow, type SankeyLink, type SankeyNode } from "@/components/bjork-ui/charts/sankey-flow";
 import { formatCompact } from "@/components/bjork-ui/charts/_kit/scale";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, ToggleButton } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("sankey-flow");
 
@@ -49,6 +49,8 @@ export default function Page() {
   const isPreview = usePreviewMode();
   const [flow, setFlow] = useState(false);
 
+  const reset = () => setFlow(false);
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -63,6 +65,9 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[760px] scale-[1.08]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={<ShellSwitch label="Flow" checked={flow} onCheckedChange={setFlow} />}
     >
       {isPreview ? (
         <div className="w-[720px]">
@@ -71,11 +76,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={860}>
           <SankeyFlow nodes={NODES} links={LINKS} flow={flow} defaultHighlightId="pro" formatValue={people} height={420} ariaLabel="Signup funnel" />
-          <ControlRow>
-            <ToggleButton pressed={flow} onClick={() => setFlow((v) => !v)}>
-              Flow
-            </ToggleButton>
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { SlopeChart, type SlopeItem } from "@/components/bjork-ui/charts/slope-chart";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("slope-chart");
 
@@ -30,6 +30,8 @@ export default function Page() {
   const isPreview = usePreviewMode();
   const [filter, setFilter] = useState<"all" | "up" | "down">("all");
 
+  const reset = () => setFilter("all");
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -47,6 +49,20 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[640px] scale-[1.12]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <ShellSegmented
+          label="Filter"
+          value={filter}
+          onChange={setFilter}
+          options={[
+            { label: "All", value: "all" },
+            { label: "Rising", value: "up" },
+            { label: "Falling", value: "down" },
+          ]}
+        />
+      }
     >
       {isPreview ? (
         <div className="w-[600px]">
@@ -55,18 +71,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={640}>
           <SlopeChart items={ITEMS} labels={YEARS} filter={filter} defaultHighlightId="ts" height={420} ariaLabel="Share of new projects by language" />
-          <ControlRow>
-            <OptionGroup
-              label="Filter"
-              value={filter}
-              onChange={setFilter}
-              options={[
-                { label: "All", value: "all" },
-                { label: "Rising", value: "up" },
-                { label: "Falling", value: "down" },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

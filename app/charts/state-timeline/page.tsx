@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { StateTimeline, createIncidentLanes, type TimelineState } from "@/components/bjork-ui/charts/state-timeline";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("state-timeline");
 const HOUR = 3600000;
@@ -33,6 +33,10 @@ export default function Page() {
   const [range, setRange] = useState<number>(7);
   const view: [number, number] = [END - range * 24 * HOUR, END];
 
+  const reset = () => {
+    setRange(7);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -52,6 +56,20 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[800px] scale-[1.06]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <ShellSegmented
+          label="Range"
+          value={range}
+          onChange={setRange}
+          options={[
+            { label: "24h", value: 1 },
+            { label: "3d", value: 3 },
+            { label: "7d", value: 7 },
+          ]}
+        />
+      }
     >
       {isPreview ? (
         <div className="w-[760px]">
@@ -60,18 +78,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={860}>
           <StateTimeline lanes={LANES} states={STATES} domain={DOMAIN} view={view} now={END} ariaLabel="Service health" />
-          <ControlRow>
-            <OptionGroup
-              label="Range"
-              value={range}
-              onChange={setRange}
-              options={[
-                { label: "24h", value: 1 },
-                { label: "3d", value: 3 },
-                { label: "7d", value: 7 },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

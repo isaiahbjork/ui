@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { ScatterBrush, createScatterCloud, type Brush } from "@/components/bjork-ui/charts/scatter-brush";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, ToggleButton } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("scatter-brush");
 const POINTS = createScatterCloud(23);
@@ -18,6 +18,8 @@ const fmtY = (v: number) => `${Math.round(v)}`;
 export default function Page() {
   const isPreview = usePreviewMode();
   const [trend, setTrend] = useState(true);
+
+  const reset = () => setTrend(true);
 
   return (
     <SimpleComponentDemoPage
@@ -35,6 +37,9 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[700px] scale-[1.1]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={<ShellSwitch label="Trend line" checked={trend} onCheckedChange={setTrend} />}
     >
       {isPreview ? (
         <div className="w-[660px]">
@@ -43,11 +48,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={720}>
           <ScatterBrush points={POINTS} xDomain={X_DOMAIN} yDomain={Y_DOMAIN} trend={trend} xLabel="Session length" yLabel="Engagement" formatX={fmtX} formatY={fmtY} height={460} ariaLabel="Sessions" />
-          <ControlRow>
-            <ToggleButton pressed={trend} onClick={() => setTrend((v) => !v)}>
-              Trend line
-            </ToggleButton>
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

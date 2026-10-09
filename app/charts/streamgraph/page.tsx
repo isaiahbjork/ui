@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { Streamgraph, createGenreSeries, type StreamOffset } from "@/components/bjork-ui/charts/streamgraph";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("streamgraph");
 const MONTHS = 24;
@@ -17,6 +17,10 @@ const hours = (v: number) => `${Math.round(v)}k h`;
 export default function Page() {
   const isPreview = usePreviewMode();
   const [offset, setOffset] = useState<StreamOffset>("wiggle");
+
+  const reset = () => {
+    setOffset("wiggle");
+  };
 
   return (
     <SimpleComponentDemoPage
@@ -35,6 +39,20 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[780px] scale-[1.08]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <ShellSegmented
+          label="Layout"
+          value={offset}
+          onChange={setOffset}
+          options={[
+            { label: "Stream", value: "wiggle" },
+            { label: "Stacked", value: "zero" },
+            { label: "100%", value: "expand" },
+          ]}
+        />
+      }
     >
       {isPreview ? (
         <div className="w-[740px]">
@@ -43,18 +61,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={860}>
           <Streamgraph series={SERIES} x={X} offset={offset} formatValue={hours} height={380} ariaLabel="Listening hours by genre" />
-          <ControlRow>
-            <OptionGroup
-              label="Layout"
-              value={offset}
-              onChange={setOffset}
-              options={[
-                { label: "Stream", value: "wiggle" },
-                { label: "Stacked", value: "zero" },
-                { label: "100%", value: "expand" },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

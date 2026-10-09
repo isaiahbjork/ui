@@ -3,8 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { BjorkButtonGroup } from "@/components/bjork-ui/primitives/button-group";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellActions, ShellSegmented, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { LiveLine, createRandomWalk, type LivePoint } from "@/components/bjork-ui/charts/live-line";
 import { mulberry32 } from "@/components/bjork-ui/_core/random";
 import { getGalleryItem } from "@/lib/bjork-gallery";
@@ -104,47 +103,11 @@ export default function Page() {
     spikeRef.current = c.injectSpike;
   }, []);
 
-  const controls = (
-    <div className="flex flex-wrap items-center justify-center gap-3">
-      <BjorkButtonGroup aria-label="Window">
-        {[
-          { label: "30s", value: 30000 },
-          { label: "60s", value: 60000 },
-          { label: "5m", value: 300000 },
-        ].map((option) => (
-          <BjorkButton
-            key={option.value}
-            size="sm"
-            variant={windowMs === option.value ? "secondary" : "ghost"}
-            aria-pressed={windowMs === option.value}
-            onClick={() => setWindowMs(option.value)}
-          >
-            {option.label}
-          </BjorkButton>
-        ))}
-      </BjorkButtonGroup>
-      <BjorkButtonGroup aria-label="Easing">
-        {[0.04, 0.08, 0.2].map((value) => (
-          <BjorkButton
-            key={value}
-            size="sm"
-            variant={easing === value ? "secondary" : "ghost"}
-            aria-pressed={easing === value}
-            onClick={() => setEasing(value)}
-            className="tabular-nums"
-          >
-            {value.toFixed(2)}
-          </BjorkButton>
-        ))}
-      </BjorkButtonGroup>
-      <BjorkButton size="sm" variant="outline" aria-pressed={paused} onClick={() => setPaused((p) => !p)}>
-        {paused ? "Resume" : "Pause"}
-      </BjorkButton>
-      <BjorkButton size="sm" variant="outline" onClick={() => spikeRef.current()}>
-        Inject spike
-      </BjorkButton>
-    </div>
-  );
+  const reset = () => {
+    setWindowMs(60000);
+    setEasing(0.08);
+    setPaused(false);
+  };
 
   return (
     <SimpleComponentDemoPage
@@ -166,6 +129,34 @@ export function Demo({ points }: { points: { t: number; v: number }[] }) {
       // The shell scales demos to fit their base width on phones. A 360px base keeps the chart at full size there.
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[760px] scale-[1.1]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Window"
+            value={windowMs}
+            onChange={setWindowMs}
+            options={[
+              { label: "30s", value: 30000 },
+              { label: "60s", value: 60000 },
+              { label: "5m", value: 300000 },
+            ]}
+          />
+          <ShellSegmented
+            label="Easing"
+            value={easing}
+            onChange={setEasing}
+            options={[0.04, 0.08, 0.2].map((value) => ({ label: value.toFixed(2), value }))}
+          />
+          <ShellSwitch label="Pause" checked={paused} onCheckedChange={setPaused} />
+          <ShellActions>
+            <BjorkButton size="sm" variant="secondary" onClick={() => spikeRef.current()}>
+              Inject spike
+            </BjorkButton>
+          </ShellActions>
+        </>
+      }
     >
       <div className="flex w-full min-w-0 flex-col gap-5">
         <LiveDemo
@@ -176,7 +167,6 @@ export function Demo({ points }: { points: { t: number; v: number }[] }) {
           onPausedChange={setPaused}
           onRegisterControls={registerControls}
         />
-        {!isPreview && controls}
       </div>
     </SimpleComponentDemoPage>
   );

@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { StackedAreaChart, type AreaSeries, type StackedAreaMode } from "@/components/bjork-ui/charts/stacked-area-chart";
 import { mulberry32 } from "@/components/bjork-ui/_core/random";
 import { gaussian } from "@/components/bjork-ui/charts/_kit/scale";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("stacked-area-chart");
 
@@ -63,6 +63,11 @@ export default function Page() {
   const [range, setRange] = useState<[number, number]>(PRESETS.year);
   const preset = (Object.keys(PRESETS) as Preset[]).find((k) => PRESETS[k][0] === range[0] && PRESETS[k][1] === range[1]) ?? null;
 
+  const reset = () => {
+    setMode("stacked");
+    setRange(PRESETS.year);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -85,6 +90,32 @@ const times = [0, 1, 2, 3].map((i) => Date.UTC(2025, 0, 1) + i * day);
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[740px] scale-[1.1]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Layout"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { label: "Stacked", value: "stacked" },
+              { label: "100%", value: "percent" },
+              { label: "Lines", value: "lines" },
+            ]}
+          />
+          <ShellSegmented
+            label="Window"
+            value={preset ?? ("custom" as Preset)}
+            onChange={(k) => setRange(PRESETS[k])}
+            options={[
+              { label: "Year", value: "year" },
+              { label: "90 days", value: "quarter" },
+              { label: "Launch", value: "launch" },
+            ]}
+          />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[700px]">
@@ -100,28 +131,6 @@ const times = [0, 1, 2, 3].map((i) => Date.UTC(2025, 0, 1) + i * day);
       ) : (
         <DemoColumn width={860}>
           <StackedAreaChart times={TIMES} series={SERIES} mode={mode} range={range} onRangeChange={setRange} height={420} ariaLabel="Daily active users by plan" />
-          <ControlRow>
-            <OptionGroup
-              label="Layout"
-              value={mode}
-              onChange={setMode}
-              options={[
-                { label: "Stacked", value: "stacked" },
-                { label: "100%", value: "percent" },
-                { label: "Lines", value: "lines" },
-              ]}
-            />
-            <OptionGroup
-              label="Window"
-              value={preset ?? ("custom" as Preset)}
-              onChange={(k) => setRange(PRESETS[k])}
-              options={[
-                { label: "Year", value: "year" },
-                { label: "90 days", value: "quarter" },
-                { label: "Launch", value: "launch" },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

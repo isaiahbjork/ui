@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { GroupedBarChart, type BarCategory, type BarMode, type BarOrientation, type BarSeries } from "@/components/bjork-ui/charts/grouped-bar-chart";
 import { formatCompact } from "@/components/bjork-ui/charts/_kit/scale";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup, ToggleButton } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("grouped-bar-chart");
 // The sign goes before the currency: −$42K, never $−42K.
@@ -58,6 +58,13 @@ export default function Page() {
     if (DATASETS[key].negative && mode === "percent") setMode("stacked");
   };
 
+  const reset = () => {
+    setDataset("revenue");
+    setMode("grouped");
+    setOrientation("auto");
+    setShowValues(false);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -80,6 +87,42 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[720px] scale-[1.12]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Dataset"
+            value={dataset}
+            onChange={pickDataset}
+            options={[
+              { label: "Revenue", value: "revenue" },
+              { label: "Net-new ARR", value: "arr" },
+            ]}
+          />
+          <ShellSegmented
+            label="Mode"
+            value={mode}
+            onChange={setMode}
+            options={[
+              { label: "Grouped", value: "grouped" as const },
+              { label: "Stacked", value: "stacked" as const },
+              ...(ds.negative ? [] : [{ label: "Percent", value: "percent" as const }]),
+            ]}
+          />
+          <ShellSegmented
+            label="Axis"
+            value={orientation}
+            onChange={setOrientation}
+            options={[
+              { label: "Auto", value: "auto" },
+              { label: "Vertical", value: "vertical" },
+              { label: "Horizontal", value: "horizontal" },
+            ]}
+          />
+          <ShellSwitch label="Values" checked={showValues} onCheckedChange={setShowValues} />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[680px]">
@@ -107,40 +150,6 @@ export default function Page() {
             height={380}
             ariaLabel={ds.ariaLabel}
           />
-          <ControlRow>
-            <OptionGroup
-              label="Dataset"
-              value={dataset}
-              onChange={pickDataset}
-              options={[
-                { label: "Revenue", value: "revenue" },
-                { label: "Net-new ARR", value: "arr" },
-              ]}
-            />
-            <OptionGroup
-              label="Mode"
-              value={mode}
-              onChange={setMode}
-              options={[
-                { label: "Grouped", value: "grouped" as const },
-                { label: "Stacked", value: "stacked" as const },
-                ...(ds.negative ? [] : [{ label: "Percent", value: "percent" as const }]),
-              ]}
-            />
-            <OptionGroup
-              label="Orientation"
-              value={orientation}
-              onChange={setOrientation}
-              options={[
-                { label: "Auto", value: "auto" },
-                { label: "Vertical", value: "vertical" },
-                { label: "Horizontal", value: "horizontal" },
-              ]}
-            />
-            <ToggleButton pressed={showValues} onClick={() => setShowValues((v) => !v)}>
-              Values
-            </ToggleButton>
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>
