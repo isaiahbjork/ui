@@ -59,6 +59,7 @@ const FuzzyWrapper = ({
     let isVisible = true;
     let isPaused = false;
     let resumeLoop: (() => void) | null = null;
+    let themeObserver: MutationObserver | null = null;
     const canvas = canvasRef.current;
     const svgContainer = svgContainerRef.current;
 
@@ -110,13 +111,19 @@ const FuzzyWrapper = ({
       const offCtx = offscreen.getContext("2d");
       if (!offCtx) return;
 
-      offscreen.width = svgWidth;
-      offscreen.height = svgHeight;
+      // Render at device resolution so the glyphs stay crisp on HiDPI screens
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      offscreen.width = Math.round(svgWidth * dpr);
+      offscreen.height = Math.round(svgHeight * dpr);
 
       // Convert SVG to canvas
       const convertSvgToCanvas = () => {
         return new Promise<void>((resolve) => {
-          const svgData = new XMLSerializer().serializeToString(svgElement);
+          // The serialized SVG loses its stylesheet, so bake the resolved
+          // theme colour in; otherwise currentColor falls back to black.
+          const clone = svgElement.cloneNode(true) as SVGSVGElement;
+          clone.style.color = window.getComputedStyle(svgElement).color;
+          const svgData = new XMLSerializer().serializeToString(clone);
           const img = new Image();
           const svgBlob = new Blob([svgData], {
             type: "image/svg+xml;charset=utf-8",
@@ -125,11 +132,15 @@ const FuzzyWrapper = ({
 
           img.onload = () => {
             offCtx.clearRect(0, 0, offscreen.width, offscreen.height);
-            offCtx.drawImage(img, 0, 0, svgWidth, svgHeight);
+            offCtx.drawImage(img, 0, 0, offscreen.width, offscreen.height);
             URL.revokeObjectURL(url);
             resolve();
           };
 
+          img.onerror = () => {
+            URL.revokeObjectURL(url);
+            resolve();
+          };
           img.src = url;
         });
       };
@@ -137,8 +148,9 @@ const FuzzyWrapper = ({
       // Setup main canvas
       const horizontalMargin = 50;
       const verticalMargin = 50;
-      canvas.width = svgWidth + horizontalMargin * 2;
-      canvas.height = svgHeight + verticalMargin * 2;
+      canvas.width = Math.round((svgWidth + horizontalMargin * 2) * dpr);
+      canvas.height = Math.round((svgHeight + verticalMargin * 2) * dpr);
+      canvas.style.width = `${svgWidth + horizontalMargin * 2}px`;
 
       const fuzzRange = 20;
       // Cap the fuzz at 15fps so the static flickers instead of strobing
@@ -168,14 +180,15 @@ const FuzzyWrapper = ({
 
         // Clear canvas
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.translate(horizontalMargin, verticalMargin);
+        ctx.translate(horizontalMargin * dpr, verticalMargin * dpr);
 
-        // Apply fuzzy effect line by line
-        for (let j = 0; j < svgHeight; j++) {
+        // Apply fuzzy effect line by line (one CSS pixel row at a time)
+        const row = Math.max(1, Math.round(dpr));
+        for (let j = 0; j < offscreen.height; j += row) {
           const dx = Math.floor(
             baseIntensity * (Math.random() - 0.5) * fuzzRange
-          );
-          ctx.drawImage(offscreen, 0, j, svgWidth, 1, dx, j, svgWidth, 1);
+          ) * dpr;
+          ctx.drawImage(offscreen, 0, j, offscreen.width, row, dx, j, offscreen.width, row);
         }
 
         ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
@@ -185,6 +198,18 @@ const FuzzyWrapper = ({
       resumeLoop = () => {
         animationFrameId = window.requestAnimationFrame(run);
       };
+
+      // The still frame under reduced motion must follow theme switches too.
+      if (reducedMotion) {
+        themeObserver = new MutationObserver(() => {
+          lastFrame = -Infinity;
+          run();
+        });
+        themeObserver.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["class", "style", "data-theme"],
+        });
+      }
 
       run();
 
@@ -200,6 +225,7 @@ const FuzzyWrapper = ({
     return () => {
       isCancelled = true;
       observer?.disconnect();
+      themeObserver?.disconnect();
       window.cancelAnimationFrame(animationFrameId);
       if (canvas && canvas.cleanupFuzzy) {
         canvas.cleanupFuzzy();
@@ -208,7 +234,7 @@ const FuzzyWrapper = ({
   }, [baseIntensity]);
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0 max-w-full">
       {/* Hidden SVG container for rendering */}
       <div
         ref={svgContainerRef}
@@ -222,7 +248,7 @@ const FuzzyWrapper = ({
       <canvas
         ref={canvasRef}
         className={className}
-        style={{ display: "block" }}
+        style={{ display: "block", maxWidth: "100%", height: "auto" }}
       />
     </div>
   );
