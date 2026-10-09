@@ -402,9 +402,11 @@ export function DonutChart({
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => setHover(hitTest(e.clientX, e.clientY), "pointer");
 
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    const n = slices.length;
+    // Zero slices draw no arc, so the keyboard steps over them.
+    const steps = slices.filter((x) => x.value > 0);
+    const n = steps.length;
     if (!n) return;
-    const cur = slices.findIndex((x) => x.id === st.current.hoverId);
+    const cur = steps.findIndex((x) => x.id === st.current.hoverId);
     let next: number | null = null;
     if (e.key === "ArrowRight" || e.key === "ArrowDown") next = cur < 0 ? 0 : (cur + 1) % n;
     else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = cur < 0 ? n - 1 : (cur - 1 + n) % n;
@@ -419,7 +421,7 @@ export function DonutChart({
     }
     if (next === null) return;
     e.preventDefault();
-    setHover(slices[next].id, "keyboard");
+    setHover(steps[next].id, "keyboard");
   };
 
   const tableCols = useMemo(() => [legendTitle, "Value", "Share", ...(hasPrev ? ["Previous", `Change ${previousLabel}`] : [])], [legendTitle, hasPrev, previousLabel]);
