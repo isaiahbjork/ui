@@ -1,0 +1,225 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "handoff-beam",
+  "title": "Handoff beam",
+  "description": "Handoff beam is a production-ready ai component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/ai/handoff-beam.tsx",
+      "content": "\"use client\";\n\nimport {\n  useEffect,\n  useRef,\n  useSyncExternalStore,\n  type ReactNode,\n} from \"react\";\nimport { useReducedMotion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport { BJORK_PALETTE, type BjorkTone } from \"@/components/bjork-ui/_core/palette\";\nimport { useBjorkTone } from \"@/components/bjork-ui/_core/tone\";\nimport { useVisibleLoop } from \"@/components/bjork-ui/_core/loop\";\nimport { useElementSize } from \"@/components/bjork-ui/_core/canvas\";\nimport { stepSpring, type SpringConfig, type SpringState } from \"@/components/bjork-ui/_core/spring\";\nimport { valueNoise1D } from \"@/components/bjork-ui/_core/random\";\nimport { LiveRegion } from \"@/components/bjork-ui/_core/a11y\";\n\nexport type BeamPhase = \"idle\" | \"listening\" | \"thinking\" | \"speaking\";\nexport type BeamLevel = number | (() => number | [number, number, number]);\n\nexport interface HandoffBeamProps {\n  phase: BeamPhase;\n  level?: BeamLevel;\n  analyser?: AnalyserNode | null;\n  children?: ReactNode;\n  radius?: number; // 32\n  reach?: number; // 120\n  intensity?: number; // 1\n  palette?: \"ember\" | \"mono\" | string[]; // \"ember\"\n  gatherOffset?: number; // 0.5\n  heldLevel?: number; // 0.45\n  attack?: number; // 40 ms\n  release?: number; // 220 ms\n  threshold?: number; // 0.06\n  sensitivity?: number; // 1.4\n  phaseLabels?: Partial<Record<BeamPhase, string>>;\n  tone?: BjorkTone;\n  attract?: boolean;\n  className?: string;\n}\n\nconst DEFAULT_LABELS: Record<BeamPhase, string> = {\n  idle: \"Idle\",\n  listening: \"Listening\",\n  thinking: \"Thinking\",\n  speaking: \"Speaking\",\n};\n\n// Lobe x-fractions, base widths and the band each lobe reads (0 low, 1 mid, 2 high).\nconst LOBE_X = [0.5, 0.34, 0.66, 0.18, 0.82];\nconst LOBE_W = [0.3, 0.22, 0.22, 0.18, 0.18];\nconst LOBE_BAND = [0, 1, 1, 2, 2];\n\nconst GATHER_SPRING: SpringConfig = { stiffness: 120, damping: 20, mass: 1 };\nconst SPRITE_SIZE = 128;\nconst SWEEP_SPAN = 0.12;\nconst SWEEP_PERIOD = 1.6; // seconds\nconst IDLE_BREATH_HZ = 0.25;\nconst RESUME_IDLE_S = 4;\nconst DPR_CAP = 1.5;\n\n// Attract schedule: listening 3s, thinking 2s, speaking 3s, idle 1.5s.\nconst ATTRACT_SEGMENTS: Array<{ phase: BeamPhase; until: number }> = [\n  { phase: \"listening\", until: 3 },\n  { phase: \"thinking\", until: 5 },\n  { phase: \"speaking\", until: 8 },\n  { phase: \"idle\", until: 9.5 },\n];\nconst ATTRACT_PERIOD = 9.5;\nconst STATIC_RAW: [number, number, number] = [0.6, 0.45, 0.3];\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\nfunction clamp01(v: number): number {\n  return v < 0 ? 0 : v > 1 ? 1 : v;\n}\n\nfunction smoothstep01(u: number): number {\n  return u * u * (3 - 2 * u);\n}\n\nfunction bandHeight(v: number): number {\n  return 0.08 + 0.9 * v;\n}\n\nfunction gatedHeight(v: number): number {\n  return clamp01(v * 8) * bandHeight(v);\n}\n\ninterface PaletteSpec {\n  colors: string[]; // one per lobe\n  composite: GlobalCompositeOperation;\n  alpha: number;\n}\n\nfunction resolvePalette(palette: HandoffBeamProps[\"palette\"], tone: BjorkTone): PaletteSpec {\n  const dark = tone === \"dark\";\n  const tokens = BJORK_PALETTE[tone];\n  if (Array.isArray(palette)) {\n    const colors = [0, 1, 2, 3, 4].map((i) => palette[Math.min(i, palette.length - 1)] ?? tokens.accent);\n    return { colors, composite: dark ? \"lighter\" : \"source-over\", alpha: dark ? 0.9 : 0.55 };\n  }\n  if (palette === \"mono\") {\n    return {\n      colors: [tokens.text, tokens.text, tokens.text, tokens.text, tokens.text],\n      composite: dark ? \"lighter\" : \"source-over\",\n      alpha: dark ? 0.7 : 0.5,\n    };\n  }\n  if (dark) {\n    return {\n      colors: [tokens.accent, \"#ff8a3d\", \"#ff8a3d\", \"#ff5ea8\", \"#ffd1a1\"],\n      composite: \"lighter\",\n      alpha: 0.9,\n    };\n  }\n  return {\n    colors: [\"#d4541a\", \"#ef7a2e\", \"#ef7a2e\", \"#e2488e\", \"#f2a65c\"],\n    // Light surfaces wash a soft glow out; full-strength multiply keeps it ember (acceptance 6: saturation 0.38).\n    composite: \"multiply\",\n    alpha: 1,\n  };\n}\n\n// Pre-rendered radial bloom: white, alpha 1 to 0 on a smoothstep falloff.\nfunction makeBaseSprite(): HTMLCanvasElement {\n  const canvas = document.createElement(\"canvas\");\n  canvas.width = SPRITE_SIZE;\n  canvas.height = SPRITE_SIZE;\n  const ctx = canvas.getContext(\"2d\");\n  if (!ctx) return canvas;\n  const half = SPRITE_SIZE / 2;\n  const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);\n  const stops = 10;\n  for (let k = 0; k <= stops; k++) {\n    const u = k / stops;\n    gradient.addColorStop(u, `rgba(255,255,255,${(1 - smoothstep01(u)).toFixed(4)})`);\n  }\n  ctx.fillStyle = gradient;\n  ctx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);\n  return canvas;\n}\n\nfunction makeTintedSprite(base: HTMLCanvasElement, color: string): HTMLCanvasElement {\n  const canvas = document.createElement(\"canvas\");\n  canvas.width = SPRITE_SIZE;\n  canvas.height = SPRITE_SIZE;\n  const ctx = canvas.getContext(\"2d\");\n  if (!ctx) return canvas;\n  ctx.drawImage(base, 0, 0);\n  ctx.globalCompositeOperation = \"source-in\";\n  ctx.fillStyle = color;\n  ctx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);\n  return canvas;\n}\n\ninterface Engine {\n  gather: SpringState;\n  spread: SpringState;\n  env: [number, number, number];\n  raw: [number, number, number];\n  out: [number, number, number];\n  bands: [number, number, number];\n  now: number; // loop clock, seconds\n  inputAt: number; // loop clock of the last pointer or key input, -Infinity if none\n  attractT: number;\n  sweepT: number; // seconds spent thinking, so the sweep starts centred on gather\n  lastPhase: BeamPhase | null;\n  heights: Float32Array; // lobe heights, reused every frame\n  voiceListen: () => [number, number, number];\n  voiceSpeak: () => [number, number, number];\n  analyserNode: AnalyserNode | null;\n  buf: Uint8Array | null;\n  bins: Int32Array; // [lowLo, lowHi, midLo, midHi, highLo, highHi]\n  spriteBase: HTMLCanvasElement | null;\n  spriteColors: string[];\n  tints: HTMLCanvasElement[];\n}\n\ninterface Latest {\n  phase: BeamPhase;\n  level: BeamLevel | undefined;\n  analyser: AnalyserNode | null;\n  attract: boolean;\n  reduce: boolean;\n  palette: PaletteSpec;\n  intensity: number;\n  gatherOffset: number;\n  heldLevel: number;\n  attack: number;\n  release: number;\n  threshold: number;\n  sensitivity: number;\n  cssW: number;\n  cssH: number;\n}\n\nfunction createEngine(phase: BeamPhase): Engine {\n  const settled = phase === \"idle\" ? 0 : 1;\n  return {\n    gather: { x: phase === \"thinking\" ? 1 : 0, v: 0 },\n    spread: { x: settled, v: 0 },\n    env: [0, 0, 0],\n    raw: [0, 0, 0],\n    out: [0, 0, 0],\n    bands: [0, 0, 0],\n    now: 0,\n    inputAt: Number.NEGATIVE_INFINITY,\n    attractT: 0,\n    sweepT: 0,\n    lastPhase: null,\n    heights: new Float32Array(5),\n    voiceListen: createSimulatedVoice(11),\n    voiceSpeak: createSimulatedVoice(29),\n    analyserNode: null,\n    buf: null,\n    bins: new Int32Array(6),\n    spriteBase: null,\n    spriteColors: [],\n    tints: [],\n  };\n}\n\n// Fills engine.raw from a level source. Array getters are read without copying.\nfunction readLevel(e: Engine, level: BeamLevel | undefined) {\n  const s = level === undefined ? 0 : typeof level === \"function\" ? level() : level;\n  if (Array.isArray(s)) {\n    e.raw[0] = s[0] ?? 0;\n    e.raw[1] = s[1] ?? 0;\n    e.raw[2] = s[2] ?? 0;\n  } else {\n    e.raw[0] = s;\n    e.raw[1] = s * 0.8;\n    e.raw[2] = s * 0.6;\n  }\n}\n\nfunction readAnalyser(e: Engine, node: AnalyserNode) {\n  if (e.analyserNode !== node) {\n    e.analyserNode = node;\n    e.buf = new Uint8Array(node.frequencyBinCount);\n    const binHz = node.context.sampleRate / node.fftSize;\n    const maxBin = node.frequencyBinCount - 1;\n    const range = (lo: number, hi: number) => {\n      const a = Math.min(maxBin, Math.max(1, Math.ceil(lo / binHz)));\n      const b = Math.min(maxBin + 1, Math.max(a + 1, Math.floor(hi / binHz)));\n      return [a, b];\n    };\n    const [l0, l1] = range(80, 300);\n    const [m0, m1] = range(300, 2000);\n    const [h0, h1] = range(2000, 6000);\n    e.bins.set([l0, l1, m0, m1, h0, h1]);\n  }\n  const buf = e.buf;\n  if (!buf) return;\n  node.getByteFrequencyData(buf);\n  for (let b = 0; b < 3; b++) {\n    const lo = e.bins[b * 2];\n    const hi = e.bins[b * 2 + 1];\n    let sum = 0;\n    for (let k = lo; k < hi; k++) sum += buf[k];\n    e.raw[b] = hi > lo ? sum / (hi - lo) / 255 : 0;\n  }\n}\n\nfunction ensureSprites(e: Engine, colors: string[]) {\n  const same =\n    e.tints.length === colors.length && colors.every((c, i) => e.spriteColors[i] === c);\n  if (same) return;\n  if (!e.spriteBase) e.spriteBase = makeBaseSprite();\n  const base = e.spriteBase;\n  const cache = new Map<string, HTMLCanvasElement>();\n  e.tints = colors.map((c) => {\n    let tinted = cache.get(c);\n    if (!tinted) {\n      tinted = makeTintedSprite(base, c);\n      cache.set(c, tinted);\n    }\n    return tinted;\n  });\n  e.spriteColors = colors.slice();\n}\n\n/**\n * Wraps a host (a composer, an input, a card) and draws one light along its bottom edge.\n * The light listens, gathers into a single thought, then speaks. It never swaps or blinks.\n * Canvas 2D only. The beam is drawn in the host's own bounds and clipped by `radius`.\n */\nexport function HandoffBeam({\n  phase,\n  level,\n  analyser = null,\n  children,\n  radius = 32,\n  reach = 120,\n  intensity = 1,\n  palette = \"ember\",\n  gatherOffset = 0.5,\n  heldLevel = 0.45,\n  attack = 40,\n  release = 220,\n  threshold = 0.06,\n  sensitivity = 1.4,\n  phaseLabels,\n  tone,\n  attract = false,\n  className,\n}: HandoffBeamProps) {\n  const resolvedTone = useBjorkTone(tone);\n  const reducedPref = useReducedMotion();\n  // Server and first client render both read \"not reduced\", so hydration matches.\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  const reduce = mounted && reducedPref === true;\n\n  const rootRef = useRef<HTMLDivElement>(null);\n  const canvasRef = useRef<HTMLCanvasElement>(null);\n  const size = useElementSize(rootRef);\n  const engineRef = useRef<Engine | null>(null);\n\n  const reachEff = size.height > 0 ? Math.min(reach, size.height) : reach;\n  const paletteSpec = resolvePalette(palette, resolvedTone);\n  const labels = { ...DEFAULT_LABELS, ...phaseLabels };\n\n  // The engine holds mutable simulation state, so it lives in a ref. It is created on first use, in the loop or on input.\n  const getEngine = (): Engine => {\n    if (!engineRef.current) engineRef.current = createEngine(latest.current?.phase ?? phase);\n    return engineRef.current;\n  };\n\n  // Everything the loop reads. Written in an effect so the render stays pure.\n  const latest = useRef<Latest | null>(null);\n  useEffect(() => {\n    latest.current = {\n      phase,\n      level,\n      analyser,\n      attract,\n      reduce,\n      palette: paletteSpec,\n      intensity,\n      gatherOffset,\n      heldLevel,\n      attack,\n      release,\n      threshold,\n      sensitivity,\n      cssW: size.width,\n      cssH: reachEff,\n    };\n  });\n\n  const frame = (dt: number, t: number) => {\n    const L = latest.current;\n    const canvas = canvasRef.current;\n    if (!L || !canvas) return;\n    const e = getEngine();\n    e.now = t;\n\n    const cssW = L.cssW;\n    const cssH = L.cssH;\n    if (cssW <= 0 || cssH <= 0) return;\n\n    // Attract drives the phase and level, unless the user is interacting.\n    const inputActive = t >= e.inputAt && t - e.inputAt < RESUME_IDLE_S;\n    let phaseNow: BeamPhase = L.phase;\n    let levelSource: BeamLevel | undefined = L.level;\n    let analyserNode: AnalyserNode | null = L.analyser;\n    let staticFrame = false;\n    if (L.attract) {\n      if (L.reduce) {\n        phaseNow = \"listening\";\n        staticFrame = true;\n        analyserNode = null;\n      } else if (!inputActive) {\n        e.attractT = (e.attractT + dt) % ATTRACT_PERIOD;\n        let seg = ATTRACT_SEGMENTS[0];\n        for (let k = 0; k < ATTRACT_SEGMENTS.length; k++) {\n          if (e.attractT < ATTRACT_SEGMENTS[k].until) { seg = ATTRACT_SEGMENTS[k]; break; }\n        }\n        phaseNow = seg.phase;\n        analyserNode = null;\n        levelSource = seg.phase === \"speaking\" ? e.voiceSpeak : e.voiceListen;\n      }\n    }\n    // Each thought starts centred: the sweep restarts when thinking begins.\n    if (phaseNow === \"thinking\" && e.lastPhase !== \"thinking\") e.sweepT = 0;\n    e.lastPhase = phaseNow;\n\n    // Levels: raw input, then the envelope (or a direct copy under reduced motion).\n    if (staticFrame) {\n      e.raw[0] = STATIC_RAW[0];\n      e.raw[1] = STATIC_RAW[1];\n      e.raw[2] = STATIC_RAW[2];\n    } else if (analyserNode) {\n      readAnalyser(e, analyserNode);\n    } else {\n      readLevel(e, levelSource);\n    }\n    for (let b = 0; b < 3; b++) {\n      const r = e.raw[b] < L.threshold ? 0 : e.raw[b];\n      if (L.reduce) {\n        e.env[b] = r;\n      } else {\n        const tau = Math.max(1, r > e.env[b] ? L.attack : L.release);\n        e.env[b] += (r - e.env[b]) * (1 - Math.exp(-(dt * 1000) / tau));\n      }\n      e.out[b] = clamp01(e.env[b] * L.sensitivity);\n    }\n\n    // Gather and spread glide with springs, so phase changes are continuous.\n    const gatherTarget = phaseNow === \"thinking\" ? 1 : 0;\n    const spreadTarget = phaseNow === \"idle\" ? 0 : 1;\n    if (L.reduce) {\n      e.gather.x = gatherTarget;\n      e.spread.x = spreadTarget;\n      e.gather.v = 0;\n      e.spread.v = 0;\n    } else {\n      stepSpring(e.gather, gatherTarget, GATHER_SPRING, dt);\n      stepSpring(e.spread, spreadTarget, GATHER_SPRING, dt);\n    }\n    const g = clamp01(e.gather.x);\n    const s = clamp01(e.spread.x);\n\n    // Thinking holds every band at heldLevel. The blend follows gather, so entry and exit are continuous.\n    for (let b = 0; b < 3; b++) e.bands[b] = e.out[b] * (1 - g) + L.heldLevel * g;\n\n    // Lobe heights. Lobe 0 breathes while idle, and the other lobes sit at 0 until spread lifts them.\n    const breath = L.reduce ? 0.12 : 0.12 + 0.04 * Math.sin(2 * Math.PI * IDLE_BREATH_HZ * t);\n    // Silence gates a lobe to 0, so a quiet listening state never out-glows idle (acceptance 2).\n    const heights = e.heights;\n    heights[0] = s * gatedHeight(e.bands[0]) + (1 - s) * breath;\n    for (let i = 1; i < 5; i++) heights[i] = s * gatedHeight(e.bands[LOBE_BAND[i]]);\n\n    // Pixel buffer at half the CSS height, scaled up. The glow is soft, so this costs nothing visible.\n    const dpr = Math.min(typeof window !== \"undefined\" ? window.devicePixelRatio || 1 : 1, DPR_CAP);\n    const bw = Math.max(1, Math.round(cssW * dpr));\n    const bh = Math.max(1, Math.round(cssH * dpr * 0.5));\n    if (canvas.width !== bw) canvas.width = bw;\n    if (canvas.height !== bh) canvas.height = bh;\n    const ctx = canvas.getContext(\"2d\");\n    if (!ctx) return;\n\n    ensureSprites(e, L.palette.colors);\n    ctx.setTransform(bw / cssW, 0, 0, bh / cssH, 0, 0);\n    ctx.clearRect(0, 0, cssW, cssH);\n\n    const widthScale = 1 - 0.75 * g;\n    ctx.globalCompositeOperation = L.palette.composite;\n    ctx.globalAlpha = L.palette.alpha * L.intensity;\n    for (let i = 0; i < 5; i++) {\n      const h = heights[i];\n      if (h <= 0.002) continue;\n      const x = L.gatherOffset + (0.5 + (LOBE_X[i] - 0.5) * s - L.gatherOffset) * (1 - g);\n      const w = LOBE_W[i] * cssW * widthScale;\n      const height = h * cssH;\n      const tint = e.tints[i];\n      if (tint) ctx.drawImage(tint, x * cssW - w / 2, cssH - height, w, height);\n    }\n\n    // Sweep: a narrower highlight that travels across the gathered lobe. Only while thinking, never under reduced motion.\n    if (phaseNow === \"thinking\" && !L.reduce) e.sweepT += dt;\n    if (!L.reduce && g > 0.01 && e.tints[0]) {\n      const sx = L.gatherOffset + SWEEP_SPAN * Math.sin((2 * Math.PI * e.sweepT) / SWEEP_PERIOD);\n      const sw = 0.1 * cssW;\n      const sh = bandHeight(L.heldLevel) * cssH;\n      ctx.globalAlpha = 0.5 * g * L.palette.alpha * L.intensity;\n      ctx.drawImage(e.tints[0], sx * cssW - sw / 2, cssH - sh, sw, sh);\n    }\n\n    // Edge line: 1px along the bottom, its span and alpha follow the energy.\n    const energy = clamp01((e.bands[0] + e.bands[1] + e.bands[2]) / 3);\n    const span = (0.2 + 0.6 * energy) * cssW;\n    ctx.globalCompositeOperation = \"source-over\";\n    ctx.globalAlpha = (0.35 + 0.65 * energy) * L.intensity;\n    ctx.fillStyle = L.palette.colors[0];\n    ctx.fillRect((cssW - span) / 2, cssH - 1, span, 1);\n  };\n\n  useVisibleLoop(rootRef, frame, {\n    fpsCap: reduce ? 10 : !attract && phase === \"idle\" ? 30 : 0,\n  });\n\n  // Pointer or key input inside the beam pauses attract for RESUME_IDLE_S seconds.\n  const noteInput = () => {\n    const e = getEngine();\n    e.inputAt = e.now;\n  };\n\n  return (\n    <div\n      ref={rootRef}\n      data-phase={phase}\n      onPointerDown={noteInput}\n      onPointerMove={noteInput}\n      onKeyDown={noteInput}\n      className={cn(\"relative w-full overflow-hidden\", className)}\n      style={{ borderRadius: radius }}\n    >\n      {children}\n      <canvas\n        ref={canvasRef}\n        aria-hidden=\"true\"\n        className=\"pointer-events-none absolute inset-x-0 bottom-0 block\"\n        style={{ width: \"100%\", height: reachEff }}\n      />\n      <LiveRegion message={labels[phase]} />\n    </div>\n  );\n}\n\n/**\n * A syllable-like level source for demos and attract. Returns the same [low, mid, high] array every call.\n * The phrase carrier is a seeded value noise, so each seed has its own rhythm.\n */\nexport function createSimulatedVoice(seed: number): () => [number, number, number] {\n  const phrase = valueNoise1D(seed);\n  const pitch = valueNoise1D(seed + 53);\n  const out: [number, number, number] = [0, 0, 0];\n  let t0 = -1;\n  return () => {\n    const now = typeof performance !== \"undefined\" ? performance.now() : 0;\n    if (t0 < 0) t0 = now;\n    const x = (now - t0) / 1000;\n    const carrier = 0.5 + 0.5 * Math.sin(2 * Math.PI * 3.1 * x + 1.7 * pitch(x * 0.6));\n    const speaking = clamp01(phrase(x * 0.7) * 2);\n    const env = clamp01(carrier * carrier * speaking);\n    out[0] = clamp01(env * (0.9 + 0.1 * pitch(x * 1.9)));\n    out[1] = clamp01(env * (0.7 + 0.2 * pitch(x * 2.6)));\n    out[2] = clamp01(env * (0.45 + 0.2 * pitch(x * 3.4)));\n    return out;\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/ai/handoff-beam.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/palette.ts",
+      "content": "export type BjorkTone = \"dark\" | \"light\";\n\n// Canvas, WebGL and SVG attribute colours. DOM code uses the CSS tokens with these as fallbacks.\nexport const BJORK_PALETTE = {\n  dark: {\n    bg: \"#050505\", stage: \"#111111\", surface: \"#121212\", raised: \"#161616\", active: \"#202020\",\n    border: \"#232323\", borderStrong: \"#343434\",\n    text: \"#ededed\", textMedium: \"rgba(237,237,237,0.72)\", textMuted: \"rgba(237,237,237,0.52)\",\n    textSoft: \"rgba(237,237,237,0.36)\", textFaint: \"rgba(237,237,237,0.22)\", hair: \"rgba(237,237,237,0.12)\",\n    accent: \"#ec5c13\", accentInk: \"#ec5c13\", accentFill: \"#b84a12\", accentSoft: \"rgba(236,92,19,0.12)\", accentMuted: \"rgba(236,92,19,0.24)\",\n    accentFg: \"#fff2ea\", success: \"#4cc38a\", warning: \"#f2b544\", error: \"#ff5c4d\",\n  },\n  light: {\n    bg: \"#f7f5ef\", stage: \"#f7f5ef\", surface: \"#fffcf6\", raised: \"#f5efe3\", active: \"#efe7d8\",\n    border: \"#eee6db\", borderStrong: \"#e1d7c8\",\n    text: \"#171717\", textMedium: \"rgba(23,23,23,0.72)\", textMuted: \"rgba(23,23,23,0.52)\",\n    textSoft: \"rgba(23,23,23,0.36)\", textFaint: \"rgba(23,23,23,0.22)\", hair: \"rgba(23,23,23,0.10)\",\n    accent: \"#ec7d43\", accentInk: \"#b4531f\", accentFill: \"#ec7d43\", accentSoft: \"rgba(236,125,67,0.10)\", accentMuted: \"rgba(236,125,67,0.20)\",\n    accentFg: \"#3f2112\", success: \"#1f8a55\", warning: \"#a86b00\", error: \"#c8361f\",\n  },\n} as const;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/palette.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/tone.ts",
+      "content": "\"use client\";\n\nimport { useSyncExternalStore } from \"react\";\nimport { useTheme } from \"next-themes\";\nimport type { BjorkTone } from \"./palette\";\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\n/**\n * Resolves the tone for a component. An explicit `tone` always wins.\n * Otherwise it follows next-themes' resolved theme, but only after mount,\n * so the server render and first client render agree on dark.\n */\nexport function useBjorkTone(tone?: BjorkTone): BjorkTone {\n  const { resolvedTheme } = useTheme();\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  if (tone) return tone;\n  if (!mounted) return \"dark\";\n  return resolvedTheme === \"light\" ? \"light\" : \"dark\";\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/tone.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/loop.ts",
+      "content": "\"use client\";\n\nimport { useCallback, useEffect, useMemo, useRef, type RefObject } from \"react\";\n\nexport interface VisibleLoopOptions {\n  enabled?: boolean;\n  fpsCap?: number;\n  rootMargin?: string;\n}\n\n/**\n * Runs `frame(dt, t)` on requestAnimationFrame while the element is near the viewport,\n * the tab is visible and `enabled` is not false. Return `false` from `frame` to go idle\n * until `wake()` is called. Writes `data-loop` on the element: running, idle or paused.\n */\nexport function useVisibleLoop(\n  ref: RefObject<HTMLElement | null>,\n  frame: (dt: number, t: number) => boolean | void,\n  opts?: VisibleLoopOptions,\n): { wake: () => void } {\n  const enabled = opts?.enabled !== false;\n  const fpsCap = opts?.fpsCap ?? 0;\n  const rootMargin = opts?.rootMargin ?? \"96px\";\n\n  const frameRef = useRef(frame);\n  useEffect(() => {\n    frameRef.current = frame;\n  }, [frame]);\n\n  const wakeRef = useRef<() => void>(() => {});\n  const wake = useCallback(() => wakeRef.current(), []);\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el || typeof window === \"undefined\") return;\n\n    let wants = true; // false once the frame callback returns false\n    let inView = false;\n    let raf = 0;\n    let last = 0;\n    let t = 0;\n    const minFrame = fpsCap > 0 ? 1000 / fpsCap : 0;\n\n    const canRun = () => enabled && inView && document.visibilityState === \"visible\";\n    const stop = () => {\n      if (raf) cancelAnimationFrame(raf);\n      raf = 0;\n    };\n\n    const update = () => {\n      if (!enabled) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      if (!wants) {\n        stop();\n        el.dataset.loop = \"idle\";\n        return;\n      }\n      if (!canRun()) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      el.dataset.loop = \"running\";\n      if (!raf) {\n        last = performance.now();\n        raf = requestAnimationFrame(tick);\n      }\n    };\n\n    const tick = (now: number) => {\n      raf = 0;\n      if (!canRun() || !wants) {\n        update();\n        return;\n      }\n      const elapsed = now - last;\n      if (minFrame && elapsed < minFrame - 0.5) {\n        raf = requestAnimationFrame(tick);\n        return;\n      }\n      last = now;\n      const dt = Math.min(0.05, Math.max(0, elapsed / 1000));\n      t += dt;\n      const keep = frameRef.current(dt, t);\n      if (keep === false) {\n        wants = false;\n        update();\n        return;\n      }\n      raf = requestAnimationFrame(tick);\n    };\n\n    const observer = new IntersectionObserver(\n      ([entry]) => {\n        inView = entry.isIntersecting;\n        update();\n      },\n      { rootMargin },\n    );\n    observer.observe(el);\n\n    const onVisibility = () => update();\n    document.addEventListener(\"visibilitychange\", onVisibility);\n\n    wakeRef.current = () => {\n      wants = true;\n      update();\n    };\n\n    update();\n\n    return () => {\n      stop();\n      observer.disconnect();\n      document.removeEventListener(\"visibilitychange\", onVisibility);\n      wakeRef.current = () => {};\n    };\n  }, [ref, enabled, fpsCap, rootMargin]);\n\n  return useMemo(() => ({ wake }), [wake]);\n}\n\n// matchMedia based check. False on the server.\nexport function isCoarsePointer(): boolean {\n  if (typeof window === \"undefined\" || typeof window.matchMedia !== \"function\") return false;\n  return window.matchMedia(\"(pointer: coarse)\").matches;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/loop.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/canvas.ts",
+      "content": "\"use client\";\n\nimport { useEffect, useState, type RefObject } from \"react\";\nimport { isCoarsePointer } from \"./loop\";\n\n// Caps DPR at 1.5 on coarse pointers and 2 otherwise.\nexport function defaultMaxDpr(): number {\n  return isCoarsePointer() ? 1.5 : 2;\n}\n\n// Sets the backing size for a CSS box and returns the DPR used.\nexport function sizeCanvas(\n  canvas: HTMLCanvasElement,\n  cssW: number,\n  cssH: number,\n  maxDpr: number = defaultMaxDpr(),\n): number {\n  const dpr = Math.min(typeof window !== \"undefined\" ? window.devicePixelRatio || 1 : 1, maxDpr);\n  canvas.width = Math.max(1, Math.round(cssW * dpr));\n  canvas.height = Math.max(1, Math.round(cssH * dpr));\n  canvas.style.width = `${cssW}px`;\n  canvas.style.height = `${cssH}px`;\n  return dpr;\n}\n\n// Rounded size of an element, kept current with a ResizeObserver.\nexport function useElementSize(ref: RefObject<HTMLElement | null>): { width: number; height: number } {\n  const [size, setSize] = useState({ width: 0, height: 0 });\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el || typeof ResizeObserver === \"undefined\") return;\n    const observer = new ResizeObserver((entries) => {\n      const box = entries[0]?.contentRect;\n      if (!box) return;\n      const width = Math.round(box.width);\n      const height = Math.round(box.height);\n      setSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));\n    });\n    observer.observe(el);\n    return () => observer.disconnect();\n  }, [ref]);\n\n  return size;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/canvas.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/spring.ts",
+      "content": "// Pure spring math, no React. Units: stiffness k, damping d (coefficient), mass m, time in seconds.\n\nexport interface SpringConfig {\n  stiffness: number;\n  damping: number;\n  mass: number;\n}\n\nexport interface SpringState {\n  x: number;\n  v: number;\n}\n\n// Damping ratio zeta = d / (2 * sqrt(k * m)).\nexport function dampingRatio(c: SpringConfig): number {\n  return c.damping / (2 * Math.sqrt(c.stiffness * c.mass));\n}\n\n// Exact solution of y'' = -(k/m) y - (d/m) y' for displacement y0 and velocity v0 at time t.\n// Returns displacement and velocity together so stepping can be exact, not integrated.\nfunction solveLinear(t: number, c: SpringConfig, y0: number, v0: number): { y: number; v: number } {\n  const w0 = Math.sqrt(c.stiffness / c.mass);\n  const z = dampingRatio(c);\n\n  if (Math.abs(z - 1) < 1e-9) {\n    // Critically damped.\n    const e = Math.exp(-w0 * t);\n    const b = v0 + w0 * y0;\n    return { y: e * (y0 + b * t), v: e * (b - w0 * (y0 + b * t)) };\n  }\n  if (z < 1) {\n    // Underdamped.\n    const wd = w0 * Math.sqrt(1 - z * z);\n    const a = z * w0;\n    const B = (v0 + a * y0) / wd;\n    const e = Math.exp(-a * t);\n    const cos = Math.cos(wd * t);\n    const sin = Math.sin(wd * t);\n    return {\n      y: e * (y0 * cos + B * sin),\n      v: e * (-a * (y0 * cos + B * sin) + wd * (-y0 * sin + B * cos)),\n    };\n  }\n  // Overdamped.\n  const s = w0 * Math.sqrt(z * z - 1);\n  const r1 = -z * w0 + s;\n  const r2 = -z * w0 - s;\n  const B = (v0 - r1 * y0) / (r2 - r1);\n  const A = y0 - B;\n  const e1 = Math.exp(r1 * t);\n  const e2 = Math.exp(r2 * t);\n  return { y: A * e1 + B * e2, v: A * r1 * e1 + B * r2 * e2 };\n}\n\n// Analytic position at time t for a spring from `from` to `to` with initial velocity v0.\nexport function springAt(t: number, c: SpringConfig, from = 0, to = 1, v0 = 0): number {\n  return to + solveLinear(t, c, from - to, v0).y;\n}\n\n// Overshoot as a fraction of the total travel. Zero when critically or overdamped.\nexport function overshoot(c: SpringConfig): number {\n  const z = dampingRatio(c);\n  if (z >= 1) return 0;\n  return Math.exp((-Math.PI * z) / Math.sqrt(1 - z * z));\n}\n\n// Seconds until the spring stays within epsilon of its target (fraction of travel).\n// Found by scanning backwards from a bound derived from the slowest decay rate.\nexport function settleTime(c: SpringConfig, epsilon = 0.001): number {\n  const w0 = Math.sqrt(c.stiffness / c.mass);\n  const z = dampingRatio(c);\n  const slowest = z < 1 ? z * w0 : (z - Math.sqrt(z * z - 1)) * w0;\n  const tEnd = (Math.log(1 / epsilon) / slowest) * 1.5 + 0.05;\n  const steps = 4000;\n  const dt = tEnd / steps;\n  const band = epsilon;\n  let last = 0;\n  for (let i = 0; i <= steps; i++) {\n    const t = i * dt;\n    if (Math.abs(springAt(t, c, 1, 0, 0)) >= band) last = t;\n  }\n  return last + dt;\n}\n\n// Advances the state by dt towards `target`. Uses the exact solution of the linear spring\n// (no integration), so it tracks springAt to rounding error at any step size and stays stable\n// for stiff configs where a fixed-step integrator drifts.\nexport function stepSpring(s: SpringState, target: number, c: SpringConfig, dt: number): void {\n  if (dt <= 0) return;\n  const r = solveLinear(dt, c, s.x - target, s.v);\n  s.x = target + r.y;\n  s.v = r.v;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/spring.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/random.ts",
+      "content": "// Seeded randomness and noise. Deterministic for a given seed, so previews and tests repeat.\n\n// Small fast PRNG. Returns floats in [0, 1).\nexport function mulberry32(seed: number): () => number {\n  let a = seed >>> 0;\n  return () => {\n    a = (a + 0x6d2b79f5) >>> 0;\n    let t = a;\n    t = Math.imul(t ^ (t >>> 15), t | 1);\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;\n  };\n}\n\n// FNV-1a 32-bit.\nexport function hashString(s: string): number {\n  let h = 0x811c9dc5;\n  for (let i = 0; i < s.length; i++) {\n    h ^= s.charCodeAt(i);\n    h = Math.imul(h, 0x01000193);\n  }\n  return h >>> 0;\n}\n\n// Integer lattice hash to [-1, 1].\nfunction latticeHash(seed: number, x: number, y = 0): number {\n  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(seed | 0, 2246822519);\n  h = Math.imul(h ^ (h >>> 13), 1274126177);\n  h ^= h >>> 16;\n  return ((h >>> 0) / 4294967295) * 2 - 1;\n}\n\nfunction smooth(t: number): number {\n  return t * t * (3 - 2 * t);\n}\n\nexport function valueNoise1D(seed: number): (x: number) => number {\n  return (x: number) => {\n    const i = Math.floor(x);\n    const f = x - i;\n    const a = latticeHash(seed, i);\n    const b = latticeHash(seed, i + 1);\n    return a + (b - a) * smooth(f);\n  };\n}\n\nexport function fbm1D(seed: number, octaves = 3): (x: number) => number {\n  const layers = Array.from({ length: octaves }, (_, o) => valueNoise1D(seed + o * 101));\n  let norm = 0;\n  for (let o = 0; o < octaves; o++) norm += 0.5 ** o;\n  return (x: number) => {\n    let sum = 0;\n    let amp = 1;\n    let freq = 1;\n    for (let o = 0; o < octaves; o++) {\n      sum += amp * layers[o](x * freq);\n      amp *= 0.5;\n      freq *= 2;\n    }\n    return sum / norm;\n  };\n}\n\nexport function valueNoise2D(seed: number): (x: number, y: number) => number {\n  return (x: number, y: number) => {\n    const xi = Math.floor(x);\n    const yi = Math.floor(y);\n    const fx = smooth(x - xi);\n    const fy = smooth(y - yi);\n    const a = latticeHash(seed, xi, yi);\n    const b = latticeHash(seed, xi + 1, yi);\n    const c = latticeHash(seed, xi, yi + 1);\n    const d = latticeHash(seed, xi + 1, yi + 1);\n    const top = a + (b - a) * fx;\n    const bottom = c + (d - c) * fx;\n    return top + (bottom - top) * fy;\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/random.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/a11y.tsx",
+      "content": "import type { ReactNode } from \"react\";\n\n// Text for assistive tech only.\nexport function VisuallyHidden({ children }: { children: ReactNode }) {\n  return <span className=\"sr-only\">{children}</span>;\n}\n\n// Announces `message` when it changes. Same text re-rendered does not re-announce.\nexport function LiveRegion({\n  message,\n  politeness = \"polite\",\n}: {\n  message: string;\n  politeness?: \"polite\" | \"assertive\";\n}) {\n  return (\n    <span role=\"status\" aria-live={politeness} aria-atomic=\"true\" className=\"sr-only\">\n      {message}\n    </span>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/a11y.tsx"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "AI",
+    "registryUrl": "https://ui.isaiahbjork.com/handoff-beam.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/handoff-beam.json"
+  },
+  "type": "registry:component"
+}

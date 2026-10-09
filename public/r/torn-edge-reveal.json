@@ -1,0 +1,219 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "torn-edge-reveal",
+  "title": "Torn edge reveal",
+  "description": "Torn edge reveal is a production-ready galleries component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/galleries/torn-edge-reveal.tsx",
+      "content": "\"use client\";\n\nimport {\n  useCallback,\n  useEffect,\n  useLayoutEffect,\n  useMemo,\n  useRef,\n  useState,\n  useSyncExternalStore,\n  type ReactNode,\n} from \"react\";\nimport { motion, useReducedMotion } from \"framer-motion\";\nimport { cn } from \"@/lib/utils\";\nimport type { BjorkTone } from \"@/components/bjork-ui/_core/palette\";\nimport { useBjorkTone } from \"@/components/bjork-ui/_core/tone\";\nimport { useVisibleLoop } from \"@/components/bjork-ui/_core/loop\";\nimport { useElementSize } from \"@/components/bjork-ui/_core/canvas\";\nimport { cubicBezier, springs } from \"@/components/bjork-ui/_core/motion\";\nimport { fbm1D, hashString, valueNoise1D } from \"@/components/bjork-ui/_core/random\";\n\nexport type TornEdge = \"top\" | \"right\" | \"bottom\" | \"left\";\n\nexport interface TornEdgeRevealProps {\n  children: ReactNode;\n  seed?: string | number;\n  edges?: TornEdge[];\n  tearDepth?: number;\n  rimWidth?: number;\n  radius?: number;\n  paperColor?: string;\n  reveal?: \"tear\" | \"fade\" | \"none\";\n  revealOn?: \"inView\" | \"mount\";\n  tearDuration?: number;\n  lift?: boolean;\n  shadow?: \"soft\" | \"lift\" | \"none\";\n  tone?: BjorkTone;\n  attract?: boolean;\n  className?: string;\n}\n\n// Clockwise order. Also the order used to derive per-edge noise seeds.\nconst EDGE_ORDER: readonly TornEdge[] = [\"top\", \"right\", \"bottom\", \"left\"];\nconst SAMPLE_STEP = 6; // px between torn samples\nconst STRIP_SPAN = 24; // px per falling strip\nconst FALL_MS = 420;\nconst MIN_TEAR_SIZE = 48;\nconst ATTRACT_MS = 6000;\nconst ATTRACT_IDLE_MS = 4000;\nconst RESIZE_DEBOUNCE_MS = 100;\nconst HOVER_LIFT = { y: -3, rotate: -0.3 } as const;\nconst easeOut = cubicBezier(0.23, 1, 0.32, 1);\n\n// Paper fibre: fractal noise tinted to 6% brown. Rasterises once.\nconst FIBRE =\n  \"url(\\\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='f'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.4706  0 0 0 0 0.3765  0 0 0 0 0.251  0 0 0 0.06 0'/></filter><rect width='100%' height='100%' filter='url(%23f)'/></svg>\\\")\";\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\ninterface EdgeFrame {\n  x: number;\n  y: number;\n  dx: number;\n  dy: number;\n  nx: number;\n  ny: number;\n  length: number;\n}\n\ninterface TearSample {\n  s: number;\n  depth: number;\n  rim: number;\n}\n\ninterface TearEdge {\n  frame: EdgeFrame;\n  samples: TearSample[];\n  step: number;\n}\n\ninterface TearModel {\n  w: number;\n  h: number;\n  r: number;\n  tears: Partial<Record<TornEdge, TearEdge>>;\n}\n\ninterface StripShape {\n  key: string;\n  edge: TornEdge;\n  uCenter: number;\n  d: string;\n  ox: number;\n  oy: number;\n}\n\ninterface TearOptions {\n  seed: string | number;\n  edges: TornEdge[];\n  tearDepth: number;\n  rimWidth: number;\n  radius: number;\n}\n\nfunction edgeFrame(edge: TornEdge, w: number, h: number): EdgeFrame {\n  // Origin, travel direction (clockwise), and inward normal for each edge.\n  switch (edge) {\n    case \"top\":\n      return { x: 0, y: 0, dx: 1, dy: 0, nx: 0, ny: 1, length: w };\n    case \"right\":\n      return { x: w, y: 0, dx: 0, dy: 1, nx: -1, ny: 0, length: h };\n    case \"bottom\":\n      return { x: w, y: h, dx: -1, dy: 0, nx: 0, ny: -1, length: w };\n    case \"left\":\n      return { x: 0, y: h, dx: 0, dy: -1, nx: 1, ny: 0, length: h };\n  }\n}\n\nfunction pointAt(f: EdgeFrame, s: number, inward: number) {\n  return { x: f.x + f.dx * s + f.nx * inward, y: f.y + f.dy * s + f.ny * inward };\n}\n\nfunction depthAt(tear: TearEdge, s: number): number {\n  const { samples, step } = tear;\n  const i = Math.min(samples.length - 2, Math.max(0, Math.floor(s / step)));\n  const t = Math.min(1, Math.max(0, (s - i * step) / step));\n  return samples[i].depth + (samples[i + 1].depth - samples[i].depth) * t;\n}\n\nfunction buildTearModel(w: number, h: number, opts: TearOptions): TearModel {\n  const r = Math.max(0, Math.min(opts.radius, w / 2, h / 2));\n  const seedNum = typeof opts.seed === \"number\" ? Math.trunc(opts.seed) : hashString(opts.seed);\n  const tears: Partial<Record<TornEdge, TearEdge>> = {};\n  const torn = EDGE_ORDER.filter((edge) => opts.edges.includes(edge));\n  torn.forEach((edge, k) => {\n    const frame = edgeFrame(edge, w, h);\n    const count = Math.max(2, Math.ceil(frame.length / SAMPLE_STEP));\n    const base = seedNum + k * 97;\n    const fbm = fbm1D(base);\n    const vDepth = valueNoise1D(base + 1);\n    const vRim = valueNoise1D(base + 2);\n    const samples: TearSample[] = [];\n    for (let i = 0; i <= count; i++) {\n      const s = (i * frame.length) / count;\n      const t = 1;\n      const depth =\n        Math.max(0, opts.tearDepth * 14 * (0.5 + 0.5 * fbm(s / 90)) + vDepth(s / 7) * 1.2) * t;\n      const rim = opts.rimWidth * (0.6 + 0.8 * (vRim(s / 40) * 0.5 + 0.5)) * t;\n      samples.push({ s, depth, rim });\n    }\n    tears[edge] = { frame, samples, step: frame.length / count };\n  });\n  return { w, h, r, tears };\n}\n\nfunction inwardAt(tear: TearEdge, j: number, p: number, rimMode: boolean): number {\n  const sample = tear.samples[j];\n  const torn = p >= 1 || sample.s / tear.frame.length < p;\n  return torn ? (rimMode ? sample.depth + sample.rim : sample.depth) : 0;\n}\n\n// Outline of the paper (rimMode false) or the media window (rimMode true).\n// Torn samples with normalised position u < p use their offsets. Others are straight.\nfunction outlinePath(m: TearModel, p: number, rimMode: boolean): string {\n  const fmt = (v: number) => v.toFixed(2);\n  const parts: string[] = [];\n  const at = (i: number) => EDGE_ORDER[(i + EDGE_ORDER.length) % EDGE_ORDER.length];\n  const straight = (i: number) => m.tears[at(i)] === undefined;\n  // A corner is rounded only where both edges meeting there are straight.\n  const roundStart = (i: number) => m.r > 0 && straight(i) && straight(i - 1);\n  const roundEnd = (i: number) => m.r > 0 && straight(i) && straight(i + 1);\n  const emit = (kind: \"M\" | \"L\" | \"Q\", pt: { x: number; y: number }, ctrl?: { x: number; y: number }) => {\n    const end = `${fmt(pt.x)} ${fmt(pt.y)}`;\n    if (kind === \"Q\" && ctrl) parts.push(`Q${fmt(ctrl.x)} ${fmt(ctrl.y)} ${end}`);\n    else parts.push(`${kind}${end}`);\n  };\n  let start: { x: number; y: number } | null = null;\n  for (let i = 0; i < EDGE_ORDER.length; i++) {\n    const edge = EDGE_ORDER[i];\n    const f = edgeFrame(edge, m.w, m.h);\n    const corner = { x: f.x, y: f.y };\n    const tear = m.tears[edge];\n    if (tear) {\n      const prev = m.tears[at(i - 1)];\n      const next = m.tears[at(i + 1)];\n      const last = tear.samples.length - 1;\n      for (let j = 0; j < tear.samples.length; j++) {\n        const sample = tear.samples[j];\n        const inward = inwardAt(tear, j, p, rimMode);\n        // Where two torn edges meet, both end on the same inner point, so the corner is cut inward, never spiked.\n        let s = sample.s;\n        if (j === 0 && prev) s = inwardAt(prev, prev.samples.length - 1, p, rimMode);\n        if (j === last && next) s = f.length - inwardAt(next, 0, p, rimMode);\n        const pt = pointAt(f, s, inward);\n        if (start === null) {\n          start = pt;\n          emit(\"M\", pt);\n        } else {\n          emit(\"L\", pt);\n        }\n      }\n      continue;\n    }\n    const rs = roundStart(i) ? m.r : 0;\n    const re = roundEnd(i) ? m.r : 0;\n    const a = pointAt(f, rs, 0);\n    const b = pointAt(f, f.length - re, 0);\n    if (start === null) {\n      start = a;\n      emit(\"M\", a);\n    } else {\n      emit(rs > 0 ? \"Q\" : \"L\", a, corner);\n    }\n    emit(\"L\", b);\n  }\n  // Close back to the start, rounding the top-left corner if it is straight.\n  if (start !== null) {\n    if (roundStart(0)) emit(\"Q\", start, { x: 0, y: 0 });\n    else emit(\"L\", start);\n  }\n  parts.push(\"Z\");\n  return parts.join(\" \");\n}\n\nfunction buildStrips(m: TearModel): StripShape[] {\n  const out: StripShape[] = [];\n  for (const edge of EDGE_ORDER) {\n    const tear = m.tears[edge];\n    if (!tear) continue;\n    const { frame: f } = tear;\n    const count = Math.max(1, Math.ceil(f.length / STRIP_SPAN));\n    for (let k = 0; k < count; k++) {\n      const sa = (k * f.length) / count;\n      const sb = ((k + 1) * f.length) / count;\n      const steps = Math.max(2, Math.ceil((sb - sa) / SAMPLE_STEP));\n      const pts: { x: number; y: number }[] = [];\n      for (let j = 0; j <= steps; j++) {\n        const s = sa + ((sb - sa) * j) / steps;\n        pts.push(pointAt(f, s, depthAt(tear, s)));\n      }\n      for (let j = steps; j >= 0; j--) {\n        const s = sa + ((sb - sa) * j) / steps;\n        pts.push(pointAt(f, s, 0));\n      }\n      const ox = pts.reduce((sum, pt) => sum + pt.x, 0) / pts.length;\n      const oy = pts.reduce((sum, pt) => sum + pt.y, 0) / pts.length;\n      const d = `M${pts.map((pt) => `${pt.x.toFixed(2)} ${pt.y.toFixed(2)}`).join(\" L\")} Z`;\n      out.push({\n        key: `${edge}-${k}`,\n        edge,\n        uCenter: (sa + sb) / 2 / f.length,\n        d,\n        ox,\n        oy,\n      });\n    }\n  }\n  return out;\n}\n\n/** Static torn outline for a box, as a clip-path path string. Same inputs give the same string. */\nexport function tornEdgePath(\n  size: { width: number; height: number },\n  opts: {\n    seed: string | number;\n    edges: TornEdge[];\n    tearDepth: number;\n    radius: number;\n    inset?: number;\n  },\n): string {\n  const model = buildTearModel(size.width, size.height, {\n    seed: opts.seed,\n    edges: opts.edges,\n    tearDepth: opts.tearDepth,\n    rimWidth: opts.inset ?? 0,\n    radius: opts.radius,\n  });\n  return outlinePath(model, 1, opts.inset !== undefined && opts.inset > 0);\n}\n\n/**\n * Mean inward depth of one torn edge, in px. The depth formula's fBm term averages to zero,\n * so the mean is 7 x tearDepth. The component uses it to pull the layout box up to the optical paper edge.\n */\nexport function tornEdgeOffset(tearDepth = 0.6): number {\n  return 7 * tearDepth;\n}\n\nfunction shadowFilter(shadow: \"soft\" | \"lift\" | \"none\", tone: BjorkTone): string | undefined {\n  if (shadow === \"none\") return undefined;\n  const light = tone === \"light\";\n  if (shadow === \"lift\") {\n    return light\n      ? \"drop-shadow(0 20px 36px rgba(66,52,33,0.18))\"\n      : \"drop-shadow(0 20px 32px rgba(0,0,0,0.35))\";\n  }\n  return light\n    ? \"drop-shadow(0 10px 18px rgba(66,52,33,0.18))\"\n    : \"drop-shadow(0 10px 16px rgba(0,0,0,0.35))\";\n}\n\nexport function TornEdgeReveal({\n  children,\n  seed = \"bjork\",\n  edges = [\"bottom\"],\n  tearDepth = 0.6,\n  rimWidth = 4,\n  radius = 4,\n  paperColor = \"#f3eee4\",\n  reveal = \"tear\",\n  revealOn = \"inView\",\n  tearDuration = 700,\n  lift = true,\n  shadow = \"soft\",\n  tone,\n  attract = false,\n  className,\n}: TornEdgeRevealProps) {\n  const resolvedTone = useBjorkTone(tone);\n  const reduceRaw = useReducedMotion();\n  // Gate on mount so the server and first client render agree.\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  const reduce = mounted && reduceRaw === true;\n  const effectiveReveal = reduce ? \"none\" : reveal;\n\n  const rootRef = useRef<HTMLDivElement>(null);\n  const paperRef = useRef<HTMLDivElement>(null);\n  const mediaRef = useRef<HTMLDivElement>(null);\n  const stripRefs = useRef<(HTMLDivElement | null)[]>([]);\n  const modelRef = useRef<TearModel | null>(null);\n  const runRef = useRef({\n    active: false,\n    pending: false,\n    startAt: 0,\n    lastP: null as number | null,\n    fallAt: [] as (number | undefined)[],\n  });\n  const lastInputRef = useRef(0);\n\n  // Measured size, debounced after the first reading so resizes settle before regenerating.\n  const measured = useElementSize(rootRef);\n  const [size, setSize] = useState({ width: 0, height: 0 });\n  useEffect(() => {\n    if (measured.width === size.width && measured.height === size.height) return;\n    const id = window.setTimeout(\n      () => setSize(measured),\n      size.width === 0 ? 0 : RESIZE_DEBOUNCE_MS,\n    );\n    return () => window.clearTimeout(id);\n  }, [measured, size]);\n\n  const [attractStep, setAttractStep] = useState(0);\n  const [started, setStarted] = useState(false);\n  const [stripsOn, setStripsOn] = useState(false);\n\n  const edgeKey = EDGE_ORDER.filter((edge) => edges.includes(edge)).join(\",\");\n  const tearable = size.width >= MIN_TEAR_SIZE && size.height >= MIN_TEAR_SIZE;\n  const seedBase = typeof seed === \"number\" ? Math.trunc(seed) : hashString(seed);\n  const effectiveSeed = seedBase + attractStep;\n\n  const model = useMemo(() => {\n    if (size.width <= 0 || size.height <= 0) return null;\n    const list = edgeKey ? (edgeKey.split(\",\") as TornEdge[]) : [];\n    return buildTearModel(size.width, size.height, {\n      seed: effectiveSeed,\n      edges: tearable ? list : [],\n      tearDepth,\n      rimWidth,\n      radius,\n    });\n  }, [size.width, size.height, effectiveSeed, edgeKey, tearable, tearDepth, rimWidth, radius]);\n\n  const strips = useMemo(\n    () => (model && effectiveReveal === \"tear\" ? buildStrips(model) : []),\n    [model, effectiveReveal],\n  );\n\n  const restP = effectiveReveal === \"tear\" ? 0 : 1;\n\n  const paint = useCallback((p: number) => {\n    const m = modelRef.current;\n    const paper = paperRef.current;\n    const media = mediaRef.current;\n    if (!m || !paper || !media) return;\n    paper.style.clipPath = `path('${outlinePath(m, p, false)}')`;\n    media.style.clipPath = `path('${outlinePath(m, p, true)}')`;\n  }, []);\n\n  // Keep the painted outline in sync with the model, the same frame it changes.\n  useLayoutEffect(() => {\n    modelRef.current = model;\n    paint(runRef.current.lastP ?? restP);\n  }, [model, paint, restP]);\n\n  const frame = useCallback(() => {\n    const r = runRef.current;\n    if (!r.active) return false;\n    const now = performance.now();\n    if (r.pending) {\n      r.pending = false;\n      r.startAt = now;\n      r.lastP = 0;\n      r.fallAt = [];\n      stripRefs.current.forEach((el) => {\n        if (!el) return;\n        el.style.opacity = \"0\";\n        el.style.transform = \"\";\n      });\n    }\n    const elapsed = now - r.startAt;\n    const p = easeOut(Math.min(1, elapsed / tearDuration));\n    r.lastP = p;\n    paint(p);\n    strips.forEach((strip, i) => {\n      const el = stripRefs.current[i];\n      if (!el) return;\n      if (r.fallAt[i] === undefined && p >= strip.uCenter) r.fallAt[i] = elapsed;\n      const fallAt = r.fallAt[i];\n      if (fallAt === undefined) return;\n      const e = easeOut(Math.min(1, (elapsed - fallAt) / FALL_MS));\n      el.style.opacity = String(1 - e);\n      el.style.transform = `translate3d(0, ${(24 * e).toFixed(2)}px, 0) rotate(${(4 * e).toFixed(2)}deg)`;\n    });\n    if (elapsed >= tearDuration + FALL_MS) {\n      r.active = false;\n      r.lastP = 1;\n      paint(1);\n      setStripsOn(false);\n      return false;\n    }\n    return true;\n  }, [paint, strips, tearDuration]);\n\n  const { wake } = useVisibleLoop(rootRef, frame, { enabled: effectiveReveal === \"tear\" });\n\n  const play = useCallback(() => {\n    const r = runRef.current;\n    r.active = true;\n    r.pending = true;\n    setStarted(true);\n    setStripsOn(true);\n    wake();\n  }, [wake]);\n\n  useEffect(() => {\n    if (effectiveReveal === \"none\" || revealOn !== \"mount\") return;\n    const id = window.setTimeout(play, 0);\n    return () => window.clearTimeout(id);\n  }, [effectiveReveal, revealOn, play]);\n\n  useEffect(() => {\n    if (effectiveReveal === \"none\" || revealOn !== \"inView\") return;\n    const el = rootRef.current;\n    if (!el || typeof IntersectionObserver === \"undefined\") {\n      const id = window.setTimeout(play, 0);\n      return () => window.clearTimeout(id);\n    }\n    const io = new IntersectionObserver(\n      (entries) => {\n        if (!entries.some((entry) => entry.isIntersecting)) return;\n        io.disconnect();\n        play();\n      },\n      { threshold: 0.25 },\n    );\n    io.observe(el);\n    return () => io.disconnect();\n  }, [effectiveReveal, revealOn, play]);\n\n  // Attract: replay the tear with the next seed every 6s. Pauses for 4s after any input.\n  useEffect(() => {\n    if (!attract || effectiveReveal !== \"tear\") return;\n    const id = window.setInterval(() => {\n      if (performance.now() - lastInputRef.current < ATTRACT_IDLE_MS) return;\n      setAttractStep((step) => step + 1);\n      play();\n    }, ATTRACT_MS);\n    return () => window.clearInterval(id);\n  }, [attract, effectiveReveal, play]);\n\n  const noteInput = useCallback(() => {\n    lastInputRef.current = performance.now();\n  }, []);\n\n  const bottomTorn = edgeKey.split(\",\").includes(\"bottom\");\n  // Optical: pull the layout box up by the torn edge's mean depth, so rows align on the paper edge.\n  // Value: -tornEdgeOffset(tearDepth), 4.2px at the default depth 0.6. Reason: the rim sits on the paper, not the box.\n  const bottomOffset = bottomTorn ? -tornEdgeOffset(tearDepth) : undefined;\n  const showStrips = stripsOn && effectiveReveal === \"tear\" ? strips : [];\n  const fade = effectiveReveal === \"fade\";\n\n  return (\n    <div\n      ref={rootRef}\n      className={cn(\"relative\", className)}\n      style={{ filter: shadowFilter(shadow, resolvedTone), marginBottom: bottomOffset }}\n      onPointerEnter={noteInput}\n      onPointerDown={noteInput}\n      onKeyDown={noteInput}\n      onFocus={noteInput}\n    >\n      <motion.div\n        className=\"relative\"\n        {...(fade\n          ? {\n              initial: { opacity: 0 },\n              animate: { opacity: started ? 1 : 0 },\n              transition: { duration: 0.24, ease: easeOut },\n            }\n          : {})}\n        whileHover={lift && !reduce ? { ...HOVER_LIFT, transition: springs.standard } : undefined}\n      >\n        <div\n          ref={paperRef}\n          aria-hidden=\"true\"\n          className=\"pointer-events-none absolute inset-0\"\n          style={{ backgroundColor: paperColor, backgroundImage: FIBRE }}\n        />\n        <div ref={mediaRef} className=\"relative\">\n          {children}\n        </div>\n        {showStrips.map((strip, i) => (\n          <div\n            key={strip.key}\n            ref={(el) => {\n              stripRefs.current[i] = el;\n            }}\n            aria-hidden=\"true\"\n            className=\"pointer-events-none absolute inset-0\"\n            style={{\n              opacity: 0,\n              clipPath: `path('${strip.d}')`,\n              transformOrigin: `${strip.ox}px ${strip.oy}px`,\n              backgroundColor: paperColor,\n              backgroundImage: FIBRE,\n            }}\n          />\n        ))}\n      </motion.div>\n    </div>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/galleries/torn-edge-reveal.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/palette.ts",
+      "content": "export type BjorkTone = \"dark\" | \"light\";\n\n// Canvas, WebGL and SVG attribute colours. DOM code uses the CSS tokens with these as fallbacks.\nexport const BJORK_PALETTE = {\n  dark: {\n    bg: \"#050505\", stage: \"#111111\", surface: \"#121212\", raised: \"#161616\", active: \"#202020\",\n    border: \"#232323\", borderStrong: \"#343434\",\n    text: \"#ededed\", textMedium: \"rgba(237,237,237,0.72)\", textMuted: \"rgba(237,237,237,0.52)\",\n    textSoft: \"rgba(237,237,237,0.36)\", textFaint: \"rgba(237,237,237,0.22)\", hair: \"rgba(237,237,237,0.12)\",\n    accent: \"#ec5c13\", accentInk: \"#ec5c13\", accentFill: \"#b84a12\", accentSoft: \"rgba(236,92,19,0.12)\", accentMuted: \"rgba(236,92,19,0.24)\",\n    accentFg: \"#fff2ea\", success: \"#4cc38a\", warning: \"#f2b544\", error: \"#ff5c4d\",\n  },\n  light: {\n    bg: \"#f7f5ef\", stage: \"#f7f5ef\", surface: \"#fffcf6\", raised: \"#f5efe3\", active: \"#efe7d8\",\n    border: \"#eee6db\", borderStrong: \"#e1d7c8\",\n    text: \"#171717\", textMedium: \"rgba(23,23,23,0.72)\", textMuted: \"rgba(23,23,23,0.52)\",\n    textSoft: \"rgba(23,23,23,0.36)\", textFaint: \"rgba(23,23,23,0.22)\", hair: \"rgba(23,23,23,0.10)\",\n    accent: \"#ec7d43\", accentInk: \"#b4531f\", accentFill: \"#ec7d43\", accentSoft: \"rgba(236,125,67,0.10)\", accentMuted: \"rgba(236,125,67,0.20)\",\n    accentFg: \"#3f2112\", success: \"#1f8a55\", warning: \"#a86b00\", error: \"#c8361f\",\n  },\n} as const;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/palette.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/tone.ts",
+      "content": "\"use client\";\n\nimport { useSyncExternalStore } from \"react\";\nimport { useTheme } from \"next-themes\";\nimport type { BjorkTone } from \"./palette\";\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\n/**\n * Resolves the tone for a component. An explicit `tone` always wins.\n * Otherwise it follows next-themes' resolved theme, but only after mount,\n * so the server render and first client render agree on dark.\n */\nexport function useBjorkTone(tone?: BjorkTone): BjorkTone {\n  const { resolvedTheme } = useTheme();\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  if (tone) return tone;\n  if (!mounted) return \"dark\";\n  return resolvedTheme === \"light\" ? \"light\" : \"dark\";\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/tone.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/loop.ts",
+      "content": "\"use client\";\n\nimport { useCallback, useEffect, useMemo, useRef, type RefObject } from \"react\";\n\nexport interface VisibleLoopOptions {\n  enabled?: boolean;\n  fpsCap?: number;\n  rootMargin?: string;\n}\n\n/**\n * Runs `frame(dt, t)` on requestAnimationFrame while the element is near the viewport,\n * the tab is visible and `enabled` is not false. Return `false` from `frame` to go idle\n * until `wake()` is called. Writes `data-loop` on the element: running, idle or paused.\n */\nexport function useVisibleLoop(\n  ref: RefObject<HTMLElement | null>,\n  frame: (dt: number, t: number) => boolean | void,\n  opts?: VisibleLoopOptions,\n): { wake: () => void } {\n  const enabled = opts?.enabled !== false;\n  const fpsCap = opts?.fpsCap ?? 0;\n  const rootMargin = opts?.rootMargin ?? \"96px\";\n\n  const frameRef = useRef(frame);\n  useEffect(() => {\n    frameRef.current = frame;\n  }, [frame]);\n\n  const wakeRef = useRef<() => void>(() => {});\n  const wake = useCallback(() => wakeRef.current(), []);\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el || typeof window === \"undefined\") return;\n\n    let wants = true; // false once the frame callback returns false\n    let inView = false;\n    let raf = 0;\n    let last = 0;\n    let t = 0;\n    const minFrame = fpsCap > 0 ? 1000 / fpsCap : 0;\n\n    const canRun = () => enabled && inView && document.visibilityState === \"visible\";\n    const stop = () => {\n      if (raf) cancelAnimationFrame(raf);\n      raf = 0;\n    };\n\n    const update = () => {\n      if (!enabled) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      if (!wants) {\n        stop();\n        el.dataset.loop = \"idle\";\n        return;\n      }\n      if (!canRun()) {\n        stop();\n        el.dataset.loop = \"paused\";\n        return;\n      }\n      el.dataset.loop = \"running\";\n      if (!raf) {\n        last = performance.now();\n        raf = requestAnimationFrame(tick);\n      }\n    };\n\n    const tick = (now: number) => {\n      raf = 0;\n      if (!canRun() || !wants) {\n        update();\n        return;\n      }\n      const elapsed = now - last;\n      if (minFrame && elapsed < minFrame - 0.5) {\n        raf = requestAnimationFrame(tick);\n        return;\n      }\n      last = now;\n      const dt = Math.min(0.05, Math.max(0, elapsed / 1000));\n      t += dt;\n      const keep = frameRef.current(dt, t);\n      if (keep === false) {\n        wants = false;\n        update();\n        return;\n      }\n      raf = requestAnimationFrame(tick);\n    };\n\n    const observer = new IntersectionObserver(\n      ([entry]) => {\n        inView = entry.isIntersecting;\n        update();\n      },\n      { rootMargin },\n    );\n    observer.observe(el);\n\n    const onVisibility = () => update();\n    document.addEventListener(\"visibilitychange\", onVisibility);\n\n    wakeRef.current = () => {\n      wants = true;\n      update();\n    };\n\n    update();\n\n    return () => {\n      stop();\n      observer.disconnect();\n      document.removeEventListener(\"visibilitychange\", onVisibility);\n      wakeRef.current = () => {};\n    };\n  }, [ref, enabled, fpsCap, rootMargin]);\n\n  return useMemo(() => ({ wake }), [wake]);\n}\n\n// matchMedia based check. False on the server.\nexport function isCoarsePointer(): boolean {\n  if (typeof window === \"undefined\" || typeof window.matchMedia !== \"function\") return false;\n  return window.matchMedia(\"(pointer: coarse)\").matches;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/loop.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/canvas.ts",
+      "content": "\"use client\";\n\nimport { useEffect, useState, type RefObject } from \"react\";\nimport { isCoarsePointer } from \"./loop\";\n\n// Caps DPR at 1.5 on coarse pointers and 2 otherwise.\nexport function defaultMaxDpr(): number {\n  return isCoarsePointer() ? 1.5 : 2;\n}\n\n// Sets the backing size for a CSS box and returns the DPR used.\nexport function sizeCanvas(\n  canvas: HTMLCanvasElement,\n  cssW: number,\n  cssH: number,\n  maxDpr: number = defaultMaxDpr(),\n): number {\n  const dpr = Math.min(typeof window !== \"undefined\" ? window.devicePixelRatio || 1 : 1, maxDpr);\n  canvas.width = Math.max(1, Math.round(cssW * dpr));\n  canvas.height = Math.max(1, Math.round(cssH * dpr));\n  canvas.style.width = `${cssW}px`;\n  canvas.style.height = `${cssH}px`;\n  return dpr;\n}\n\n// Rounded size of an element, kept current with a ResizeObserver.\nexport function useElementSize(ref: RefObject<HTMLElement | null>): { width: number; height: number } {\n  const [size, setSize] = useState({ width: 0, height: 0 });\n\n  useEffect(() => {\n    const el = ref.current;\n    if (!el || typeof ResizeObserver === \"undefined\") return;\n    const observer = new ResizeObserver((entries) => {\n      const box = entries[0]?.contentRect;\n      if (!box) return;\n      const width = Math.round(box.width);\n      const height = Math.round(box.height);\n      setSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));\n    });\n    observer.observe(el);\n    return () => observer.disconnect();\n  }, [ref]);\n\n  return size;\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/canvas.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/motion.ts",
+      "content": "// Shared springs, easings and durations. Components import these instead of inventing values.\n\nexport const springs = {\n  press: { type: \"spring\", stiffness: 500, damping: 30, mass: 0.6 },\n  snappy: { type: \"spring\", stiffness: 400, damping: 25, mass: 1 },\n  standard: { type: \"spring\", stiffness: 300, damping: 30, mass: 0.8 },\n  soft: { type: \"spring\", stiffness: 200, damping: 25, mass: 1.2 },\n  settle: { type: \"spring\", stiffness: 380, damping: 30, mass: 0.8 },\n  blurIn: { type: \"spring\", stiffness: 400, damping: 28, mass: 0.6 },\n} as const;\n\nexport const ease = {\n  out: [0.23, 1, 0.32, 1],\n  inOut: [0.77, 0, 0.175, 1],\n  drawer: [0.32, 0.72, 0, 1],\n} as const;\n\nexport const easeCss = {\n  out: \"cubic-bezier(0.23,1,0.32,1)\",\n  inOut: \"cubic-bezier(0.77,0,0.175,1)\",\n  drawer: \"cubic-bezier(0.32,0.72,0,1)\",\n} as const;\n\nexport const durations = { press: 140, tooltip: 160, menu: 200, panel: 280 } as const; // ms\n\n// Cubic bezier easing for canvas and rAF code. Returns progress y for input x in [0, 1].\nexport function cubicBezier(x1: number, y1: number, x2: number, y2: number): (t: number) => number {\n  const cx = 3 * x1;\n  const bx = 3 * (x2 - x1) - cx;\n  const ax = 1 - cx - bx;\n  const cy = 3 * y1;\n  const by = 3 * (y2 - y1) - cy;\n  const ay = 1 - cy - by;\n  const sampleX = (s: number) => ((ax * s + bx) * s + cx) * s;\n  const sampleY = (s: number) => ((ay * s + by) * s + cy) * s;\n  const sampleDX = (s: number) => (3 * ax * s + 2 * bx) * s + cx;\n\n  const solveX = (x: number) => {\n    let s = x;\n    for (let i = 0; i < 8; i++) {\n      const err = sampleX(s) - x;\n      if (Math.abs(err) < 1e-6) return s;\n      const d = sampleDX(s);\n      if (Math.abs(d) < 1e-6) break;\n      s -= err / d;\n    }\n    let lo = 0;\n    let hi = 1;\n    s = x;\n    while (lo < hi) {\n      const v = sampleX(s);\n      if (Math.abs(v - x) < 1e-6) return s;\n      if (x > v) lo = s;\n      else hi = s;\n      s = (lo + hi) / 2;\n      if (hi - lo < 1e-7) break;\n    }\n    return s;\n  };\n\n  return (t: number) => {\n    if (t <= 0) return 0;\n    if (t >= 1) return 1;\n    return sampleY(solveX(t));\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/motion.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/random.ts",
+      "content": "// Seeded randomness and noise. Deterministic for a given seed, so previews and tests repeat.\n\n// Small fast PRNG. Returns floats in [0, 1).\nexport function mulberry32(seed: number): () => number {\n  let a = seed >>> 0;\n  return () => {\n    a = (a + 0x6d2b79f5) >>> 0;\n    let t = a;\n    t = Math.imul(t ^ (t >>> 15), t | 1);\n    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);\n    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;\n  };\n}\n\n// FNV-1a 32-bit.\nexport function hashString(s: string): number {\n  let h = 0x811c9dc5;\n  for (let i = 0; i < s.length; i++) {\n    h ^= s.charCodeAt(i);\n    h = Math.imul(h, 0x01000193);\n  }\n  return h >>> 0;\n}\n\n// Integer lattice hash to [-1, 1].\nfunction latticeHash(seed: number, x: number, y = 0): number {\n  let h = Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263) ^ Math.imul(seed | 0, 2246822519);\n  h = Math.imul(h ^ (h >>> 13), 1274126177);\n  h ^= h >>> 16;\n  return ((h >>> 0) / 4294967295) * 2 - 1;\n}\n\nfunction smooth(t: number): number {\n  return t * t * (3 - 2 * t);\n}\n\nexport function valueNoise1D(seed: number): (x: number) => number {\n  return (x: number) => {\n    const i = Math.floor(x);\n    const f = x - i;\n    const a = latticeHash(seed, i);\n    const b = latticeHash(seed, i + 1);\n    return a + (b - a) * smooth(f);\n  };\n}\n\nexport function fbm1D(seed: number, octaves = 3): (x: number) => number {\n  const layers = Array.from({ length: octaves }, (_, o) => valueNoise1D(seed + o * 101));\n  let norm = 0;\n  for (let o = 0; o < octaves; o++) norm += 0.5 ** o;\n  return (x: number) => {\n    let sum = 0;\n    let amp = 1;\n    let freq = 1;\n    for (let o = 0; o < octaves; o++) {\n      sum += amp * layers[o](x * freq);\n      amp *= 0.5;\n      freq *= 2;\n    }\n    return sum / norm;\n  };\n}\n\nexport function valueNoise2D(seed: number): (x: number, y: number) => number {\n  return (x: number, y: number) => {\n    const xi = Math.floor(x);\n    const yi = Math.floor(y);\n    const fx = smooth(x - xi);\n    const fy = smooth(y - yi);\n    const a = latticeHash(seed, xi, yi);\n    const b = latticeHash(seed, xi + 1, yi);\n    const c = latticeHash(seed, xi, yi + 1);\n    const d = latticeHash(seed, xi + 1, yi + 1);\n    const top = a + (b - a) * fx;\n    const bottom = c + (d - c) * fx;\n    return top + (bottom - top) * fy;\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/random.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Galleries",
+    "registryUrl": "https://ui.isaiahbjork.com/torn-edge-reveal.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/torn-edge-reveal.json"
+  },
+  "type": "registry:component"
+}
