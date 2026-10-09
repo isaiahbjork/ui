@@ -384,7 +384,7 @@ export function DeploymentCard({
               aria-label="Build log"
               tabIndex={0}
               className={cn(
-                "h-[168px] overflow-y-auto overscroll-contain rounded-[10px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-card-inset)] py-2 font-mono text-[11px] leading-[18px]",
+                "h-[168px] overflow-y-auto overscroll-contain rounded-[10px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-card-inset)] shadow-[var(--bjork-shadow-inset)] py-2 font-mono text-[11px] leading-[18px]",
                 focusRing,
               )}
             >

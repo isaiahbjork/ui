@@ -299,8 +299,8 @@ export function NowPlayingCard({
           <span
             aria-hidden="true"
             className={cn(
-              "absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--bjork-text)] shadow-[0_1px_3px_rgba(0,0,0,0.4)] transition-transform duration-150 motion-reduce:transition-none",
-              dragging ? "scale-100" : "scale-0 group-hover:scale-100 group-focus-visible:scale-100",
+              "absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[color:var(--bjork-text)] shadow-[0_1px_3px_rgba(0,0,0,0.4)] transition-[opacity,transform] duration-150 motion-reduce:transition-none",
+              dragging ? "scale-100" : "scale-90 opacity-0 group-hover:scale-100 group-hover:opacity-100 group-focus-visible:scale-100 group-focus-visible:opacity-100",
             )}
             style={{ left: `${pct * 100}%` }}
           />

@@ -204,7 +204,7 @@ export function AnimatedRadialChart({
           transition={{ duration: shouldReduceMotion ? 0.15 : 0.5, delay: shouldReduceMotion ? 0 : animationDuration * 0.75 }}
         >
           {isLightTone ? (
-            <span className="text-[#242424]">
+            <span className="text-[color:var(--bjork-text-faint)]">
               <span>{displayValue}</span>%
             </span>
           ) : (

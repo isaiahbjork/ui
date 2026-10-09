@@ -160,7 +160,7 @@ export function AIVoiceInput({
                     <div
                       key={i}
                       className={cn(
-                        "w-0.5 rounded-full transition-all duration-300",
+                        "w-0.5 rounded-full transition-[background-color,border-color,color,opacity,transform] duration-300",
                         isVoiceActive
                           ? "animate-pulse bg-[var(--bjork-accent)] opacity-80"
                           : "h-1 bg-[var(--bjork-text-faint)] opacity-45"
