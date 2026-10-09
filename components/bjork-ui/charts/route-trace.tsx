@@ -141,8 +141,8 @@ const TRACE_COLOUR: Record<BjorkTone, { trace: string; glow: string }> = {
 
 const ROUTE_CSS = `
 @keyframes bjork-route-packet {
-  from { stroke-dashoffset: 0; }
-  to { stroke-dashoffset: calc(-1 * var(--rt-len, 0)); }
+  from { stroke-dashoffset: 0px; }
+  to { stroke-dashoffset: calc(-1 * var(--rt-len, 0px)); }
 }
 [data-route-trace][data-loop="paused"] .bjork-route-packet { animation-play-state: paused !important; }
 `;
@@ -745,7 +745,8 @@ export function RouteTrace({
                           animationIterationCount: animate ? "infinite" : undefined,
                           animationDelay: animate ? `-${fmt(delay)}s` : undefined,
                           animationPlayState: frozen || st === "down" ? "paused" : "running",
-                          "--rt-len": fmt(r.length),
+                          // A length, not a bare number: Chrome steps a unitless calc() offset instead of tweening it.
+                          "--rt-len": `${fmt(r.length)}px`,
                         } as CSSProperties
                       }
                     />
