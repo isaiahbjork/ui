@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import type { BjorkTone } from "@/components/bjork-ui/_core/palette";
 import { useChartCanvas, easeOut } from "@/components/bjork-ui/charts/_kit/canvas";
 import { useChartTheme, chartFocusRing, ChartTable, ChartAnnouncer, type AnnouncerHandle } from "@/components/bjork-ui/charts/_kit/chrome";
-import { clamp, crisp, damp, niceTicks, withAlpha, formatPercent, formatCompact } from "@/components/bjork-ui/charts/_kit/scale";
+import { clamp, crisp, damp, niceTicks, withAlpha, formatPercent, formatCompact, formatFixed, formatSigned } from "@/components/bjork-ui/charts/_kit/scale";
 
 export interface Candle {
   t: number;
@@ -63,12 +63,13 @@ const PRICE_LABELS = 6;
 const TABLE_COLUMNS = ["Date", "Open", "High", "Low", "Close", "Volume"];
 const TIME_LABELS = 10;
 
-const defaultFormatPrice = (v: number) =>
-  new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(v);
+// Cached formatter: this runs for every price label on every frame of a zoom.
+const defaultFormatPrice = (v: number) => formatFixed(v, 2);
 
 const defaultFormatVolume = (v: number) => formatCompact(v);
-const axisDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" });
-const fullDate = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+// UTC like the rest of the kit, so a midnight-UTC candle never shows as the previous day.
+const axisDate = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+const fullDate = new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 const defaultFormatTime = (t: number, detail: "axis" | "full") => (detail === "axis" ? axisDate : fullDate).format(t);
 
 interface RunState {
@@ -496,13 +497,16 @@ export function CandlestickChart({
         ctx.stroke();
         if (priceTag) {
           const v = range.hi - ((s.pointerY - plot.t) / pH) * (range.hi - range.lo);
-          priceTag.textContent = c.formatPrice(v);
+          const pt = c.formatPrice(v);
+          if (priceTag.textContent !== pt) priceTag.textContent = pt;
           priceTag.style.transform = `translate3d(${(plot.r + 4).toFixed(1)}px, ${(s.pointerY - 11).toFixed(2)}px, 0)`;
           priceTag.style.opacity = "1";
         }
       } else if (priceTag) priceTag.style.opacity = "0";
       if (timeTag) {
-        timeTag.textContent = c.formatTime(rows[cur].t, "axis");
+        // Write only on change, so the width read below doesn't force a layout every frame.
+        const tt = c.formatTime(rows[cur].t, "axis");
+        if (timeTag.textContent !== tt) timeTag.textContent = tt;
         const tw = timeTag.offsetWidth;
         const tx = clamp(xOf(cur) - tw / 2, plot.l, plot.r - tw);
         timeTag.style.transform = `translate3d(${tx.toFixed(1)}px, ${(h - PAD_BOTTOM + 2).toFixed(1)}px, 0)`;
@@ -527,7 +531,7 @@ export function CandlestickChart({
         c.formatPrice(rr.h),
         c.formatPrice(rr.l),
         c.formatPrice(rr.c),
-        `${chg >= 0 ? "+" : ""}${formatPercent(chg, 2)}`,
+        formatSigned(chg, (v) => formatPercent(v, 2)),
         rows[ri].v !== undefined ? c.formatVolume(rows[ri].v!) : "",
       ];
       spans.forEach((el, k) => {
@@ -619,7 +623,8 @@ export function CandlestickChart({
     s.cursor = i;
     s.cursorSource = i === null ? null : source;
     onCursorChange?.(i, i === null ? null : data[i] ?? null);
-    if (i !== null) say(describe(i));
+    // Speak keyboard moves only; a pointer sweep would flood the live region.
+    if (i !== null && source === "keyboard") say(describe(i));
     wake();
   };
 
@@ -648,6 +653,11 @@ export function CandlestickChart({
     const s = st.current;
     s.drag = { x: pt.x, vs: s.ts, ve: s.te, id: e.pointerId, moved: false };
     e.currentTarget.setPointerCapture(e.pointerId);
+    // A tap on touch has no hover, so it places the crosshair itself.
+    if (e.pointerType === "touch" && pt.x >= s.plot.l && pt.x <= s.plot.r && pt.y >= s.plot.t && pt.y <= s.plot.vb) {
+      s.pointerY = pt.y;
+      setCursor(indexAt(pt.x), "pointer");
+    }
   };
 
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
