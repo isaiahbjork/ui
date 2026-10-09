@@ -18,7 +18,7 @@ import {
   type AnnouncerHandle,
   type TooltipContent,
 } from "@/components/bjork-ui/charts/_kit/chrome";
-import { clamp, crisp, damp, niceDomain, niceTicks, withAlpha, formatNumber, gaussian } from "@/components/bjork-ui/charts/_kit/scale";
+import { clamp, crisp, damp, niceDomain, niceTicks, quantile, withAlpha, formatNumber, gaussian } from "@/components/bjork-ui/charts/_kit/scale";
 
 export interface SwarmItem {
   id: string;
@@ -36,13 +36,18 @@ export interface SwarmBand {
 }
 
 export interface BeeswarmProps {
+  /** One dot per item. x is the exact value; packing only moves dots off the axis, and the radius shrinks until the swarm fits the height. */
   items: SwarmItem[];
+  /** "log" needs positive values; non-positive ones are left out of the plot (they stay in the table). */
   scale?: "linear" | "log";
+  /** Fixed value domain. Auto by default (nice on linear, whole decades on log). */
   domain?: [number, number];
   bands?: SwarmBand[];
   /** Item drawn in the accent with a ring. */
   highlightId?: string | null;
+  /** Called on click, or Enter/Space on the keyboard-focused dot. */
   onSelect?: (item: SwarmItem) => void;
+  /** Preferred dot radius in px; it shrinks when the swarm would overflow. */
   radius?: number;
   formatValue?: (v: number) => string;
   height?: number;
@@ -63,6 +68,7 @@ const X_LABELS = 12;
 const BAND_LABELS = 6;
 const ATTRACT_STEP_MS = 1400;
 const ATTRACT_IDLE_MS = 4000;
+const OFF_PLOT = -1e5;
 const settle = cubicBezier(0.34, 1.36, 0.64, 1); // a small overshoot on landing
 
 const clock = () => performance.now();
@@ -109,6 +115,7 @@ function layoutSwarm(xs: Float64Array, order: number[], r0: number, halfH: numbe
 interface Run {
   key: string;
   idsKey: string;
+  items: SwarmItem[] | null;
   xs: Float64Array;
   ys: Float64Array;
   dx: Float64Array;
@@ -174,6 +181,7 @@ export function Beeswarm({
   const st = useRef<Run>({
     key: "",
     idsKey: "",
+    items: null,
     xs: new Float64Array(0),
     ys: new Float64Array(0),
     dx: new Float64Array(0),
@@ -211,11 +219,21 @@ export function Beeswarm({
 
     // Layout when data, scale or size change. Existing dots glide to their new places.
     const key = `${n}|${c.scale}|${d0}|${d1}|${w}|${h}|${c.radius}|${I[0]?.id}|${I[n - 1]?.id}`;
-    if (key !== s.key) {
+    if (key !== s.key || I !== s.items) {
+      s.items = I;
       const xs = new Float64Array(n);
-      for (let i = 0; i < n; i++) xs[i] = xOf(I[i].value);
+      // Values the scale can't place (non-finite, or non-positive on log) park far off the plot and are not drawn.
+      for (let i = 0; i < n; i++) {
+        const v = I[i].value;
+        xs[i] = Number.isFinite(v) && (!log || v > 0) ? xOf(v) : OFF_PLOT;
+      }
       const order = Array.from({ length: n }, (_, i) => i).sort((a, b) => xs[a] - xs[b]);
-      const { ys, r } = layoutSwarm(xs, order, c.radius, (plot.b - plot.t) / 2 - 2);
+      const { ys, r } = layoutSwarm(
+        xs,
+        order.filter((i) => xs[i] !== OFF_PLOT),
+        c.radius,
+        (plot.b - plot.t) / 2 - 2,
+      );
       const idsKey = `${I[0]?.id}|${I[n - 1]?.id}|${n}`;
       const sameItems = s.hasLayout && s.idsKey === idsKey;
       s.idsKey = idsKey;
@@ -322,6 +340,7 @@ export function Beeswarm({
         y = plot.t - 20 + (y - (plot.t - 20)) * settle(k);
         alpha = Math.min(1, k * 3);
       }
+      if (s.xs[i] === OFF_PLOT) continue;
       const it = I[i];
       if (it.id === c.highlightId) {
         hlIndex = i;
@@ -475,6 +494,16 @@ export function Beeswarm({
 
   const tableRows = useMemo(() => [...items].sort((a, b) => a.value - b.value).map((it) => [it.label ?? it.id, it.group ?? "", formatValue(it.value)]), [items, formatValue]);
   const tableCols = useMemo(() => ["Item", "Group", "Value"], []);
+  const summary = useMemo(() => {
+    const vs = items.map((it) => it.value).filter(Number.isFinite).sort((a, b) => a - b);
+    if (!vs.length) return `${ariaLabel}: no items`;
+    const parts = [`${ariaLabel}: ${items.length} items from ${formatValue(vs[0])} to ${formatValue(vs[vs.length - 1])}, median ${formatValue(quantile(vs, 0.5))}`];
+    for (const b of bands) {
+      const k = vs.filter((v) => (b.from === undefined || v >= b.from) && (b.to === undefined || v <= b.to)).length;
+      parts.push(`${k} in ${b.label}`);
+    }
+    return parts.join(", ");
+  }, [items, bands, formatValue, ariaLabel]);
 
   return (
     <div ref={rootRef} data-loop="idle" className={cn("relative w-full select-none text-[color:var(--bjork-text)]", className)} style={{ ...vars, height }}>
@@ -501,7 +530,7 @@ export function Beeswarm({
         className={cn("absolute inset-0 cursor-crosshair touch-pan-y rounded-[10px]", chartFocusRing)}
       >
         <div ref={hostRef} className="absolute inset-0">
-          <canvas ref={canvasRef} role="img" aria-label={`${ariaLabel}: ${items.length} items`} className="pointer-events-none absolute left-0 top-0" />
+          <canvas ref={canvasRef} role="img" aria-label={summary} className="pointer-events-none absolute left-0 top-0" />
         </div>
         <LabelPool count={X_LABELS} pool={xPool} />
         <LabelPool count={BAND_LABELS} pool={bandPool} className="font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]" />
