@@ -1,11 +1,14 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import { BjorkInput } from "@/components/bjork-ui/primitives/input";
-import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import {
+  ShellActions,
+  ShellSwitch,
+  SimpleComponentDemoPage,
+} from "@/components/bjork-ui/component-demo-shell";
 import { SolarSkyPanel } from "@/components/bjork-ui/cards/solar-sky-panel";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -47,7 +50,6 @@ export default function Page() {
   const isPreview = usePreviewMode();
   const [day, setDay] = useState("");
   const [returnToNow, setReturnToNow] = useState(true);
-  const switchId = useId();
 
   const panelDate = (zone: string) => {
     if (isPreview) return zonedInstant(PREVIEW_LOCAL, zone);
@@ -55,26 +57,10 @@ export default function Page() {
     return day ? zonedInstant(`${day}T12:00`, zone) : undefined;
   };
 
-  const controls = (
-    <div className="flex flex-wrap items-center justify-center gap-3">
-      <BjorkInput
-        type="date"
-        aria-label="Day"
-        value={day}
-        onChange={(event) => setDay(event.target.value)}
-        className="w-auto"
-      />
-      <BjorkButton size="sm" variant="outline" onClick={() => setDay("")}>
-        Now
-      </BjorkButton>
-      <div className="flex items-center gap-2">
-        <BjorkSwitch id={switchId} checked={returnToNow} onCheckedChange={setReturnToNow} />
-        <label htmlFor={switchId} className="text-sm">
-          Return to now
-        </label>
-      </div>
-    </div>
-  );
+  const reset = () => {
+    setDay("");
+    setReturnToNow(true);
+  };
 
   return (
     <SimpleComponentDemoPage
@@ -98,6 +84,25 @@ export function Demo() {
       // The shell scales the demo to fit a 340px base on phones. The capture frame gives three panels about 80% of the 900px clip.
       previewScaleClassName="w-[340px]"
       previewCaptureScaleClassName="w-[1000px] scale-[0.8]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellActions label="Day">
+            <BjorkInput
+              type="date"
+              aria-label="Day"
+              value={day}
+              onChange={(event) => setDay(event.target.value)}
+              className="w-auto"
+            />
+            <BjorkButton size="sm" variant="secondary" onClick={() => setDay("")}>
+              Now
+            </BjorkButton>
+          </ShellActions>
+          <ShellSwitch label="Return to now" checked={returnToNow} onCheckedChange={setReturnToNow} />
+        </>
+      }
     >
       <div className="flex w-full min-w-0 flex-col items-center gap-5">
         <div className="flex w-full max-w-[920px] flex-wrap justify-center gap-4">
@@ -114,7 +119,6 @@ export function Demo() {
             />
           ))}
         </div>
-        {!isPreview && controls}
       </div>
     </SimpleComponentDemoPage>
   );

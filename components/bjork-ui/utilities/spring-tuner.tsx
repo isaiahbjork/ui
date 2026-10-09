@@ -25,6 +25,7 @@ import {
 } from "@/components/bjork-ui/_core/spring";
 import { springs } from "@/components/bjork-ui/_core/motion";
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
+import { BJORK_SURFACE } from "@/components/bjork-ui/_core/surface";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import { useVisibleLoop } from "@/components/bjork-ui/_core/loop";
 
@@ -450,7 +451,7 @@ export function SpringTuner({
         ...rangeVars,
         background: panel,
         borderColor: border,
-        boxShadow: tok("shadow-panel", "none"),
+        boxShadow: BJORK_SURFACE[resolvedTone].shadowSurface,
         color: textColor,
       }}
       className={cn(

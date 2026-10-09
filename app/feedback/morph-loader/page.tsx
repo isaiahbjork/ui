@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
+import {
+  ShellActions,
+  ShellSegmented,
+  SimpleComponentDemoPage,
+} from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import { MorphLoader, type MorphState, type MorphTarget } from "@/components/bjork-ui/feedback/morph-loader";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
@@ -25,31 +29,8 @@ const stateOptions = [
 
 type DeployPhase = "idle" | "deploying" | "deployed";
 
-// Row 1: a button that shows a 16px loader, then morphs to a check.
-function DeployButton() {
-  const [phase, setPhase] = useState<DeployPhase>("idle");
-
-  useEffect(() => {
-    if (phase !== "deploying") return;
-    const id = window.setTimeout(() => setPhase("deployed"), 1800);
-    return () => window.clearTimeout(id);
-  }, [phase]);
-
-  const label = phase === "idle" ? "Deploy" : phase === "deploying" ? "Deploying…" : "Deployed";
-
-  return (
-    <BjorkButton
-      type="button"
-      onClick={() => setPhase("deploying")}
-      className="min-w-[156px] justify-center has-[>[role=status]:first-child]:pl-3.5"
-    >
-      {phase !== "idle" ? (
-        <MorphLoader size={16} state={phase === "deploying" ? "loading" : "done"} labels={{ loading: "", done: "" }} />
-      ) : null}
-      {label}
-    </BjorkButton>
-  );
-}
+const DEFAULT_TARGET: MorphTarget = "check";
+const DEFAULT_ROW_STATE: MorphState = "done";
 
 function Caption({ children }: { children: ReactNode }) {
   return (
@@ -73,8 +54,25 @@ function TileSample() {
 
 export default function Page() {
   const preview = usePreviewMode();
-  const [target, setTarget] = useState<MorphTarget>("check");
-  const [rowState, setRowState] = useState<MorphState>("done");
+  const [target, setTarget] = useState<MorphTarget>(DEFAULT_TARGET);
+  const [rowState, setRowState] = useState<MorphState>(DEFAULT_ROW_STATE);
+  const [deployPhase, setDeployPhase] = useState<DeployPhase>("idle");
+
+  // The deploy button shows a 16px loader, then morphs to a check after 1.8s.
+  useEffect(() => {
+    if (deployPhase !== "deploying") return;
+    const id = window.setTimeout(() => setDeployPhase("deployed"), 1800);
+    return () => window.clearTimeout(id);
+  }, [deployPhase]);
+
+  const deployLabel =
+    deployPhase === "idle" ? "Deploy" : deployPhase === "deploying" ? "Deploying…" : "Deployed";
+
+  const reset = () => {
+    setTarget(DEFAULT_TARGET);
+    setRowState(DEFAULT_ROW_STATE);
+    setDeployPhase("idle");
+  };
 
   return (
     <SimpleComponentDemoPage
@@ -94,12 +92,44 @@ export default function Page() {
       details={<TileSample />}
       previewScaleClassName="w-[340px]"
       previewCaptureScaleClassName="w-[640px] scale-[1.15]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellActions label="Action">
+            <BjorkButton
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={() => setDeployPhase("deploying")}
+              className="min-w-[156px] justify-center has-[>[role=status]:first-child]:pl-3.5"
+            >
+              {deployPhase !== "idle" ? (
+                <MorphLoader
+                  size={16}
+                  state={deployPhase === "deploying" ? "loading" : "done"}
+                  labels={{ loading: "", done: "" }}
+                />
+              ) : null}
+              {deployLabel}
+            </BjorkButton>
+          </ShellActions>
+          <ShellSegmented
+            label="Target"
+            value={target}
+            options={targetOptions}
+            onChange={(value) => setTarget(value as MorphTarget)}
+          />
+          <ShellSegmented
+            label="State"
+            value={rowState}
+            options={stateOptions}
+            onChange={(value) => setRowState(value as MorphState)}
+          />
+        </>
+      }
     >
       <div className="flex w-[min(640px,calc(100vw-56px))] flex-col items-center gap-12 py-6">
-        <div className="flex flex-col items-center gap-3">
-          <DeployButton />
-        </div>
-
         <div className="flex items-end justify-center gap-12">
           <div className="flex flex-col items-center gap-3">
             <MorphLoader size={24} state="loading" />
@@ -117,22 +147,6 @@ export default function Page() {
 
         <div className="flex flex-col items-center gap-6">
           <MorphLoader size={preview ? 112 : 64} state={rowState} target={target} progress={preview ? 0.75 : undefined} />
-          {!preview ? (
-            <div className="flex w-[min(320px,calc(100vw-56px))] flex-col gap-2">
-              <ShellSegmented
-                label="Target"
-                value={target}
-                options={targetOptions}
-                onChange={(value) => setTarget(value as MorphTarget)}
-              />
-              <ShellSegmented
-                label="State"
-                value={rowState}
-                options={stateOptions}
-                onChange={(value) => setRowState(value as MorphState)}
-              />
-            </div>
-          ) : null}
         </div>
       </div>
     </SimpleComponentDemoPage>
