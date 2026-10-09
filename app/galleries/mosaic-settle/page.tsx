@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ShellSegmented, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { MosaicSettle } from "@/components/bjork-ui/galleries/mosaic-settle";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
@@ -11,14 +11,16 @@ const item = getGalleryItem("mosaic-settle");
 
 // Demo plates generated for the library (Wave 0), never borrowed art.
 const PLATES = [
-  "/images/plates/plate-01.webp",
-  "/images/plates/plate-02.webp",
-  "/images/plates/plate-03.webp",
-  "/images/plates/plate-04.webp",
-  "/images/plates/plate-05.webp",
-  "/images/plates/plate-06.webp",
+  { src: "/images/plates/plate-01.webp", alt: "Dusk dune plate" },
+  { src: "/images/plates/plate-02.webp", alt: "Concrete plate" },
+  { src: "/images/plates/plate-03.webp", alt: "Ember plate" },
+  { src: "/images/plates/plate-04.webp", alt: "Tide plate" },
 ];
-const PLATE_ALTS = ["Dusk dune plate", "Concrete plate", "Ember plate", "Tide plate", "Paper plate", "Signal plate"];
+const SRC_LIST = PLATES.map((plate) => plate.src);
+// Preview pose: 1 and 2 settled, 3 frozen mid-settle, 4 a static churn frame.
+const PREVIEW_PROGRESS: (number | undefined)[] = [undefined, undefined, 0.55, 0];
+const PENDING_MS = 1800;
+const STAGGER_MS = 150;
 
 type PaletteName = "ember" | "ocean" | "mono";
 type MechanicName = "organic" | "sweep";
@@ -26,19 +28,23 @@ type MechanicName = "organic" | "sweep";
 export default function Page() {
   const isPreview = usePreviewMode();
   const attract = usePreviewSearchParam("attract") === "1";
-  const [pending, setPending] = useState(false);
+  const [pending, setPending] = useState([false, false, false, false]);
   const [palette, setPalette] = useState<PaletteName>("ember");
   const [mechanic, setMechanic] = useState<MechanicName>("organic");
-  const [plate, setPlate] = useState("01");
-  const [log, setLog] = useState("No callbacks yet");
-  const replayTimer = useRef(0);
+  const [cellSize, setCellSize] = useState("14");
+  const timers = useRef<number[]>([]);
 
-  const plateIndex = Math.max(0, Number(plate) - 1);
+  useEffect(() => () => timers.current.forEach((id) => window.clearTimeout(id)), []);
 
-  const replay = () => {
-    setPending(true);
-    window.clearTimeout(replayTimer.current);
-    replayTimer.current = window.setTimeout(() => setPending(false), 1400);
+  // All four go pending for 1.8s, then settle 150ms apart.
+  const regenerate = () => {
+    timers.current.forEach((id) => window.clearTimeout(id));
+    setPending([true, true, true, true]);
+    timers.current = PLATES.map((_, i) =>
+      window.setTimeout(() => {
+        setPending((prev) => prev.map((value, j) => (j === i ? false : value)));
+      }, PENDING_MS + i * STAGGER_MS),
+    );
   };
 
   const details = (
@@ -63,18 +69,15 @@ export default function Page() {
         onChange={(v) => setMechanic(v as MechanicName)}
       />
       <ShellSegmented
-        label="Plate"
-        value={plate}
-        options={PLATES.map((_, i) => ({ value: String(i + 1).padStart(2, "0"), label: String(i + 1).padStart(2, "0") }))}
-        onChange={setPlate}
+        label="Cell size"
+        value={cellSize}
+        options={[
+          { value: "8", label: "8" },
+          { value: "14", label: "14" },
+          { value: "24", label: "24" },
+        ]}
+        onChange={setCellSize}
       />
-      <div className="flex items-center justify-between gap-3">
-        {/* tabIndex is explicit so server and client render the same attribute under reduced motion (shared BjorkButton issue). */}
-        <BjorkButton variant="outline" size="sm" tabIndex={0} onClick={replay}>
-          Replay
-        </BjorkButton>
-        <span className="font-mono text-[12px] text-[color:var(--bjork-text-muted)]">{log}</span>
-      </div>
     </div>
   );
 
@@ -90,30 +93,36 @@ export default function Page() {
   palette="ember"
   mechanic="sweep"
   onSettled={() => console.log("settled")}
-  onError={() => console.log("failed")}
 />`}
       details={details}
-      previewScaleClassName="w-[420px]"
-      previewCaptureScaleClassName="w-[560px]"
+      // The grid already sizes itself to the viewport, so the phone fit must not shrink it again.
+      previewScaleClassName="w-[320px]"
+      previewCaptureScaleClassName="w-[920px] scale-[0.8]"
     >
-      {isPreview ? (
-        <MosaicSettle src={PLATES[0]} alt={PLATE_ALTS[0]} pending={false} palette="ember" />
-      ) : (
-        <div className="w-[min(560px,calc(100vw-56px))] min-w-0">
-          <MosaicSettle
-            src={PLATES[plateIndex]}
-            srcList={PLATES}
-            alt={PLATE_ALTS[plateIndex]}
-            caption={`Plate ${plate}`}
-            pending={pending}
-            palette={palette}
-            mechanic={mechanic}
-            attract={attract}
-            onSettled={() => setLog("onSettled fired")}
-            onError={() => setLog("onError fired")}
-          />
+      <div className="flex w-[min(640px,calc(100vw-56px))] min-w-0 flex-col items-center gap-5">
+        <div className="grid w-full grid-cols-2 gap-3">
+          {PLATES.map((plate, i) => (
+            <MosaicSettle
+              key={plate.src}
+              src={plate.src}
+              alt={plate.alt}
+              caption={`Plate 0${i + 1}`}
+              pending={isPreview ? false : pending[i]}
+              progress={isPreview ? PREVIEW_PROGRESS[i] : undefined}
+              palette={palette}
+              mechanic={mechanic}
+              cellSize={Number(cellSize)}
+              srcList={i === 0 ? SRC_LIST : undefined}
+              attract={attract && i === 0}
+            />
+          ))}
         </div>
-      )}
+        {!isPreview ? (
+          <BjorkButton variant="outline" size="sm" onClick={regenerate}>
+            Regenerate
+          </BjorkButton>
+        ) : null}
+      </div>
     </SimpleComponentDemoPage>
   );
 }

@@ -10,13 +10,12 @@ import {
 } from "react";
 import NextImage from "next/image";
 import { useReducedMotion } from "framer-motion";
-import { Mesh, Program, Renderer, Texture, Triangle } from "ogl";
 import { cn } from "@/lib/utils";
 import { BJORK_PALETTE, type BjorkTone } from "@/components/bjork-ui/_core/palette";
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
-import { cubicBezier, ease } from "@/components/bjork-ui/_core/motion";
 import { useVisibleLoop } from "@/components/bjork-ui/_core/loop";
-import { defaultMaxDpr, useElementSize } from "@/components/bjork-ui/_core/canvas";
+import { useElementSize } from "@/components/bjork-ui/_core/canvas";
+import { hashString } from "@/components/bjork-ui/_core/random";
 
 export type MosaicPalette = "ember" | "ocean" | "mono" | [string, string, string, string];
 
@@ -37,6 +36,8 @@ export interface MosaicSettleProps {
   onError?: () => void;
   /** Images that `attract` cycles through. Falls back to `src`. */
   srcList?: string[];
+  /** Posed frame: renders this settle progress (0 = churn at t 0, 1 = fully resolved) once, with no loop. */
+  progress?: number;
   tone?: BjorkTone;
   attract?: boolean;
   className?: string;
@@ -57,26 +58,12 @@ const ATTRACT_RELEASE_MS = 2600;
 const ATTRACT_RESUME_MS = 4000;
 const FADE_MS = 200;
 const FALLBACK_FADE_MS = 400;
-const MAX_CONTEXT_ATTEMPTS = 3;
-
-// Cubic bezier from _core/motion (ease.out), evaluated per frame for the settle progress.
-const easeOutCurve = cubicBezier(ease.out[0], ease.out[1], ease.out[2], ease.out[3]);
-
-// Probed once. OGL logs a console error when no context exists, so the probe avoids that path entirely.
-let webglSupport: boolean | null = null;
-function supportsWebGL(): boolean {
-  if (webglSupport === null) {
-    try {
-      const probe = document.createElement("canvas");
-      const gl = probe.getContext("webgl2") || probe.getContext("webgl");
-      webglSupport = gl !== null;
-      gl?.getExtension("WEBGL_lose_context")?.loseContext();
-    } catch {
-      webglSupport = false;
-    }
-  }
-  return webglSupport;
-}
+// Plan: DPR capped at 1.5.
+const MAX_DPR = 1.5;
+// Decoded plates kept as textures on the shared context, so Regenerate and attract never re-upload.
+const TEXTURE_CACHE = 12;
+// Grace period before the shared context is released, so a StrictMode or keyed remount reuses it.
+const DISPOSE_DELAY_MS = 1000;
 
 function hexToRgb(hex: string): Rgb {
   let h = hex.trim().replace("#", "");
@@ -114,6 +101,7 @@ uniform float uMechanic;
 uniform vec2 uOrigin;
 uniform float uImageAspect;
 uniform float uFrameAspect;
+uniform float uSeed;
 
 float hash(vec2 p) {
   p = fract(p * vec2(443.897, 441.423));
@@ -161,17 +149,17 @@ float maxOriginDist() {
 void main() {
   vec2 cell = floor(vUv * uCells);
   vec2 cc = (cell + 0.5) / uCells;
-  float h = hash(cell);
+  float h = hash(cell + uSeed);
 
   // Pending churn: quantised noise picks a palette index, plus a small brightness flicker.
-  float n = vnoise(cell * 0.35 + vec2(uTime * 0.6, 0.0));
+  float n = vnoise(cell * 0.35 + vec2(uTime * 0.6 + uSeed, uSeed * 0.37));
   float idx = floor(clamp(n, 0.0, 0.999) * 4.0);
   vec3 pend = paletteAt(idx) + (h - 0.5) * 0.08;
 
   // Settle delay per cell.
   float delay;
   if (uMechanic < 0.5) {
-    delay = 0.6 * h + 0.4 * vnoise(cell * 0.12);
+    delay = 0.6 * h + 0.4 * vnoise(cell * 0.12 + uSeed);
   } else {
     delay = 0.85 * originDist(cc) / maxOriginDist() + 0.15 * h;
   }
@@ -186,6 +174,193 @@ void main() {
 }
 `;
 
+// One WebGL context and one compiled program for every MosaicSettle on the page. Each frame renders into a
+// corner of the shared drawing buffer and copies it onto its own 2D canvas, so Replay and Regenerate never
+// create a context or compile a shader. Contexts are a scarce browser resource (Chrome keeps about 16).
+interface SharedGL {
+  canvas: HTMLCanvasElement;
+  gl: WebGLRenderingContext;
+  program: WebGLProgram;
+  buffer: WebGLBuffer;
+  u: Record<
+    | "uTex"
+    | "uSettle"
+    | "uTime"
+    | "uCells"
+    | "uPalette"
+    | "uMechanic"
+    | "uOrigin"
+    | "uImageAspect"
+    | "uFrameAspect"
+    | "uSeed",
+    WebGLUniformLocation | null
+  >;
+  placeholder: WebGLTexture;
+  textures: Map<string, WebGLTexture>;
+  width: number;
+  height: number;
+  lost: boolean;
+}
+
+let shared: SharedGL | null = null;
+let sharedUnsupported = false;
+let sharedUsers = 0;
+let disposeTimer = 0;
+
+function compile(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  return shader;
+}
+
+function createShared(): SharedGL | null {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1;
+  canvas.height = 1;
+  let gl: WebGLRenderingContext | null = null;
+  try {
+    gl = canvas.getContext("webgl", {
+      alpha: false,
+      antialias: false,
+      depth: false,
+      stencil: false,
+      premultipliedAlpha: false,
+      preserveDrawingBuffer: false,
+    });
+  } catch {
+    gl = null;
+  }
+  if (!gl) return null;
+
+  const vs = compile(gl, gl.VERTEX_SHADER, VERT);
+  const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
+  const program = gl.createProgram();
+  const buffer = gl.createBuffer();
+  const placeholder = gl.createTexture();
+  if (!vs || !fs || !program || !buffer || !placeholder) return null;
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    return null;
+  }
+  gl.deleteShader(vs);
+  gl.deleteShader(fs);
+  gl.useProgram(program);
+
+  // One oversized triangle covers the viewport.
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const position = gl.getAttribLocation(program, "position");
+  gl.enableVertexAttribArray(position);
+  gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
+
+  // A 1x1 placeholder keeps the sampler complete until the real image is uploaded.
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, placeholder);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 0, 0, 255]));
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
+  const loc = (name: string) => gl.getUniformLocation(program, name);
+  const state: SharedGL = {
+    canvas,
+    gl,
+    program,
+    buffer,
+    u: {
+      uTex: loc("uTex"),
+      uSettle: loc("uSettle"),
+      uTime: loc("uTime"),
+      uCells: loc("uCells"),
+      uPalette: loc("uPalette"),
+      uMechanic: loc("uMechanic"),
+      uOrigin: loc("uOrigin"),
+      uImageAspect: loc("uImageAspect"),
+      uFrameAspect: loc("uFrameAspect"),
+      uSeed: loc("uSeed"),
+    },
+    placeholder,
+    textures: new Map(),
+    width: 1,
+    height: 1,
+    lost: false,
+  };
+  gl.uniform1i(state.u.uTex, 0);
+  canvas.addEventListener("webglcontextlost", () => {
+    // Recreated on the next draw. Nothing on the lost context is touched again.
+    state.lost = true;
+    if (shared === state) shared = null;
+  });
+  return state;
+}
+
+// The shared context, created on first use. Null when WebGL is unavailable (the CSS fallback takes over).
+function getShared(): SharedGL | null {
+  if (shared && !shared.lost) return shared;
+  if (sharedUnsupported) return null;
+  shared = createShared();
+  if (!shared) sharedUnsupported = true;
+  return shared;
+}
+
+function disposeShared() {
+  const s = shared;
+  shared = null;
+  if (!s || s.lost) return;
+  const { gl } = s;
+  s.textures.forEach((tex) => gl.deleteTexture(tex));
+  s.textures.clear();
+  gl.deleteTexture(s.placeholder);
+  gl.deleteBuffer(s.buffer);
+  gl.deleteProgram(s.program);
+  gl.getExtension("WEBGL_lose_context")?.loseContext();
+}
+
+function retainShared() {
+  sharedUsers++;
+  window.clearTimeout(disposeTimer);
+}
+
+function releaseShared() {
+  sharedUsers = Math.max(0, sharedUsers - 1);
+  if (sharedUsers > 0) return;
+  window.clearTimeout(disposeTimer);
+  disposeTimer = window.setTimeout(() => {
+    if (sharedUsers === 0) disposeShared();
+  }, DISPOSE_DELAY_MS);
+}
+
+// Texture for a decoded image, uploaded once per source and kept in a small LRU shared by every frame.
+function textureFor(s: SharedGL, img: HTMLImageElement): WebGLTexture {
+  const { gl } = s;
+  const key = img.src;
+  const hit = s.textures.get(key);
+  if (hit) {
+    s.textures.delete(key);
+    s.textures.set(key, hit);
+    return hit;
+  }
+  const tex = gl.createTexture();
+  if (!tex) return s.placeholder;
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  // Throws a SecurityError for a cross-origin image without CORS; the caller falls back to the CSS surface.
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+  s.textures.set(key, tex);
+  if (s.textures.size > TEXTURE_CACHE) {
+    const [oldKey, oldTex] = s.textures.entries().next().value as [string, WebGLTexture];
+    s.textures.delete(oldKey);
+    gl.deleteTexture(oldTex);
+  }
+  return tex;
+}
+
 interface LiveState {
   pending: boolean;
   reduce: boolean;
@@ -198,8 +373,10 @@ interface LiveState {
   mechanic: "organic" | "sweep";
   ox: number;
   oy: number;
-  pal: number[];
+  pal: Float32Array;
   src: string;
+  seed: number;
+  progress: number | undefined;
 }
 
 const INITIAL_LIVE: LiveState = {
@@ -214,34 +391,51 @@ const INITIAL_LIVE: LiveState = {
   mechanic: "organic",
   ox: 0,
   oy: 0,
-  pal: [],
+  pal: new Float32Array(12),
   src: "",
+  seed: 0,
+  progress: undefined,
 };
 
-interface GLState {
-  renderer: Renderer;
-  program: Program;
-  mesh: Mesh;
-  texture: Texture;
-  image: HTMLImageElement | null;
+// The visible surface of one frame: a 2D canvas the shared render is copied onto.
+interface View {
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
   dead: boolean;
 }
 
-function draw(gl: GLState, s: LiveState, settle: number, time: number) {
-  if (s.decoded && gl.image !== s.decoded) {
-    gl.image = s.decoded;
-    gl.texture.image = s.decoded;
+// Renders one frame on the shared context and copies it to the view. Returns false when WebGL is gone.
+function draw(view: View, s: LiveState, settle: number, time: number): boolean {
+  const g = getShared();
+  if (!g) return false;
+  const { gl, u } = g;
+  const pw = view.canvas.width;
+  const ph = view.canvas.height;
+  if (pw < 1 || ph < 1) return true;
+  // The shared buffer only grows, so frames of different sizes never reallocate it per draw.
+  if (pw > g.width || ph > g.height) {
+    g.width = Math.max(g.width, pw);
+    g.height = Math.max(g.height, ph);
+    g.canvas.width = g.width;
+    g.canvas.height = g.height;
   }
-  const u = gl.program.uniforms;
-  u.uTime.value = time;
-  u.uSettle.value = settle;
-  u.uCells.value = [s.cols, s.rows];
-  u.uFrameAspect.value = s.width / s.height;
-  u.uImageAspect.value = s.decoded ? s.decoded.naturalWidth / s.decoded.naturalHeight : 1;
-  u.uMechanic.value = s.mechanic === "sweep" ? 1 : 0;
-  u.uOrigin.value = [s.ox, s.oy];
-  u.uPalette.value = s.pal;
-  gl.renderer.render({ scene: gl.mesh });
+  gl.viewport(0, 0, pw, ph);
+  gl.activeTexture(gl.TEXTURE0);
+  if (s.decoded) gl.bindTexture(gl.TEXTURE_2D, textureFor(g, s.decoded));
+  else gl.bindTexture(gl.TEXTURE_2D, g.placeholder);
+  gl.uniform1f(u.uTime, time);
+  gl.uniform1f(u.uSettle, settle);
+  gl.uniform2f(u.uCells, s.cols, s.rows);
+  gl.uniform1f(u.uFrameAspect, s.width / s.height);
+  gl.uniform1f(u.uImageAspect, s.decoded ? s.decoded.naturalWidth / s.decoded.naturalHeight : 1);
+  gl.uniform1f(u.uMechanic, s.mechanic === "sweep" ? 1 : 0);
+  gl.uniform2f(u.uOrigin, s.ox, s.oy);
+  gl.uniform3fv(u.uPalette, s.pal);
+  gl.uniform1f(u.uSeed, s.seed);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+  // The viewport sits at the bottom-left of the buffer, which is the bottom rows of the canvas image.
+  view.ctx.drawImage(g.canvas, 0, g.height - ph, pw, ph, 0, 0, pw, ph);
+  return true;
 }
 
 function subscribeNoop() {
@@ -269,6 +463,7 @@ export function MosaicSettle({
   onSettled,
   onError,
   srcList,
+  progress,
   tone: toneProp,
   attract = false,
   className,
@@ -295,7 +490,6 @@ export function MosaicSettle({
   const [doneFor, setDoneFor] = useState<string | null>(null);
   const [fadeOn, setFadeOn] = useState(false);
   const [glFailed, setGlFailed] = useState(false);
-  const [epoch, setEpoch] = useState(0);
   const [prevPending, setPrevPending] = useState(effPending);
 
   // A rising edge of `pending` after the image has settled re-churns: clear the done latch.
@@ -320,7 +514,7 @@ export function MosaicSettle({
   const figureRef = useRef<HTMLElement>(null);
   const frameRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const glRef = useRef<GLState | null>(null);
+  const viewRef = useRef<View | null>(null);
   const phaseRef = useRef<"churn" | "settle">("churn");
   const phaseSrcRef = useRef("");
   const settleStartRef = useRef(0);
@@ -353,8 +547,11 @@ export function MosaicSettle({
       mechanic,
       ox: origin[0],
       oy: 1 - origin[1],
-      pal: colors.flatMap(hexToRgb),
+      pal: new Float32Array(colors.flatMap(hexToRgb)),
       src: effSrc,
+      // Per-image offset, so frames side by side never churn in lockstep.
+      seed: (hashString(effSrc) % 997) / 7,
+      progress,
     };
   });
 
@@ -379,97 +576,50 @@ export function MosaicSettle({
     };
   }, [effSrc]);
 
-  // WebGL context: created when the canvas mounts, lost when it unmounts (settled, or a new churn).
+  // Holds the shared WebGL context for as long as this frame is mounted; the last unmount releases it.
+  useEffect(() => {
+    retainShared();
+    return releaseShared;
+  }, []);
+
+  // The 2D view canvas mounts while unsettled. The shared context is created (and the program compiled) on the
+  // first mount only; later churns reuse it.
   useEffect(() => {
     if (!showCanvas) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
-    if (!supportsWebGL()) {
+    const ctx = getShared() ? canvas.getContext("2d") : null;
+    if (!ctx) {
       requestAnimationFrame(() => setGlFailed(true));
       return;
     }
-
-    let renderer: Renderer | null = null;
-    try {
-      renderer = new Renderer({
-        canvas,
-        alpha: false,
-        antialias: false,
-        dpr: Math.min(window.devicePixelRatio || 1, defaultMaxDpr()),
-      });
-    } catch {
-      renderer = null;
-    }
-    const gl = renderer?.gl;
-    if (!renderer || !gl || gl.isContextLost()) {
-      // StrictMode re-runs effects on the same canvas, whose context is already lost: remount with a fresh canvas.
-      requestAnimationFrame(() => {
-        if (epoch + 1 >= MAX_CONTEXT_ATTEMPTS) setGlFailed(true);
-        else setEpoch((e) => e + 1);
-      });
-      return;
-    }
-
-    let state: GLState;
-    try {
-      const geometry = new Triangle(gl);
-      const texture = new Texture(gl, {
-        generateMipmaps: false,
-        minFilter: gl.LINEAR,
-        magFilter: gl.LINEAR,
-        wrapS: gl.CLAMP_TO_EDGE,
-        wrapT: gl.CLAMP_TO_EDGE,
-      });
-      // A 1x1 placeholder keeps the sampler complete until the real image is uploaded.
-      const placeholder = document.createElement("canvas");
-      placeholder.width = 1;
-      placeholder.height = 1;
-      texture.image = placeholder;
-      const program = new Program(gl, {
-        vertex: VERT,
-        fragment: FRAG,
-        uniforms: {
-          uTex: { value: texture },
-          uSettle: { value: 0 },
-          uTime: { value: 0 },
-          uCells: { value: [1, 1] },
-          uPalette: { value: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
-          uMechanic: { value: 0 },
-          uOrigin: { value: [0, 0] },
-          uImageAspect: { value: 1 },
-          uFrameAspect: { value: 1 },
-        },
-      });
-      const mesh = new Mesh(gl, { geometry, program });
-      state = { renderer, program, mesh, texture, image: null, dead: false };
-    } catch {
-      requestAnimationFrame(() => setGlFailed(true));
-      return;
-    }
-
-    glRef.current = state;
+    const view: View = { canvas, ctx, dead: false };
+    viewRef.current = view;
     phaseRef.current = "churn";
     phaseSrcRef.current = "";
-
     return () => {
-      // Mark dead first so a frame that is already queued never touches a lost context.
-      state.dead = true;
-      renderer.gl.getExtension("WEBGL_lose_context")?.loseContext();
+      // Mark dead first so a frame that is already queued never draws to an unmounted canvas.
+      view.dead = true;
+      if (viewRef.current === view) viewRef.current = null;
     };
-  }, [showCanvas, epoch]);
-
-  useEffect(() => {
-    const g = glRef.current;
-    if (!g || g.dead || !showCanvas || !size.width || !size.height) return;
-    g.renderer.setSize(size.width, size.height);
-  }, [size.width, size.height, showCanvas, epoch]);
+  }, [showCanvas]);
 
   // One frame function drives churn, settle and the static reduced-motion frame.
   const frame = (_dt: number, t: number): boolean => {
     const s = live.current;
-    const g = glRef.current;
-    if (!g || g.dead) return false;
+    const view = viewRef.current;
+    if (!view || view.dead) return false;
     if (!s.width || !s.height) return true;
+
+    // Posed: one static frame at the given progress, then idle. Redrawn when the image decodes or progress changes.
+    if (s.progress !== undefined) {
+      try {
+        if (!draw(view, s, Math.min(1, Math.max(0, s.progress)), 0)) setGlFailed(true);
+      } catch {
+        setGlFailed(true);
+      }
+      return false;
+    }
 
     if (phaseSrcRef.current !== s.src) {
       phaseSrcRef.current = s.src;
@@ -490,13 +640,17 @@ export function MosaicSettle({
       } else {
         const p = Math.min(1, (t - settleStartRef.current) / (s.duration / 1000));
         finished = p >= 1;
-        settle = finished ? 1 : easeOutCurve(p);
+        // easeOutQuad: the cell flip spreads over most of the duration (ease.out front-loads it into ~250ms).
+        settle = finished ? 1 : p * (2 - p);
       }
     }
 
     try {
       // Reduced motion draws one static frame: no churn time, no settle sweep.
-      draw(g, s, settle, s.reduce ? 0 : t);
+      if (!draw(view, s, settle, s.reduce ? 0 : t)) {
+        setGlFailed(true);
+        return false;
+      }
     } catch {
       // Texture upload can fail on cross-origin images without CORS. Fall back to the CSS surface.
       setGlFailed(true);
@@ -519,9 +673,23 @@ export function MosaicSettle({
   // The loop is always subscribed. With no canvas the frame returns false at once, so data-loop reads idle.
   const { wake } = useVisibleLoop(figureRef, frame);
 
+  // Sizes the view canvas (DPR capped at 1.5). Resizing clears it, so this also wakes a posed, idle frame.
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view || view.dead || !showCanvas || !size.width || !size.height) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+    const pw = Math.max(1, Math.round(size.width * dpr));
+    const ph = Math.max(1, Math.round(size.height * dpr));
+    if (view.canvas.width !== pw || view.canvas.height !== ph) {
+      view.canvas.width = pw;
+      view.canvas.height = ph;
+    }
+    wake();
+  }, [size.width, size.height, showCanvas, wake]);
+
   useEffect(() => {
     wake();
-  }, [wake, effPending, decodedImg, reduce]);
+  }, [wake, effPending, decodedImg, reduce, progress, showCanvas]);
 
   // Fires once per completed settle (canvas or fallback), including re-settles after a re-churn.
   useEffect(() => {
@@ -584,12 +752,11 @@ export function MosaicSettle({
             filter: fallbackMode && !imgShown && !reduce ? "blur(12px)" : "none",
             transition: fallbackMode
               ? `opacity ${reduce ? 200 : FALLBACK_FADE_MS}ms cubic-bezier(0.23,1,0.32,1), filter ${FALLBACK_FADE_MS}ms cubic-bezier(0.23,1,0.32,1)`
-              : `opacity ${FADE_MS}ms ease-out`,
+              : "none", // the canvas fades out over an opaque img, so the swap never dips
           }}
         />
         {showCanvas ? (
           <canvas
-            key={epoch}
             ref={canvasRef}
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 size-full"
