@@ -84,6 +84,7 @@ function LiveDemo({
       window={windowMs}
       easing={easing}
       paused={isPreview ? true : paused}
+      showPauseButton={!isPreview}
       onPausedChange={onPausedChange}
       threshold={THRESHOLD}
       formatValue={formatDemoValue}

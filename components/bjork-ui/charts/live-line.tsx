@@ -43,6 +43,8 @@ export interface LiveLineProps {
   onScrub?: (index: number, p: LivePoint) => void;
   paused?: boolean;
   onPausedChange?: (paused: boolean) => void;
+  /** Shows the pause/resume button in the top-right corner. */
+  showPauseButton?: boolean;
   height?: number;
   ariaLabel?: string;
   tone?: BjorkTone;
@@ -203,6 +205,7 @@ export function LiveLine({
   scrub = false,
   onScrub,
   paused: pausedProp,
+  showPauseButton = true,
   onPausedChange,
   height = 220,
   ariaLabel = "Live chart",
@@ -1003,20 +1006,22 @@ export function LiveLine({
           className="pointer-events-none absolute left-0 top-0 flex h-6 items-center whitespace-nowrap rounded-[8px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-surface-hover)] px-2 font-mono text-[11px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 shadow-[0_14px_28px_-12px_rgba(0,0,0,0.6)]"
         />
 
-        <button
-          type="button"
-          aria-pressed={paused}
-          aria-label={paused ? "Resume" : "Pause"}
-          onClick={() => setPaused(!paused)}
-          className="absolute right-0 top-0 inline-flex size-6 items-center justify-center rounded-[7px] text-[color:var(--bjork-text-muted)] transition-[background-color,color,transform] duration-150 ease-out hover:bg-[color:var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)] active:scale-[0.97]"
-        >
-          {paused ? (
-            // Play glyph nudged 0.5px right: the triangle's weight sits on its flat left edge (OPTICAL-ALIGNMENT R2, 12px icon).
-            <Play className="size-3 translate-x-[0.5px] fill-current" aria-hidden="true" />
-          ) : (
-            <Pause className="size-3 fill-current" aria-hidden="true" />
-          )}
-        </button>
+        {showPauseButton ? (
+          <button
+            type="button"
+            aria-pressed={paused}
+            aria-label={paused ? "Resume" : "Pause"}
+            onClick={() => setPaused(!paused)}
+            className="absolute right-0 top-0 inline-flex size-6 items-center justify-center rounded-[7px] text-[color:var(--bjork-text-muted)] transition-[background-color,color,transform] duration-150 ease-out hover:bg-[color:var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)] active:scale-[0.97]"
+          >
+            {paused ? (
+              // Play glyph nudged 0.5px right: the triangle's weight sits on its flat left edge (OPTICAL-ALIGNMENT R2, 12px icon).
+              <Play className="size-3 translate-x-[0.5px] fill-current" aria-hidden="true" />
+            ) : (
+              <Pause className="size-3 fill-current" aria-hidden="true" />
+            )}
+          </button>
+        ) : null}
 
         <div
           aria-hidden="true"
