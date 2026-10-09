@@ -1,9 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellActions, ShellSegmented, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
-import { BjorkButton, BjorkButtonGroup } from "@/components/bjork-ui/primitives";
+import { BjorkButton } from "@/components/bjork-ui/primitives";
 import { ChromaticText, type ChromaticTextHandle } from "@/components/bjork-ui/text/chromatic-text";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -30,6 +30,12 @@ export default function ChromaticTextDemo() {
   const [decay, setDecay] = useState<number>(0.7);
   const [grain, setGrain] = useState(false);
 
+  const reset = () => {
+    setIntensity(1);
+    setDecay(0.7);
+    setGrain(false);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -52,49 +58,32 @@ const ref = useRef<ChromaticTextHandle>(null);
 ref.current?.pulse(); // one-shot sweep`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[860px] scale-[1]"
-    >
-      <div className="flex w-[min(860px,calc(100vw-72px))] flex-col items-center gap-6">
-        {!isPreview ? (
-          <div className="flex flex-wrap items-center justify-center gap-3">
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellActions>
             <BjorkButton size="sm" variant="secondary" onClick={() => textRef.current?.pulse()}>
               Pulse
             </BjorkButton>
-            <BjorkButtonGroup aria-label="Intensity">
-              {intensities.map((v) => (
-                <BjorkButton
-                  key={v.label}
-                  size="sm"
-                  variant={intensity === v.value ? "secondary" : "ghost"}
-                  aria-pressed={intensity === v.value}
-                  onClick={() => setIntensity(v.value)}
-                >
-                  {v.label}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-            <BjorkButtonGroup aria-label="Decay">
-              {decays.map((v) => (
-                <BjorkButton
-                  key={v.label}
-                  size="sm"
-                  variant={decay === v.value ? "secondary" : "ghost"}
-                  aria-pressed={decay === v.value}
-                  onClick={() => setDecay(v.value)}
-                >
-                  {v.label}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-            <BjorkButton
-              size="sm"
-              variant={grain ? "secondary" : "ghost"}
-              aria-pressed={grain}
-              onClick={() => setGrain((g) => !g)}
-            >
-              Grain
-            </BjorkButton>
-          </div>
-        ) : null}
+          </ShellActions>
+          <ShellSegmented
+            label="Amount"
+            value={intensity}
+            options={intensities.map((v) => ({ value: v.value, label: v.label }))}
+            onChange={setIntensity}
+          />
+          <ShellSegmented
+            label="Decay"
+            value={decay}
+            options={decays.map((v) => ({ value: v.value, label: v.label }))}
+            onChange={setDecay}
+          />
+          <ShellSwitch label="Grain" checked={grain} onCheckedChange={setGrain} />
+        </>
+      }
+    >
+      <div className="flex w-[min(860px,calc(100vw-72px))] flex-col items-center gap-6">
         <ChromaticText
           ref={textRef}
           text="Chromatic"

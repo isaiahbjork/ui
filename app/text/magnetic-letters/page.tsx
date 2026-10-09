@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
-import { BjorkButton, BjorkButtonGroup } from "@/components/bjork-ui/primitives";
 import { MagneticLetters, type MagneticMode } from "@/components/bjork-ui/text/magnetic-letters";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -25,6 +24,11 @@ export default function MagneticLettersDemo() {
   const [mode, setMode] = useState<MagneticMode>("attract");
   const [strength, setStrength] = useState<number>(1);
 
+  const reset = () => {
+    setMode("attract");
+    setStrength(1);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -42,38 +46,26 @@ export default function MagneticLettersDemo() {
 />`}
       previewScaleClassName="w-[344px]"
       previewCaptureScaleClassName="w-[860px] scale-[0.98]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Field"
+            value={mode}
+            options={modes.map((m) => ({ value: m, label: m }))}
+            onChange={setMode}
+          />
+          <ShellSegmented
+            label="Strength"
+            value={strength}
+            options={strengths.map((s) => ({ value: s.value, label: s.label }))}
+            onChange={setStrength}
+          />
+        </>
+      }
     >
       <div className="flex w-[min(880px,calc(100vw-72px))] max-w-full flex-col items-center gap-8">
-        {!isPreview ? (
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <BjorkButtonGroup aria-label="Field mode">
-              {modes.map((m) => (
-                <BjorkButton
-                  key={m}
-                  size="sm"
-                  variant={mode === m ? "secondary" : "ghost"}
-                  aria-pressed={mode === m}
-                  onClick={() => setMode(m)}
-                >
-                  {m}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-            <BjorkButtonGroup aria-label="Strength">
-              {strengths.map((s) => (
-                <BjorkButton
-                  key={s.label}
-                  size="sm"
-                  variant={strength === s.value ? "secondary" : "ghost"}
-                  aria-pressed={strength === s.value}
-                  onClick={() => setStrength(s.value)}
-                >
-                  {s.label}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-          </div>
-        ) : null}
         <MagneticLetters
           tone={tone}
           mode={mode}
