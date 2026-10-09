@@ -69,6 +69,8 @@ export interface MarketingHeroProductProps {
   /** Header links. Pass an empty array to hide the header. */
   nav?: BlockLink[];
   signIn?: BlockLink;
+  /** Small button at the right of the header. Defaults to the primary call to action. */
+  headerCta?: BlockLink;
   announcement?: { tag: string; label: string; href: string };
   title: ReactNode;
   description: ReactNode;
@@ -97,6 +99,7 @@ export const MARKETING_HERO_SAMPLE: MarketingHeroProductProps = {
     { label: "Changelog", href: "#changelog" },
   ],
   signIn: { label: "Sign in", href: "#sign-in" },
+  headerCta: { label: "Get started", href: "#start" },
   announcement: { tag: "New", label: "Replay any run from its trace", href: "#replay" },
   title: (
     <>
@@ -166,6 +169,7 @@ export function MarketingHeroProduct({
   brand = MARKETING_HERO_SAMPLE.brand,
   nav = MARKETING_HERO_SAMPLE.nav,
   signIn,
+  headerCta,
   announcement,
   title,
   description,
@@ -210,7 +214,7 @@ export function MarketingHeroProduct({
       <HeroBackdrop />
 
       {brand && nav && nav.length > 0 ? (
-        <HeroHeader brand={brand} nav={nav} signIn={signIn} cta={primaryCta} />
+        <HeroHeader brand={brand} nav={nav} signIn={signIn} cta={headerCta ?? primaryCta} />
       ) : null}
 
       <div className={cn(blockFrame, "relative pb-0 pt-14 @3xl:pt-20 @5xl:pt-24")}>
@@ -390,7 +394,7 @@ function HeroHeader({
               {signIn.label}
             </a>
           ) : null}
-          <CtaLink link={{ ...cta, label: "Get started" }} variant="secondary" className="hidden h-9 px-3.5 text-[13px] @md:inline-flex" />
+          <CtaLink link={cta} variant="secondary" className="hidden h-9 px-3.5 text-[13px] @md:inline-flex" />
           <button
             ref={buttonRef}
             type="button"
