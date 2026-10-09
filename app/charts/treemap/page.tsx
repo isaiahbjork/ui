@@ -47,7 +47,7 @@ export default function Page() {
   return (
     <SimpleComponentDemoPage
       item={item}
-      description="Squarified tiles, sized by value and coloured by change: accent for gains and ink for losses, both stronger with size of move. Click a sector or press Enter to zoom in, and every tile glides to its new place; Escape and the breadcrumbs zoom back out. Labels only appear where they fit."
+      description="Squarified tiles, sized by value and coloured by change: accent for gains and blue for losses, both stronger with size of move and fading to the background at zero. Click a sector or press Enter to zoom in, and every tile glides to its new place; Escape and the breadcrumbs zoom back out. Labels only appear where they fit, and a tile too small for its number keeps a minus bar when it fell."
       dependencies={["framer-motion"]}
       usageCode={`import { Treemap } from "@/components/bjork-ui/charts/treemap";
 

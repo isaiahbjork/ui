@@ -17,6 +17,7 @@ import {
   type TooltipContent,
 } from "@/components/bjork-ui/charts/_kit/chrome";
 import { clamp, damp, withAlpha, mixColor, formatCompact, formatPercent, formatSigned } from "@/components/bjork-ui/charts/_kit/scale";
+import { seriesColor } from "@/components/bjork-ui/charts/_kit/series";
 
 export interface TreeNode {
   id: string;
@@ -33,7 +34,7 @@ export interface TreemapProps {
   /** Current zoom root. Uncontrolled by default. */
   rootId?: string;
   onRootChange?: (id: string) => void;
-  /** "change" colours by `change` (accent up, ink down). "value" grades ink by size. */
+  /** "change" colours by `change` on a diverging scale (accent up, blue down, stage at zero). "value" grades ink by size. */
   colorBy?: "change" | "value";
   /** |change| that reaches full intensity. */
   changeScale?: number;
@@ -178,14 +179,18 @@ function mapRect(t: Rect, from: Rect, to: Rect): Rect {
   return { x: to.x + (t.x - from.x) * sx, y: to.y + (t.y - from.y) * sy, w: t.w * sx, h: t.h * sy };
 }
 
-function tileFill(pal: ChartPalette, colorBy: "change" | "value", change: number | null, valueRank: number, scale: number): { fill: string; strong: boolean } {
-  if (colorBy === "change" && change !== null) {
-    const k = clamp(Math.abs(change) / scale, 0, 1);
-    // Capped below full strength: a large tile never becomes a saturated block.
-    const a = 0.06 + 0.58 * Math.pow(k, 0.8);
-    if (change >= 0) return { fill: mixColor(pal.stage, pal.accent, a), strong: false };
-    return { fill: mixColor(pal.stage, pal.text, a * 0.6), strong: false };
-  }
+// Negative pole of the diverging change scale: the series blue, a CVD-safe partner for the accent.
+const downColor = (tone: BjorkTone) => seriesColor(tone, 1);
+
+function changeFill(pal: ChartPalette, tone: BjorkTone, change: number, scale: number): string {
+  const k = clamp(Math.abs(change) / scale, 0, 1);
+  // Capped below full strength: a large tile never becomes a saturated block.
+  const a = 0.06 + 0.58 * Math.pow(k, 0.8);
+  return mixColor(pal.stage, change >= 0 ? pal.accent : downColor(tone), a);
+}
+
+function tileFill(pal: ChartPalette, tone: BjorkTone, colorBy: "change" | "value", change: number | null, valueRank: number, scale: number): { fill: string; strong: boolean } {
+  if (colorBy === "change" && change !== null) return { fill: changeFill(pal, tone, change, scale), strong: false };
   const a = 0.08 + 0.3 * valueRank;
   return { fill: mixColor(pal.stage, pal.text, a), strong: false };
 }
@@ -217,7 +222,7 @@ export function Treemap({
   attract = false,
   className,
 }: TreemapProps) {
-  const { pal, reduce, vars } = useChartTheme(toneProp);
+  const { tone, pal, reduce, vars } = useChartTheme(toneProp);
   const announcer = useRef<AnnouncerHandle>(null);
   const tipRef = useRef<TooltipHandle>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -242,9 +247,9 @@ export function Treemap({
     return out;
   }, [flat, rootId]);
 
-  const cfg = useRef({ flat, rootId, mode, changeScale, reduce, pal, formatValue, formatChange, attract });
+  const cfg = useRef({ flat, rootId, mode, changeScale, reduce, pal, tone, formatValue, formatChange, attract });
   useEffect(() => {
-    cfg.current = { flat, rootId, mode, changeScale, reduce, pal, formatValue, formatChange, attract };
+    cfg.current = { flat, rootId, mode, changeScale, reduce, pal, tone, formatValue, formatChange, attract };
   });
 
   const st = useRef<Run>({
@@ -366,7 +371,7 @@ export function Treemap({
     for (const t of s.tiles.values()) {
       if (t.kind !== "leaf" || t.alpha < 0.01 || t.r.w < 0.5 || t.r.h < 0.5) continue;
       const f = F.get(t.id);
-      const { fill, strong } = tileFill(p, c.mode, f?.change ?? null, rankOf(f?.value ?? 0), c.changeScale);
+      const { fill, strong } = tileFill(p, c.tone, c.mode, f?.change ?? null, rankOf(f?.value ?? 0), c.changeScale);
       const hov = s.hover === t.id;
       ctx.globalAlpha = t.alpha * (s.hover && !hov ? 0.82 : 1);
       ctx.fillStyle = fill;
@@ -378,6 +383,18 @@ export function Treemap({
         ctx.lineWidth = 1.5;
         ctx.strokeStyle = p.text;
         ctx.stroke();
+      }
+      // A tile too small to print its change keeps a minus bar when it fell, so sign never rests
+      // on hue alone. Same fit rule as the value label below.
+      const ch = c.mode === "change" ? (f?.change ?? null) : null;
+      if (ch !== null && ch < 0 && t.r.w >= 14 && t.r.h >= 12) {
+        const valShown = t.r.w - 12 >= c.formatChange(ch).length * 6.6 && t.r.h >= 40 && t.r.w - 12 >= Math.min((f?.node.label.length ?? 0) * 6.6, 52);
+        if (!valShown) {
+          const bw = Math.min(8, Math.max(4, Math.round(t.r.w * 0.3)));
+          ctx.globalAlpha = t.alpha;
+          ctx.fillStyle = withAlpha(p.text, 0.78);
+          ctx.fillRect(Math.round(t.r.x + t.r.w - 5 - bw), Math.round(t.r.y + t.r.h - 6), bw, 1.5);
+        }
       }
       labels.push({ id: t.id, r: t.r, strong, alpha: t.alpha, group: false });
     }
@@ -446,12 +463,12 @@ export function Treemap({
     if (!f) return null;
     const parent = f.parent ? flat.get(f.parent) : null;
     return {
-      key: `${id}|${pal.text}`,
+      key: `${id}|${pal.text}|${tone}`,
       title: parent && parent.node.id !== data.id ? parent.node.label : undefined,
       rows: [
         { key: "v", label: f.node.label, value: formatValue(f.value) },
         ...(parent ? [{ key: "s", label: `of ${parent.node.label}`, value: formatPercent(f.value / Math.max(1e-12, parent.value), 1), strong: false }] : []),
-        ...(f.change !== null ? [{ key: "c", label: "Change", value: formatChange(f.change), color: f.change >= 0 ? pal.accent : pal.textMuted }] : []),
+        ...(f.change !== null ? [{ key: "c", label: "Change", value: formatChange(f.change), color: f.change >= 0 ? pal.accent : downColor(tone) }] : []),
       ],
     };
   };
@@ -592,6 +609,13 @@ export function Treemap({
     if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
       e.preventDefault();
       moveFocus(e.key);
+    } else if (e.key === "Home" || e.key === "End") {
+      // Reading order: first is the top-left leaf, last the bottom-right.
+      const leaves = [...s.tiles.values()].filter((t) => t.kind === "leaf" && t.targetAlpha === 1);
+      if (!leaves.length) return;
+      e.preventDefault();
+      leaves.sort((a, b) => a.target.y + a.target.x - (b.target.y + b.target.x));
+      setHover((e.key === "Home" ? leaves[0] : leaves[leaves.length - 1]).id, "keyboard");
     } else if (e.key === "Enter" || e.key === " ") {
       if (!s.hover) return;
       e.preventDefault();
@@ -652,8 +676,8 @@ export function Treemap({
         <div aria-hidden="true" className="absolute right-0 top-[5px] flex items-center gap-1.5 font-mono text-[10px] leading-none tabular-nums text-[color:var(--bjork-text-soft)]">
           <span className="[text-box:trim-both_cap_alphabetic]">{formatChange(-changeScale)}</span>
           <span
-            className="inline-block h-[6px] w-20 rounded-full"
-            style={{ background: `linear-gradient(90deg, ${mixColor(pal.stage, pal.text, 0.38)}, ${mixColor(pal.stage, pal.text, 0.04)} 50%, ${mixColor(pal.stage, pal.accent, 0.06)} 50%, ${mixColor(pal.stage, pal.accent, 0.64)})` }}
+            className="inline-block h-[6px] w-20 rounded-full shadow-[inset_0_0_0_1px_var(--bjork-hair)]"
+            style={{ background: `linear-gradient(90deg, ${changeFill(pal, tone, -changeScale, changeScale)}, ${changeFill(pal, tone, -changeScale * 0.4, changeScale)} 30%, ${pal.stage} 50%, ${changeFill(pal, tone, changeScale * 0.4, changeScale)} 70%, ${changeFill(pal, tone, changeScale, changeScale)})` }}
           />
           <span className="[text-box:trim-both_cap_alphabetic]">{formatChange(changeScale)}</span>
         </div>
@@ -662,7 +686,7 @@ export function Treemap({
         ref={wrapperRef}
         role="group"
         aria-roledescription="chart"
-        aria-label={`${ariaLabel}. Arrow keys move between tiles, Enter zooms into a group, Escape zooms out.`}
+        aria-label={`${ariaLabel}. Arrow keys move between tiles, Home and End jump to the first and last, Enter zooms into a group, Escape zooms out.`}
         tabIndex={0}
         onPointerEnter={() => {
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
