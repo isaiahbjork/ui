@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import { RetrievalInspector, SAMPLE_RETRIEVAL } from "@/components/bjork-ui/ai/retrieval-inspector";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { BjorkButton } from "@/components/bjork-ui/primitives/button";
+import { ShellSegmented, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("retrieval-inspector");
 
-function Demo() {
+const THRESHOLDS = [0.6, 0.7, 0.8];
+const DEFAULT_THRESHOLD = 0.7;
+
+function Demo({ threshold, onThresholdChange }: { threshold: number; onThresholdChange: (t: number) => void }) {
   const isPreview = usePreviewMode();
-  const [threshold, setThreshold] = useState(0.7);
 
   return (
     <div className="flex w-[min(680px,calc(100vw-56px))] flex-col items-stretch gap-6">
@@ -19,29 +20,18 @@ function Demo() {
         {...SAMPLE_RETRIEVAL}
         // The pose raises the cut so two chunks read as filtered.
         threshold={isPreview ? 0.8 : threshold}
-        onThresholdChange={setThreshold}
+        onThresholdChange={onThresholdChange}
       />
       {!isPreview && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          {[0.6, 0.7, 0.8].map((t) => (
-            <BjorkButton
-              key={t}
-              variant={threshold === t ? "default" : "ghost"}
-              aria-pressed={threshold === t}
-              size="sm"
-              onClick={() => setThreshold(t)}
-            >
-              {t.toFixed(2)}
-            </BjorkButton>
-          ))}
-          <span className="font-mono text-[11px] text-[color:var(--bjork-text-faint)]">↑ ↓ to move, Enter to open</span>
-        </div>
+        <p className="text-center font-mono text-[11px] text-[color:var(--bjork-text-faint)]">↑ ↓ to move, Enter to open</p>
       )}
     </div>
   );
 }
 
 export default function Page() {
+  const [threshold, setThreshold] = useState(DEFAULT_THRESHOLD);
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -61,8 +51,18 @@ export function Demo() {
 }`}
       previewScaleClassName="w-[380px]"
       previewCaptureScaleClassName="w-[680px] scale-[0.66]"
+      optionsDefaultOpen={false}
+      onReset={() => setThreshold(DEFAULT_THRESHOLD)}
+      controls={
+        <ShellSegmented
+          label="Threshold"
+          value={threshold}
+          options={THRESHOLDS.map((t) => ({ value: t, label: t.toFixed(2) }))}
+          onChange={setThreshold}
+        />
+      }
     >
-      <Demo />
+      <Demo threshold={threshold} onThresholdChange={setThreshold} />
     </SimpleComponentDemoPage>
   );
 }

@@ -16,6 +16,8 @@ import { motion } from "framer-motion";
 import { LiveRegion, VisuallyHidden } from "@/components/bjork-ui/_core/a11y";
 import { ease, easeCss, springs } from "@/components/bjork-ui/_core/motion";
 import {
+  AI_CARD,
+  AI_WELL,
   FOCUS_RING,
   PRESS,
   formatDuration,
@@ -219,7 +221,8 @@ export function ToolCallGroup({ children, label = "Tool calls", tone: toneProp, 
         aria-label={label}
         style={style}
         className={cn(
-          "w-full max-w-[640px] divide-y divide-[color:var(--bjork-border)] rounded-[12px] border border-[color:var(--bjork-border)]",
+          AI_CARD,
+          "w-full max-w-[640px] divide-y divide-[color:var(--bjork-border-muted)]",
           className,
         )}
       >
@@ -283,7 +286,7 @@ export function ToolCallCard({
       data-status={status}
       className={cn(
         "@container w-full min-w-0 font-bjork-alpha text-[color:var(--bjork-text)]",
-        grouped ? "px-3" : "max-w-[640px] rounded-[12px] border border-[color:var(--bjork-border)] px-3",
+        grouped ? "px-3" : cn(AI_CARD, "max-w-[640px] px-3"),
         className,
       )}
     >
@@ -472,7 +475,7 @@ function Section({
           initial={reduce ? false : { opacity: 0, y: 6, filter: "blur(4px)" }}
           animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
           transition={reduce ? { duration: 0.12, ease: ease.out } : springs.blurIn}
-          className="relative min-w-0 overflow-hidden rounded-[8px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-field-inset)]"
+          className={cn(AI_WELL, "relative min-w-0 overflow-hidden")}
         >
           <pre className="overflow-x-auto px-3 py-2.5 font-mono text-[11.5px] leading-[18px] text-[color:var(--bjork-text-muted)]">
             <code>

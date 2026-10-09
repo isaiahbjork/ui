@@ -7,9 +7,8 @@ import {
   ToolCallGroup,
   type ToolCallStatus,
 } from "@/components/bjork-ui/ai/tool-call-card";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { ShellActions, ShellSegmented, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { BjorkButtonGroup } from "@/components/bjork-ui/primitives/button-group";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -29,11 +28,10 @@ const REPLY_OUTPUT = {
 };
 
 type Outcome = "success" | "error" | "denied";
+const OUTCOMES = ["success", "error", "denied"] as const;
 
-function Demo() {
+function Demo({ outcome }: { outcome: Outcome }) {
   const isPreview = usePreviewMode();
-  const [run, setRun] = useState(0);
-  const [outcome, setOutcome] = useState<Outcome>("success");
   const [chars, setChars] = useState(0);
   const [phase, setPhase] = useState<ToolCallStatus>("input-streaming");
   const [startedAt, setStartedAt] = useState<number | undefined>(undefined);
@@ -55,22 +53,13 @@ function Demo() {
       }
     }, 40);
     return () => window.clearInterval(id);
-  }, [isPreview, phase, outcome, run]);
+  }, [isPreview, phase, outcome]);
 
   useEffect(() => {
     if (isPreview || phase !== "running") return;
     const id = window.setTimeout(() => setPhase(outcome === "error" ? "error" : "success"), 2200);
     return () => window.clearTimeout(id);
   }, [isPreview, phase, outcome]);
-
-  const restart = (next: Outcome = outcome) => {
-    setOutcome(next);
-    setChars(0);
-    setPhase("input-streaming");
-    setStartedAt(undefined);
-    setOpen(true);
-    setRun((r) => r + 1);
-  };
 
   const [first, second, third] = SAMPLE_TOOL_CALLS;
 
@@ -94,7 +83,6 @@ function Demo() {
         <ToolCallCard {...first} />
         <ToolCallCard {...second} />
         <ToolCallCard
-          key={run}
           name={third.name}
           summary={third.summary}
           status={phase}
@@ -107,29 +95,20 @@ function Demo() {
           onOpenChange={setOpen}
         />
       </ToolCallGroup>
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <BjorkButton variant="secondary" size="sm" onClick={() => restart()}>
-          Replay
-        </BjorkButton>
-        <BjorkButtonGroup role="group" aria-label="Outcome">
-          {(["success", "error", "denied"] as const).map((value) => (
-            <BjorkButton
-              key={value}
-              aria-pressed={outcome === value}
-              variant={outcome === value ? "default" : "ghost"}
-              size="sm"
-              onClick={() => restart(value)}
-            >
-              {value}
-            </BjorkButton>
-          ))}
-        </BjorkButtonGroup>
-      </div>
     </div>
   );
 }
 
 export default function Page() {
+  const [outcome, setOutcome] = useState<Outcome>("success");
+  // Changing the key remounts the demo, which replays the stream from the start.
+  const [run, setRun] = useState(0);
+
+  const restart = (next: Outcome = outcome) => {
+    setOutcome(next);
+    setRun((r) => r + 1);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -148,8 +127,25 @@ export function Demo() {
 }`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[560px] scale-[0.84]"
+      optionsDefaultOpen={false}
+      onReset={() => restart("success")}
+      controls={
+        <>
+          <ShellSegmented
+            label="Outcome"
+            value={outcome}
+            options={OUTCOMES.map((value) => ({ value, label: value }))}
+            onChange={(value) => restart(value)}
+          />
+          <ShellActions>
+            <BjorkButton variant="secondary" size="sm" onClick={() => restart()}>
+              Replay
+            </BjorkButton>
+          </ShellActions>
+        </>
+      }
     >
-      <Demo />
+      <Demo key={run} outcome={outcome} />
     </SimpleComponentDemoPage>
   );
 }

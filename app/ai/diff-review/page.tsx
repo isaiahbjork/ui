@@ -2,17 +2,25 @@
 
 import { useState } from "react";
 import { DiffReview, SAMPLE_DIFF, type DiffDecisions } from "@/components/bjork-ui/ai/diff-review";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { ShellActions, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("diff-review");
 
-function Demo() {
+type Result = { text: string; decisions: DiffDecisions } | null;
+
+function Demo({
+  run,
+  result,
+  onComplete,
+}: {
+  run: number;
+  result: Result;
+  onComplete: (result: Result) => void;
+}) {
   const isPreview = usePreviewMode();
-  const [run, setRun] = useState(0);
-  const [result, setResult] = useState<{ text: string; decisions: DiffDecisions } | null>(null);
 
   if (isPreview) {
     return (
@@ -26,29 +34,29 @@ function Demo() {
 
   return (
     <div className="flex w-[min(620px,calc(100vw-56px))] flex-col items-stretch gap-5">
-      <DiffReview key={run} {...SAMPLE_DIFF} onComplete={(text, decisions) => setResult({ text, decisions })} />
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <BjorkButton
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            setResult(null);
-            setRun((r) => r + 1);
-          }}
-        >
-          Reset
-        </BjorkButton>
-        <span className="font-mono text-[11px] text-[color:var(--bjork-text-faint)]">
-          {result
-            ? `onComplete → ${result.text.split("\n").length} lines, ${accepted} of ${Object.keys(result.decisions).length} accepted`
-            : "Focus a change, then j / k to move, a / r to decide"}
-        </span>
-      </div>
+      <DiffReview
+        key={run}
+        {...SAMPLE_DIFF}
+        onComplete={(text, decisions) => onComplete({ text, decisions })}
+      />
+      <p className="text-center font-mono text-[11px] text-[color:var(--bjork-text-faint)]">
+        {result
+          ? `onComplete → ${result.text.split("\n").length} lines, ${accepted} of ${Object.keys(result.decisions).length} accepted`
+          : "Focus a change, then j / k to move, a / r to decide"}
+      </p>
     </div>
   );
 }
 
 export default function Page() {
+  const [run, setRun] = useState(0);
+  const [result, setResult] = useState<Result>(null);
+
+  const reset = () => {
+    setResult(null);
+    setRun((r) => r + 1);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -68,8 +76,17 @@ export function Demo() {
 }`}
       previewScaleClassName="w-[380px]"
       previewCaptureScaleClassName="w-[620px] scale-[0.7]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <ShellActions>
+          <BjorkButton variant="ghost" size="sm" onClick={reset}>
+            Reset
+          </BjorkButton>
+        </ShellActions>
+      }
     >
-      <Demo />
+      <Demo run={run} result={result} onComplete={setResult} />
     </SimpleComponentDemoPage>
   );
 }

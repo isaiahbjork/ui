@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import { ease, springs } from "@/components/bjork-ui/_core/motion";
 import {
+  AI_CARD,
   FOCUS_RING,
   PRESS,
   useAiTone,
@@ -351,7 +352,7 @@ export function DiffReview({
       style={style}
       className={cn("@container w-full min-w-0 max-w-[720px] font-bjork-alpha text-[color:var(--bjork-text)]", className)}
     >
-      <div className="overflow-hidden rounded-[12px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-surface)]">
+      <div className={cn(AI_CARD, "overflow-hidden")}>
         <header className="flex flex-col gap-1 border-b border-[color:var(--bjork-border)] px-3 py-2 @[480px]:flex-row @[480px]:items-center @[480px]:justify-between @[480px]:gap-3">
           <div className="flex min-w-0 flex-1 items-baseline gap-2.5">
             <h3 id={titleId} className="min-w-0 truncate font-mono text-[12px] leading-5 text-[color:var(--bjork-text)]">

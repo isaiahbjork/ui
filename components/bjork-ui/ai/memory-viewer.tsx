@@ -6,6 +6,7 @@ import { Pencil, Search } from "lucide-react";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import { ease, easeCss, springs } from "@/components/bjork-ui/_core/motion";
 import {
+  AI_PANEL,
   FOCUS_RING,
   PRESS,
   useAiTone,
@@ -159,7 +160,7 @@ export function MemoryViewer({
   return (
     <section
       aria-labelledby={titleId}
-      className={cn("@container w-full max-w-[560px] font-bjork-alpha text-[color:var(--bjork-text)]", className)}
+      className={cn(AI_PANEL, "@container w-full max-w-[560px] font-bjork-alpha text-[color:var(--bjork-text)]", className)}
       style={style}
     >
       <header className="flex items-center justify-between gap-3 pb-3">

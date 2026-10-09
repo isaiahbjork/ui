@@ -13,6 +13,8 @@ import {
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import { easeCss } from "@/components/bjork-ui/_core/motion";
 import {
+  AI_CARD,
+  AI_WELL,
   FOCUS_RING,
   PRESS,
   useAiTone,
@@ -374,7 +376,7 @@ export function ApprovalGate({
         }}
       >
         <div className="min-h-0 overflow-hidden">
-          <div className="relative overflow-hidden rounded-[12px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-surface)] px-4 pb-3.5 pt-3">
+          <div className={cn(AI_CARD, "relative overflow-hidden px-4 pb-3.5 pt-3")}>
             <div className="flex min-h-6 items-center justify-between gap-3">
               <span className="font-mono text-[10px] uppercase leading-4 tracking-[0.08em] text-[color:var(--bjork-text-faint)]">
                 Approval needed
@@ -425,7 +427,7 @@ export function ApprovalGate({
             </p>
 
             {params.length > 0 && (
-              <dl className="mt-3 overflow-hidden rounded-[8px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-field-inset)] py-1">
+              <dl className={cn(AI_WELL, "mt-3 overflow-hidden py-1")}>
                 {params.map(([key, value]) => (
                   <Param key={key} name={key} value={value} />
                 ))}

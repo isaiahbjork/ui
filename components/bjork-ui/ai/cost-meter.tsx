@@ -5,6 +5,7 @@ import { motion, useSpring, useTransform } from "framer-motion";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import { easeCss } from "@/components/bjork-ui/_core/motion";
 import {
+  AI_PANEL,
   FOCUS_RING,
   formatTokens,
   useAiTone,
@@ -186,7 +187,7 @@ export function CostMeter({
   return (
     <section
       aria-labelledby={labelId}
-      className={cn("@container w-full max-w-[560px] font-bjork-alpha text-[color:var(--bjork-text)]", className)}
+      className={cn(AI_PANEL, "@container w-full max-w-[560px] font-bjork-alpha text-[color:var(--bjork-text)]", className)}
       style={style}
     >
       <div className="flex items-center justify-between gap-3">

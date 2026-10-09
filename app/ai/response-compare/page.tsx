@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { ResponseCompare, SAMPLE_COMPARISON, type CompareVote } from "@/components/bjork-ui/ai/response-compare";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { ShellActions, ShellSwitch, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -19,11 +18,20 @@ const POSED_VOTE: CompareVote = {
   },
 };
 
-function Demo() {
+const DEFAULT_BLIND = true;
+
+function Demo({
+  blind,
+  run,
+  vote,
+  onVote,
+}: {
+  blind: boolean;
+  run: number;
+  vote: CompareVote | null;
+  onVote: (vote: CompareVote | null) => void;
+}) {
   const isPreview = usePreviewMode();
-  const [blind, setBlind] = useState(true);
-  const [run, setRun] = useState(0);
-  const [vote, setVote] = useState<CompareVote | null>(null);
 
   if (isPreview) {
     return (
@@ -35,31 +43,25 @@ function Demo() {
 
   return (
     <div className="flex w-[min(700px,calc(100vw-56px))] flex-col items-stretch gap-6">
-      <ResponseCompare key={`${run}-${blind}`} {...SAMPLE_COMPARISON} blind={blind} onVote={setVote} />
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <label className="flex cursor-pointer items-center gap-2 text-[13px] text-[color:var(--bjork-text-muted)]">
-          <BjorkSwitch aria-label="Blind" size="sm" checked={blind} onCheckedChange={setBlind} />
-          Blind
-        </label>
-        <BjorkButton
-          variant="secondary"
-          size="sm"
-          onClick={() => {
-            setVote(null);
-            setRun((r) => r + 1);
-          }}
-        >
-          Reset
-        </BjorkButton>
-        <span className="font-mono text-[11px] text-[color:var(--bjork-text-faint)]">
-          {vote ? `onVote → ${vote.choice}` : "Arrow keys move between choices"}
-        </span>
-      </div>
+      <ResponseCompare key={`${run}-${blind}`} {...SAMPLE_COMPARISON} blind={blind} onVote={onVote} />
+      <p className="text-center font-mono text-[11px] text-[color:var(--bjork-text-faint)]">
+        {vote ? `onVote → ${vote.choice}` : "Arrow keys move between choices"}
+      </p>
     </div>
   );
 }
 
 export default function Page() {
+  const [blind, setBlind] = useState(DEFAULT_BLIND);
+  const [run, setRun] = useState(0);
+  const [vote, setVote] = useState<CompareVote | null>(null);
+
+  const reset = () => {
+    setBlind(DEFAULT_BLIND);
+    setVote(null);
+    setRun((r) => r + 1);
+  };
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -80,8 +82,20 @@ export function Demo() {
 }`}
       previewScaleClassName="w-[380px]"
       previewCaptureScaleClassName="w-[700px] scale-[0.82]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSwitch label="Blind" checked={blind} onCheckedChange={setBlind} />
+          <ShellActions>
+            <BjorkButton variant="ghost" size="sm" onClick={reset}>
+              Reset
+            </BjorkButton>
+          </ShellActions>
+        </>
+      }
     >
-      <Demo />
+      <Demo blind={blind} run={run} vote={vote} onVote={setVote} />
     </SimpleComponentDemoPage>
   );
 }

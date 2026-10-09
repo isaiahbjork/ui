@@ -5,7 +5,8 @@ import { AnimatePresence, motion, type Variants } from "framer-motion";
 import { ArrowUpRight, Shuffle } from "lucide-react";
 import { LiveRegion, VisuallyHidden } from "@/components/bjork-ui/_core/a11y";
 import { ease } from "@/components/bjork-ui/_core/motion";
-import { FOCUS_RING, PRESS, useAiTone, useReduceMotion, type BjorkTone } from "@/components/bjork-ui/ai/_shared";
+import {
+  AI_TILE, FOCUS_RING, PRESS, useAiTone, useReduceMotion, type BjorkTone } from "@/components/bjork-ui/ai/_shared";
 import { cn } from "@/lib/utils";
 
 export interface SuggestedPrompt {
@@ -220,7 +221,7 @@ export function SuggestedPrompts({
           >
             {Array.from({ length: skeletonCount }, (_, i) =>
               cards ? (
-                <div key={i} className="h-[86px] rounded-[12px] border border-[color:var(--bjork-border)] p-3">
+                <div key={i} className={cn(AI_TILE, "h-[86px] p-3")}>
                   <div className="bjork-sp-skel h-2 w-10 rounded-full" />
                   <div className="bjork-sp-skel mt-3 h-3 w-[72%] rounded-full" />
                   <div className="bjork-sp-skel mt-2.5 h-2.5 w-[54%] rounded-full" />
@@ -259,7 +260,7 @@ export function SuggestedPrompts({
                 className={cn(
                   "group relative min-w-0 cursor-pointer text-left transition-[background-color,border-color,color] duration-150",
                   cards
-                    ? "flex min-h-[86px] flex-col rounded-[12px] border border-[color:var(--bjork-border)] p-3 pr-8 hover:border-[color:var(--bjork-border-strong)] hover:bg-[var(--bjork-surface-active)]"
+                    ? cn(AI_TILE, "flex min-h-[86px] flex-col p-3 pr-8 hover:border-[color:var(--bjork-border)] hover:bg-[color:var(--bjork-surface-hover)]")
                     : "inline-flex h-8 max-w-full items-center gap-1.5 rounded-full border border-[color:var(--bjork-border)] pl-3 pr-2.5 text-[13px] font-medium text-[color:var(--bjork-text-medium)] hover:border-[color:var(--bjork-border-strong)] hover:bg-[var(--bjork-surface-active)] hover:text-[color:var(--bjork-text)]",
                   FOCUS_RING,
                   PRESS,
