@@ -1,0 +1,208 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "plan-usage-card",
+  "title": "Plan usage card",
+  "description": "Plan usage card is a production-ready cards component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "lucide-react",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/cards/plan-usage-card.tsx",
+      "content": "\"use client\";\n\nimport { useId, useMemo } from \"react\";\nimport { motion } from \"framer-motion\";\nimport { AlertTriangle, ArrowUpRight, RotateCw } from \"lucide-react\";\nimport { ease } from \"@/components/bjork-ui/_core/motion\";\nimport {\n  CardButton,\n  CardFrame,\n  Pill,\n  Skeleton,\n  useCardTheme,\n  useClock,\n  useReducedMotionSafe,\n  type CardTheme,\n} from \"@/components/bjork-ui/cards/card-kit\";\nimport { cn } from \"@/lib/utils\";\n\nexport interface UsageMeter {\n  id: string;\n  label: string;\n  used: number;\n  limit: number;\n  /** Unit shown after the numbers, e.g. \"requests\" or \"GB\". */\n  unit?: string;\n  /** Fraction digits for the numbers. Default 0. */\n  decimals?: number;\n  /** What happens past the limit, e.g. \"$0.40 per 1K\". Shown once the meter is over. */\n  overage?: string;\n  /** Project the cycle-end total from the pace so far. Turn off for levels such as seats or storage. Default true. */\n  paced?: boolean;\n}\n\nexport type PlanUsageStatus = \"ready\" | \"loading\" | \"error\";\n\nexport interface PlanUsageCardProps {\n  planName?: string;\n  /** Pre-formatted price, e.g. \"$20\". */\n  price?: string;\n  interval?: \"month\" | \"year\";\n  /** ISO date-time the billing cycle started. */\n  cycleStart?: string;\n  /** ISO date-time the billing cycle ends (renewal). */\n  cycleEnd?: string;\n  meters?: UsageMeter[];\n  status?: PlanUsageStatus;\n  errorMessage?: string;\n  onRetry?: () => void;\n  onUpgrade?: () => void;\n  onManage?: () => void;\n  upgradeLabel?: string;\n  /** Epoch ms. Freezes the clock for previews and tests. */\n  now?: number;\n  locale?: string;\n  theme?: CardTheme;\n  className?: string;\n}\n\nexport const PLAN_USAGE_SAMPLE = {\n  planName: \"Pro\",\n  price: \"$20\",\n  interval: \"month\" as const,\n  cycleStart: \"2026-10-01T00:00:00Z\",\n  cycleEnd: \"2026-11-01T00:00:00Z\",\n  now: Date.UTC(2026, 9, 19, 12),\n  meters: [\n    { id: \"requests\", label: \"API requests\", used: 71_840, limit: 100_000, unit: \"requests\", overage: \"$0.40 per 1K\" },\n    { id: \"seats\", label: \"Seats\", used: 6, limit: 10, unit: \"seats\", paced: false },\n    { id: \"storage\", label: \"Storage\", used: 41.6, limit: 50, unit: \"GB\", decimals: 1, overage: \"$0.08 per GB\", paced: false },\n    { id: \"builds\", label: \"Build minutes\", used: 3_120, limit: 3_000, unit: \"min\", overage: \"$0.01 per min\" },\n  ] satisfies UsageMeter[],\n};\n\ntype MeterState = \"ok\" | \"pace\" | \"over\";\n\ninterface MeterView {\n  meter: UsageMeter;\n  ratio: number;\n  projectedRatio: number;\n  state: MeterState;\n  note: string | null;\n}\n\nconst DAY = 86_400_000;\n\nfunction clamp(v: number, lo = 0, hi = 1) {\n  return Math.min(hi, Math.max(lo, v));\n}\n\n/**\n * Plan usage for the current billing cycle. Each meter projects the cycle-end total from the pace so\n * far, warns before a limit is hit and says what happens past it.\n */\nexport function PlanUsageCard({\n  planName = PLAN_USAGE_SAMPLE.planName,\n  price = PLAN_USAGE_SAMPLE.price,\n  interval = PLAN_USAGE_SAMPLE.interval,\n  cycleStart = PLAN_USAGE_SAMPLE.cycleStart,\n  cycleEnd = PLAN_USAGE_SAMPLE.cycleEnd,\n  meters = PLAN_USAGE_SAMPLE.meters,\n  status = \"ready\",\n  errorMessage = \"Usage could not be loaded.\",\n  onRetry,\n  onUpgrade,\n  onManage,\n  upgradeLabel = \"Upgrade to Team\",\n  now,\n  locale = \"en-US\",\n  theme = \"auto\",\n  className,\n}: PlanUsageCardProps) {\n  const { style } = useCardTheme(theme);\n  const reduce = useReducedMotionSafe();\n  const titleId = useId();\n  const clock = useClock(now, 60_000);\n\n  const start = Date.parse(cycleStart);\n  const end = Date.parse(cycleEnd);\n  const at = clock ?? start;\n  const elapsed = clamp((at - start) / (end - start));\n  const daysLeft = Math.max(0, Math.ceil((end - at) / DAY));\n\n  const fmtDate = useMemo(\n    () => new Intl.DateTimeFormat(locale, { month: \"short\", day: \"numeric\", timeZone: \"UTC\" }),\n    [locale],\n  );\n\n  const views = useMemo<MeterView[]>(() => {\n    const num = (m: UsageMeter, v: number) =>\n      new Intl.NumberFormat(locale, {\n        maximumFractionDigits: m.decimals ?? 0,\n        minimumFractionDigits: m.decimals ?? 0,\n        notation: v >= 100_000 ? \"compact\" : \"standard\",\n      }).format(v);\n    return meters.map((meter) => {\n      const ratio = meter.limit > 0 ? meter.used / meter.limit : 0;\n      // Pace needs a few percent of the cycle behind it before it means anything.\n      const projected = meter.paced !== false && elapsed > 0.04 ? meter.used / elapsed : meter.used;\n      const projectedRatio = meter.limit > 0 ? projected / meter.limit : 0;\n      let state: MeterState = \"ok\";\n      let note: string | null = null;\n      if (ratio >= 1) {\n        state = \"over\";\n        note = meter.overage ? `Over by ${num(meter, meter.used - meter.limit)} · ${meter.overage}` : \"Limit reached\";\n      } else if (projectedRatio > 1 && elapsed > 0.04) {\n        state = \"pace\";\n        const hitAt = start + (meter.limit / meter.used) * (at - start);\n        note = `On pace to hit the limit ${fmtDate.format(hitAt)}`;\n      }\n      return { meter, ratio, projectedRatio, state, note };\n    });\n  }, [meters, elapsed, locale, start, at, fmtDate]);\n\n  const attention = views.filter((v) => v.state !== \"ok\").length;\n  const ready = status === \"ready\";\n\n  return (\n    <CardFrame aria-labelledby={titleId} aria-busy={status === \"loading\" || undefined} className={className} style={style}>\n      <header className=\"flex items-start justify-between gap-3 px-5 pt-5\">\n        <div className=\"min-w-0\">\n          <div className=\"flex items-center gap-2\">\n            <h3 id={titleId} className=\"text-[15px] font-semibold leading-5\">\n              {planName} plan\n            </h3>\n            {ready && attention > 0 && (\n              <Pill tone={views.some((v) => v.state === \"over\") ? \"error\" : \"warning\"}>\n                {attention} {attention === 1 ? \"meter needs\" : \"meters need\"} attention\n              </Pill>\n            )}\n          </div>\n          <p className=\"mt-1 text-[13px] leading-5 text-[color:var(--bjork-text-muted)]\">\n            <span className=\"text-[color:var(--bjork-text-medium)]\">{price}</span> per {interval}\n          </p>\n        </div>\n        {onManage && (\n          <CardButton size=\"sm\" variant=\"ghost\" onClick={onManage} className=\"-mr-1.5\">\n            Manage\n          </CardButton>\n        )}\n      </header>\n\n      {/* Billing cycle */}\n      <div className=\"px-5 pt-4\">\n        <div className=\"flex items-baseline justify-between text-[12px] leading-4 text-[color:var(--bjork-text-muted)]\">\n          <span>\n            {fmtDate.format(start)} – {fmtDate.format(end - 1)}\n          </span>\n          <span className=\"text-[color:var(--bjork-text-medium)]\">\n            {clock === null ? \" \" : daysLeft === 0 ? \"Renews today\" : `${daysLeft} ${daysLeft === 1 ? \"day\" : \"days\"} left`}\n          </span>\n        </div>\n        <div\n          className=\"relative mt-2 h-[3px] overflow-hidden rounded-full bg-[color:var(--bjork-track)]\"\n          role=\"progressbar\"\n          aria-label=\"Billing cycle elapsed\"\n          aria-valuemin={0}\n          aria-valuemax={100}\n          aria-valuenow={Math.round(elapsed * 100)}\n        >\n          <div\n            className=\"absolute inset-y-0 left-0 rounded-full bg-[color:var(--bjork-text-soft)]\"\n            style={{ width: `${elapsed * 100}%` }}\n          />\n        </div>\n      </div>\n\n      <div className=\"mt-4 border-t border-[color:var(--bjork-border)]\">\n        {status === \"loading\" && (\n          <ul className=\"space-y-5 px-5 py-5\" aria-label=\"Loading usage\">\n            {[0, 1, 2].map((i) => (\n              <li key={i} className=\"space-y-2.5\">\n                <div className=\"flex justify-between\">\n                  <Skeleton className=\"h-3.5 w-24\" />\n                  <Skeleton className=\"h-3.5 w-20\" />\n                </div>\n                <Skeleton className=\"h-1.5 w-full rounded-full\" />\n              </li>\n            ))}\n          </ul>\n        )}\n\n        {status === \"error\" && (\n          <div role=\"alert\" className=\"flex flex-col items-start gap-3 px-5 py-6\">\n            <div className=\"flex items-center gap-2 text-[13px] text-[color:var(--bjork-text-medium)]\">\n              <AlertTriangle aria-hidden=\"true\" className=\"size-4 text-[color:var(--bjork-error)]\" />\n              {errorMessage}\n            </div>\n            {onRetry && (\n              <CardButton size=\"sm\" onClick={onRetry} icon={<RotateCw aria-hidden=\"true\" className=\"size-3.5\" />}>\n                Try again\n              </CardButton>\n            )}\n          </div>\n        )}\n\n        {ready && meters.length === 0 && (\n          <p className=\"px-5 py-6 text-[13px] text-[color:var(--bjork-text-muted)]\">This plan has no metered usage.</p>\n        )}\n\n        {ready && meters.length > 0 && (\n          <ul className=\"divide-y divide-[color:var(--bjork-border)]\">\n            {views.map((view, i) => (\n              <MeterRow key={view.meter.id} view={view} index={i} reduce={reduce} locale={locale} />\n            ))}\n          </ul>\n        )}\n      </div>\n\n      {ready && onUpgrade && (\n        <footer className=\"flex items-center justify-between gap-3 border-t border-[color:var(--bjork-border)] bg-[color:var(--bjork-card-raised)] px-5 py-3.5\">\n          <p className=\"min-w-0 text-[12px] leading-4 text-[color:var(--bjork-text-muted)]\">\n            {attention > 0 ? \"Team raises every limit and pools seats.\" : \"Need more room? Compare plans.\"}\n          </p>\n          <CardButton\n            size=\"sm\"\n            variant={attention > 0 ? \"primary\" : \"secondary\"}\n            onClick={onUpgrade}\n            icon={<ArrowUpRight aria-hidden=\"true\" className=\"size-3.5\" />}\n            className=\"flex-row-reverse\"\n          >\n            {upgradeLabel}\n          </CardButton>\n        </footer>\n      )}\n    </CardFrame>\n  );\n}\n\nfunction MeterRow({\n  view,\n  index,\n  reduce,\n  locale,\n}: {\n  view: MeterView;\n  index: number;\n  reduce: boolean;\n  locale: string;\n}) {\n  const noteId = useId();\n  const labelId = useId();\n  const { meter, ratio, projectedRatio, state, note } = view;\n  const fmt = new Intl.NumberFormat(locale, {\n    maximumFractionDigits: meter.decimals ?? 0,\n    minimumFractionDigits: meter.decimals ?? 0,\n  });\n  const pct = Math.round(ratio * 100);\n  const fill = clamp(ratio);\n  const ghost = clamp(projectedRatio);\n  const color =\n    state === \"over\" ? \"var(--bjork-error)\" : state === \"pace\" ? \"var(--bjork-warning)\" : \"var(--bjork-accent)\";\n  const unit = meter.unit ? ` ${meter.unit}` : \"\";\n\n  return (\n    <li className=\"px-5 py-3.5\">\n      <div className=\"flex items-baseline justify-between gap-3\">\n        <span id={labelId} className=\"truncate text-[13px] font-medium leading-5\">\n          {meter.label}\n        </span>\n        <span className=\"shrink-0 text-[12px] leading-5 text-[color:var(--bjork-text-muted)]\">\n          <span className=\"text-[color:var(--bjork-text)]\">{fmt.format(meter.used)}</span>\n          {\" / \"}\n          {fmt.format(meter.limit)}\n          <span className=\"hidden @[360px]:inline\">{unit}</span>\n          <span\n            className={cn(\n              \"ml-2 inline-block min-w-[4ch] text-right\",\n              state === \"over\" && \"text-[color:var(--bjork-error)]\",\n              state === \"pace\" && \"text-[color:var(--bjork-warning)]\",\n            )}\n          >\n            {pct}%\n          </span>\n        </span>\n      </div>\n\n      <div\n        role=\"meter\"\n        aria-labelledby={labelId}\n        aria-describedby={note ? noteId : undefined}\n        aria-valuemin={0}\n        aria-valuemax={meter.limit}\n        aria-valuenow={Math.min(meter.used, meter.limit)}\n        aria-valuetext={`${fmt.format(meter.used)} of ${fmt.format(meter.limit)}${unit}, ${pct}%`}\n        className=\"relative mt-2 h-1.5 overflow-hidden rounded-full bg-[color:var(--bjork-track)]\"\n      >\n        {/* Projected cycle-end usage, drawn as a hatched ghost behind the real fill. */}\n        {state === \"pace\" && (\n          <motion.div\n            aria-hidden=\"true\"\n            className=\"absolute inset-y-0 left-0 origin-left rounded-full\"\n            style={{\n              width: `${ghost * 100}%`,\n              backgroundImage: `repeating-linear-gradient(135deg, ${color} 0 2px, transparent 2px 5px)`,\n              opacity: 0.45,\n            }}\n            initial={reduce ? false : { scaleX: 0 }}\n            animate={{ scaleX: 1 }}\n            transition={{ duration: 0.7, delay: 0.25 + index * 0.06, ease: ease.out }}\n          />\n        )}\n        <motion.div\n          aria-hidden=\"true\"\n          className=\"absolute inset-y-0 left-0 origin-left rounded-full\"\n          style={{ width: `${fill * 100}%`, background: color }}\n          initial={reduce ? false : { scaleX: 0 }}\n          animate={{ scaleX: 1 }}\n          transition={{ duration: 0.7, delay: 0.1 + index * 0.06, ease: ease.out }}\n        />\n      </div>\n\n      {note && (\n        <p\n          id={noteId}\n          className={cn(\n            \"mt-1.5 text-[12px] leading-4\",\n            state === \"over\" ? \"text-[color:var(--bjork-error)]\" : \"text-[color:var(--bjork-warning)]\",\n          )}\n        >\n          {note}\n        </p>\n      )}\n    </li>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/cards/plan-usage-card.tsx"
+    },
+    {
+      "path": "components/bjork-ui/_core/motion.ts",
+      "content": "// Shared springs, easings and durations. Components import these instead of inventing values.\n\nexport const springs = {\n  press: { type: \"spring\", stiffness: 500, damping: 30, mass: 0.6 },\n  snappy: { type: \"spring\", stiffness: 400, damping: 25, mass: 1 },\n  standard: { type: \"spring\", stiffness: 300, damping: 30, mass: 0.8 },\n  soft: { type: \"spring\", stiffness: 200, damping: 25, mass: 1.2 },\n  settle: { type: \"spring\", stiffness: 380, damping: 30, mass: 0.8 },\n  blurIn: { type: \"spring\", stiffness: 400, damping: 28, mass: 0.6 },\n} as const;\n\nexport const ease = {\n  out: [0.23, 1, 0.32, 1],\n  inOut: [0.77, 0, 0.175, 1],\n  drawer: [0.32, 0.72, 0, 1],\n} as const;\n\nexport const easeCss = {\n  out: \"cubic-bezier(0.23,1,0.32,1)\",\n  inOut: \"cubic-bezier(0.77,0,0.175,1)\",\n  drawer: \"cubic-bezier(0.32,0.72,0,1)\",\n} as const;\n\nexport const durations = { press: 140, tooltip: 160, menu: 200, panel: 280 } as const; // ms\n\n// Cubic bezier easing for canvas and rAF code. Returns progress y for input x in [0, 1].\nexport function cubicBezier(x1: number, y1: number, x2: number, y2: number): (t: number) => number {\n  const cx = 3 * x1;\n  const bx = 3 * (x2 - x1) - cx;\n  const ax = 1 - cx - bx;\n  const cy = 3 * y1;\n  const by = 3 * (y2 - y1) - cy;\n  const ay = 1 - cy - by;\n  const sampleX = (s: number) => ((ax * s + bx) * s + cx) * s;\n  const sampleY = (s: number) => ((ay * s + by) * s + cy) * s;\n  const sampleDX = (s: number) => (3 * ax * s + 2 * bx) * s + cx;\n\n  const solveX = (x: number) => {\n    let s = x;\n    for (let i = 0; i < 8; i++) {\n      const err = sampleX(s) - x;\n      if (Math.abs(err) < 1e-6) return s;\n      const d = sampleDX(s);\n      if (Math.abs(d) < 1e-6) break;\n      s -= err / d;\n    }\n    let lo = 0;\n    let hi = 1;\n    s = x;\n    while (lo < hi) {\n      const v = sampleX(s);\n      if (Math.abs(v - x) < 1e-6) return s;\n      if (x > v) lo = s;\n      else hi = s;\n      s = (lo + hi) / 2;\n      if (hi - lo < 1e-7) break;\n    }\n    return s;\n  };\n\n  return (t: number) => {\n    if (t <= 0) return 0;\n    if (t >= 1) return 1;\n    return sampleY(solveX(t));\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/motion.ts"
+    },
+    {
+      "path": "components/bjork-ui/cards/card-kit.tsx",
+      "content": "\"use client\";\n\nimport {\n  forwardRef,\n  useSyncExternalStore,\n  type ButtonHTMLAttributes,\n  type CSSProperties,\n  type HTMLAttributes,\n  type ReactNode,\n} from \"react\";\nimport { useReducedMotion } from \"framer-motion\";\nimport type { BjorkTone } from \"@/components/bjork-ui/_core/palette\";\nimport { useBjorkTone } from \"@/components/bjork-ui/_core/tone\";\nimport { cn } from \"@/lib/utils\";\n\n/** \"auto\" follows the site theme (next-themes). \"light\" and \"dark\" pin the card. */\nexport type CardTheme = \"light\" | \"dark\" | \"auto\";\n\n/**\n * Card tokens. They are written onto the card root as the library's `--bjork-*` custom properties,\n * so a pinned theme wins over the page theme, and the status colours the global sheet lacks\n * (success, warning, error) are always defined.\n */\nexport const CARD_TOKENS = {\n  dark: {\n    card: \"#141414\",\n    raised: \"#1b1b1b\",\n    inset: \"#0d0d0d\",\n    hover: \"#1f1f1f\",\n    border: \"#242424\",\n    borderStrong: \"#363636\",\n    hair: \"rgba(237,237,237,0.08)\",\n    text: \"#ededed\",\n    textMedium: \"rgba(237,237,237,0.74)\",\n    textMuted: \"rgba(237,237,237,0.56)\",\n    textSoft: \"rgba(237,237,237,0.4)\",\n    textFaint: \"rgba(237,237,237,0.22)\",\n    accent: \"#ec5c13\",\n    accentInk: \"#f27a3c\",\n    accentFill: \"#b84a12\",\n    accentFillHover: \"#c95517\",\n    accentFg: \"#fff2ea\",\n    accentSoft: \"rgba(236,92,19,0.13)\",\n    accentMuted: \"rgba(236,92,19,0.26)\",\n    success: \"#4cc38a\",\n    successSoft: \"rgba(76,195,138,0.13)\",\n    warning: \"#f2b544\",\n    warningSoft: \"rgba(242,181,68,0.13)\",\n    error: \"#ff6b5c\",\n    errorSoft: \"rgba(255,107,92,0.13)\",\n    track: \"#262626\",\n    shadow:\n      \"inset 0 1px 0 rgba(255,255,255,0.045), 0 1px 0 rgba(0,0,0,0.5), 0 24px 48px -28px rgba(0,0,0,0.9)\",\n    raisedShadow: \"inset 0 1px 0 rgba(255,255,255,0.04)\",\n  },\n  light: {\n    card: \"#fffcf6\",\n    raised: \"#f7f1e6\",\n    inset: \"#f1eadd\",\n    hover: \"#f3ecdf\",\n    border: \"#ebe2d4\",\n    borderStrong: \"#dbcfbd\",\n    hair: \"rgba(23,23,23,0.07)\",\n    text: \"#171717\",\n    textMedium: \"rgba(23,23,23,0.76)\",\n    textMuted: \"rgba(23,23,23,0.62)\",\n    textSoft: \"rgba(23,23,23,0.46)\",\n    textFaint: \"rgba(23,23,23,0.2)\",\n    accent: \"#ec7d43\",\n    accentInk: \"#a84a19\",\n    accentFill: \"#ec7d43\",\n    accentFillHover: \"#f0935f\",\n    accentFg: \"#3f2112\",\n    accentSoft: \"rgba(236,125,67,0.12)\",\n    accentMuted: \"rgba(236,125,67,0.24)\",\n    success: \"#1b7f4d\",\n    successSoft: \"rgba(31,138,85,0.11)\",\n    warning: \"#966000\",\n    warningSoft: \"rgba(168,107,0,0.11)\",\n    error: \"#c0331d\",\n    errorSoft: \"rgba(200,54,31,0.1)\",\n    track: \"#ebe3d6\",\n    shadow:\n      \"inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 2px rgba(66,52,33,0.06), 0 22px 44px -28px rgba(66,52,33,0.26)\",\n    raisedShadow: \"inset 0 1px 0 rgba(255,255,255,0.7)\",\n  },\n} as const;\n\nexport type CardTokens = (typeof CARD_TOKENS)[BjorkTone];\n\nexport function cardVars(tone: BjorkTone): CSSProperties {\n  const t = CARD_TOKENS[tone];\n  return {\n    colorScheme: tone,\n    \"--bjork-card\": t.card,\n    \"--bjork-card-raised\": t.raised,\n    \"--bjork-card-inset\": t.inset,\n    \"--bjork-card-hover\": t.hover,\n    \"--bjork-border\": t.border,\n    \"--bjork-border-strong\": t.borderStrong,\n    \"--bjork-hair\": t.hair,\n    \"--bjork-text\": t.text,\n    \"--bjork-text-medium\": t.textMedium,\n    \"--bjork-text-muted\": t.textMuted,\n    \"--bjork-text-soft\": t.textSoft,\n    \"--bjork-text-faint\": t.textFaint,\n    \"--bjork-accent\": t.accent,\n    \"--bjork-accent-ink\": t.accentInk,\n    \"--bjork-accent-fill\": t.accentFill,\n    \"--bjork-accent-fill-hover\": t.accentFillHover,\n    \"--bjork-accent-foreground\": t.accentFg,\n    \"--bjork-accent-soft\": t.accentSoft,\n    \"--bjork-accent-muted\": t.accentMuted,\n    \"--bjork-success\": t.success,\n    \"--bjork-success-soft\": t.successSoft,\n    \"--bjork-warning\": t.warning,\n    \"--bjork-warning-soft\": t.warningSoft,\n    \"--bjork-error\": t.error,\n    \"--bjork-error-soft\": t.errorSoft,\n    \"--bjork-track\": t.track,\n    \"--bjork-card-shadow\": t.shadow,\n    \"--bjork-raised-shadow\": t.raisedShadow,\n    \"--bjork-ring-offset\": t.card,\n  } as CSSProperties;\n}\n\n/** Resolves the card tone and the CSS variables for it. */\nexport function useCardTheme(theme: CardTheme = \"auto\") {\n  const tone = useBjorkTone(theme === \"auto\" ? undefined : theme);\n  return { tone, tokens: CARD_TOKENS[tone], style: cardVars(tone) };\n}\n\nconst noopSubscribe = () => () => {};\n\n/** True after hydration. The server render and the first client render both see false. */\nexport function useHydrated() {\n  return useSyncExternalStore(\n    noopSubscribe,\n    () => true,\n    () => false,\n  );\n}\n\n/** Reduced-motion preference, hydration-safe: false until mounted. */\nexport function useReducedMotionSafe() {\n  const hydrated = useHydrated();\n  const reduced = useReducedMotion();\n  return hydrated && reduced === true;\n}\n\nconst clockStores = new Map<number, { subscribe: (cb: () => void) => () => void; get: () => number }>();\n\nfunction clockStore(stepMs: number) {\n  let store = clockStores.get(stepMs);\n  if (!store) {\n    store = {\n      subscribe: (cb) => {\n        const id = window.setInterval(cb, Math.min(stepMs, 1000));\n        return () => window.clearInterval(id);\n      },\n      get: () => Math.floor(Date.now() / stepMs) * stepMs,\n    };\n    clockStores.set(stepMs, store);\n  }\n  return store;\n}\n\n/**\n * Wall clock rounded to `stepMs`. A fixed `now` (previews, tests) wins. Returns null during SSR and\n * hydration so server and client text agree; callers render a neutral fallback for that frame.\n */\nexport function useClock(now: number | undefined, stepMs = 60_000): number | null {\n  const store = clockStore(stepMs);\n  const live = useSyncExternalStore(store.subscribe, store.get, () => null);\n  return now ?? live;\n}\n\nexport const focusRing =\n  \"outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)]\";\n\nexport interface CardFrameProps extends HTMLAttributes<HTMLElement> {\n  style?: CSSProperties;\n  /** Width in px, capped at the container width. Default 420. */\n  maxWidth?: number;\n  as?: \"section\" | \"article\" | \"div\";\n}\n\n/** The shared card surface: tokens, radius, border, shadow and a container query root. */\nexport const CardFrame = forwardRef<HTMLElement, CardFrameProps>(function CardFrame(\n  { as: Tag = \"section\", maxWidth = 420, className, style, children, ...rest },\n  ref,\n) {\n  return (\n    <Tag\n      ref={ref as never}\n      className={cn(\n        \"@container relative max-w-full overflow-hidden rounded-[20px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-card)] font-bjork-alpha text-[color:var(--bjork-text)] shadow-[var(--bjork-card-shadow)] [font-variant-numeric:tabular-nums]\",\n        className,\n      )}\n      // A fixed width capped at the container: fills narrow columns, and keeps its size inside\n      // shrink-to-fit parents (flex centring, popovers) where a percentage width would collapse.\n      style={{ width: maxWidth, ...style }}\n      {...rest}\n    >\n      {children}\n    </Tag>\n  );\n});\n\ntype ButtonVariant = \"primary\" | \"secondary\" | \"ghost\" | \"danger\";\n\nexport interface CardButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {\n  variant?: ButtonVariant;\n  size?: \"sm\" | \"md\";\n  icon?: ReactNode;\n}\n\nconst buttonVariants: Record<ButtonVariant, string> = {\n  primary:\n    \"bg-[color:var(--bjork-accent-fill)] text-[color:var(--bjork-accent-foreground)] hover:bg-[color:var(--bjork-accent-fill-hover)] shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]\",\n  secondary:\n    \"border border-[color:var(--bjork-border)] bg-[color:var(--bjork-card-raised)] text-[color:var(--bjork-text)] shadow-[var(--bjork-raised-shadow)] hover:bg-[color:var(--bjork-card-hover)] hover:border-[color:var(--bjork-border-strong)]\",\n  ghost:\n    \"text-[color:var(--bjork-text-medium)] hover:bg-[color:var(--bjork-card-hover)] hover:text-[color:var(--bjork-text)]\",\n  danger:\n    \"border border-[color:var(--bjork-border)] bg-[color:var(--bjork-error-soft)] text-[color:var(--bjork-error)] hover:border-[color:var(--bjork-error)]\",\n};\n\nexport const CardButton = forwardRef<HTMLButtonElement, CardButtonProps>(function CardButton(\n  { variant = \"secondary\", size = \"md\", icon, className, children, type = \"button\", ...rest },\n  ref,\n) {\n  return (\n    <button\n      ref={ref}\n      type={type}\n      className={cn(\n        \"inline-flex shrink-0 cursor-pointer select-none items-center justify-center gap-1.5 whitespace-nowrap rounded-[10px] font-medium transition-[background-color,border-color,color,transform,opacity] duration-150 ease-out active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-45 disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100\",\n        size === \"sm\" ? \"h-8 px-2.5 text-[12px]\" : \"h-9 px-3.5 text-[13px]\",\n        buttonVariants[variant],\n        focusRing,\n        className,\n      )}\n      {...rest}\n    >\n      {icon}\n      {children}\n    </button>\n  );\n});\n\nexport type PillTone = \"neutral\" | \"accent\" | \"success\" | \"warning\" | \"error\";\n\nconst pillTones: Record<PillTone, string> = {\n  neutral: \"bg-[color:var(--bjork-hair)] text-[color:var(--bjork-text-medium)]\",\n  accent: \"bg-[color:var(--bjork-accent-soft)] text-[color:var(--bjork-accent-ink)]\",\n  success: \"bg-[color:var(--bjork-success-soft)] text-[color:var(--bjork-success)]\",\n  warning: \"bg-[color:var(--bjork-warning-soft)] text-[color:var(--bjork-warning)]\",\n  error: \"bg-[color:var(--bjork-error-soft)] text-[color:var(--bjork-error)]\",\n};\n\n/** Small status label. `dot` adds a leading status dot; `pulse` animates it (not under reduced motion). */\nexport function Pill({\n  tone = \"neutral\",\n  dot = false,\n  pulse = false,\n  className,\n  children,\n}: {\n  tone?: PillTone;\n  dot?: boolean;\n  pulse?: boolean;\n  className?: string;\n  children: ReactNode;\n}) {\n  return (\n    <span\n      className={cn(\n        \"inline-flex h-[22px] shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2 text-[11px] font-medium leading-none\",\n        pillTones[tone],\n        className,\n      )}\n    >\n      {dot && (\n        <span aria-hidden=\"true\" className=\"relative inline-flex size-1.5\">\n          {pulse && (\n            <span className=\"absolute inset-0 rounded-full bg-current opacity-60 motion-safe:animate-ping\" />\n          )}\n          <span className=\"relative inline-flex size-1.5 rounded-full bg-current\" />\n        </span>\n      )}\n      {children}\n    </span>\n  );\n}\n\n/** Loading placeholder. Shimmers unless reduced motion is on. */\nexport function Skeleton({ className, style }: { className?: string; style?: CSSProperties }) {\n  return (\n    <span\n      aria-hidden=\"true\"\n      className={cn(\"block rounded-[6px] bg-[color:var(--bjork-hair)] motion-safe:animate-pulse\", className)}\n      style={style}\n    />\n  );\n}\n\n/** Deterministic pseudo-random generator for sample data, so server and client agree. */\nexport function seeded(seed: number) {\n  let s = seed >>> 0 || 1;\n  return () => {\n    s ^= s << 13;\n    s ^= s >>> 17;\n    s ^= s << 5;\n    return ((s >>> 0) % 100_000) / 100_000;\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/cards/card-kit.tsx"
+    },
+    {
+      "path": "components/bjork-ui/_core/palette.ts",
+      "content": "export type BjorkTone = \"dark\" | \"light\";\n\n// Canvas, WebGL and SVG attribute colours. DOM code uses the CSS tokens with these as fallbacks.\nexport const BJORK_PALETTE = {\n  dark: {\n    bg: \"#050505\", stage: \"#111111\", surface: \"#121212\", raised: \"#161616\", active: \"#202020\",\n    border: \"#232323\", borderStrong: \"#343434\",\n    text: \"#ededed\", textMedium: \"rgba(237,237,237,0.72)\", textMuted: \"rgba(237,237,237,0.52)\",\n    textSoft: \"rgba(237,237,237,0.36)\", textFaint: \"rgba(237,237,237,0.22)\", hair: \"rgba(237,237,237,0.12)\",\n    accent: \"#ec5c13\", accentInk: \"#ec5c13\", accentFill: \"#b84a12\", accentSoft: \"rgba(236,92,19,0.12)\", accentMuted: \"rgba(236,92,19,0.24)\",\n    accentFg: \"#fff2ea\", success: \"#4cc38a\", warning: \"#f2b544\", error: \"#ff5c4d\",\n  },\n  light: {\n    bg: \"#f7f5ef\", stage: \"#f7f5ef\", surface: \"#fffcf6\", raised: \"#f5efe3\", active: \"#efe7d8\",\n    border: \"#eee6db\", borderStrong: \"#e1d7c8\",\n    text: \"#171717\", textMedium: \"rgba(23,23,23,0.72)\", textMuted: \"rgba(23,23,23,0.52)\",\n    textSoft: \"rgba(23,23,23,0.36)\", textFaint: \"rgba(23,23,23,0.22)\", hair: \"rgba(23,23,23,0.10)\",\n    accent: \"#ec7d43\", accentInk: \"#b4531f\", accentFill: \"#ec7d43\", accentSoft: \"rgba(236,125,67,0.10)\", accentMuted: \"rgba(236,125,67,0.20)\",\n    accentFg: \"#3f2112\", success: \"#1f8a55\", warning: \"#a86b00\", error: \"#c8361f\",\n  },\n} as const;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/palette.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/tone.ts",
+      "content": "\"use client\";\n\nimport { useSyncExternalStore } from \"react\";\nimport { useTheme } from \"next-themes\";\nimport type { BjorkTone } from \"./palette\";\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\n/**\n * Resolves the tone for a component. An explicit `tone` always wins.\n * Otherwise it follows next-themes' resolved theme, but only after mount,\n * so the server render and first client render agree on dark.\n */\nexport function useBjorkTone(tone?: BjorkTone): BjorkTone {\n  const { resolvedTheme } = useTheme();\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  if (tone) return tone;\n  if (!mounted) return \"dark\";\n  return resolvedTheme === \"light\" ? \"light\" : \"dark\";\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/tone.ts"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Cards",
+    "registryUrl": "https://ui.isaiahbjork.com/plan-usage-card.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/plan-usage-card.json"
+  },
+  "type": "registry:component"
+}
