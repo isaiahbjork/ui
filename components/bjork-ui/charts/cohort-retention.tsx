@@ -592,6 +592,7 @@ export function CohortRetention({
           // A touch tap fires leave right after up; keep the tapped mark until the next tap.
           if (e.pointerType !== "touch") setHover(null, null);
         }}
+        onBlur={() => setHover(null, null)}
         onKeyDown={onKeyDown}
         aria-hidden={empty || undefined}
         className={cn("absolute inset-x-0 top-0 flex rounded-[10px]", empty && "invisible", L.scrollable ? "touch-pan-x touch-pan-y" : "touch-pan-y", chartFocusRing)}

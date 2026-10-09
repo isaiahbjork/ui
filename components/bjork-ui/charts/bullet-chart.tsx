@@ -825,6 +825,7 @@ export function BulletChart({
             // A touch tap fires leave right after up; keep the tapped row until the next tap.
             if (e.pointerType !== "touch" && st.current.source === "pointer") setHover(null, null);
           }}
+          onBlur={() => setHover(null, null)}
           onKeyDown={onKeyDown}
           className={cn("absolute inset-0 touch-pan-y rounded-[10px]", chartFocusRing)}
         >

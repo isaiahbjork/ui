@@ -684,6 +684,7 @@ export function CalendarHeatmap({
             if (e.pointerType !== "touch" && st.current.source === "pointer") setHover(null, null);
           }}
           onClick={onClick}
+          onBlur={() => setHover(null, null)}
           onKeyDown={onKeyDown}
           className={cn("absolute inset-0 touch-pan-y overflow-hidden rounded-[6px]", onSelect && "cursor-pointer", chartFocusRing)}
         >

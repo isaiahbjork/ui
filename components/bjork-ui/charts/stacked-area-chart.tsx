@@ -1269,6 +1269,7 @@ export function StackedAreaChart({
           if (e.pointerType !== "touch" && st.current.source === "pointer") setCursor(null, null);
         }}
         onDoubleClick={onDoubleClick}
+        onBlur={() => setCursor(null, null)}
         onKeyDown={onKeyDown}
         className={cn("absolute inset-0 touch-pan-y rounded-[10px]", chartFocusRing)}
       >
