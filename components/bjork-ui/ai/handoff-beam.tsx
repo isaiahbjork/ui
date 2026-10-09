@@ -24,14 +24,19 @@ export interface HandoffBeamProps {
   level?: BeamLevel;
   analyser?: AnalyserNode | null;
   children?: ReactNode;
+  /** Corner radius of the host, so the light is clipped to it. */
   radius?: number; // 32
-  reach?: number; // 120
+  /** Height in px the light may rise into the host from its bottom edge. */
+  reach?: number; // 22
   intensity?: number; // 1
+  /** "ember", "mono", or up to five colours: centre, edge, thinking, listening edge, speaking edge. */
   palette?: "ember" | "mono" | string[]; // "ember"
+  /** Horizontal centre of the light, 0 to 1. */
   gatherOffset?: number; // 0.5
+  /** How far the thinking shimmer lifts the line, 0 to 1. */
   heldLevel?: number; // 0.45
-  attack?: number; // 40 ms
-  release?: number; // 220 ms
+  attack?: number; // 70 ms
+  release?: number; // 260 ms
   threshold?: number; // 0.06
   sensitivity?: number; // 1.4
   phaseLabels?: Partial<Record<BeamPhase, string>>;
@@ -47,18 +52,28 @@ const DEFAULT_LABELS: Record<BeamPhase, string> = {
   speaking: "Speaking",
 };
 
-// Lobe x-fractions, base widths and the band each lobe reads (0 low, 1 mid, 2 high).
-const LOBE_X = [0.5, 0.34, 0.66, 0.18, 0.82];
-const LOBE_W = [0.3, 0.22, 0.22, 0.18, 0.18];
-const LOBE_BAND = [0, 1, 1, 2, 2];
+const PHASE_INDEX: Record<BeamPhase, number> = { idle: 0, listening: 1, thinking: 2, speaking: 3 };
 
-const GATHER_SPRING: SpringConfig = { stiffness: 120, damping: 20, mass: 1 };
-const SPRITE_SIZE = 128;
-const SWEEP_SPAN = 0.12;
-const SWEEP_PERIOD = 1.6; // seconds
-const IDLE_BREATH_HZ = 0.25;
+// Every phase is a weight. All four glide on the same critically damped spring, so they always
+// sum to 1 and any mix of two phases is a valid pose: changes morph, never swap.
+const MORPH: SpringConfig = { stiffness: 64, damping: 16, mass: 1 };
+
+// Per phase (idle, listening, thinking, speaking): span as a fraction of the host width,
+// resting brightness, and the extra brightness the voice level adds.
+const SPAN = [0.16, 0.6, 0.3, 0.5];
+const BRIGHT = [0.42, 0.55, 0.85, 0.62];
+const BRIGHT_GAIN = [0, 0.45, 0, 0.35];
+
+const POINTS = 96; // curve samples across the span
+const RAMP = 96; // colour ramp texels across the span
+const SHIMMER_S = 1.5; // seconds for one pass of the thinking shimmer
+const SHIMMER_W = 0.22; // shimmer half-width, in span units
+const IDLE_BREATH_HZ = 0.2;
+const LISTEN_FLOOR = 0.07; // a faint drift while listening to silence, so it never reads as off
 const RESUME_IDLE_S = 4;
-const DPR_CAP = 1.5;
+const DPR_CAP = 2;
+const STATIC_CLOCK = 0.8; // frozen time for reduced motion, picked for a balanced pose
+const STATIC_RAW: [number, number, number] = [0.6, 0.45, 0.3];
 
 // Attract schedule: listening 3s, thinking 2s, speaking 3s, idle 1.5s.
 const ATTRACT_SEGMENTS: Array<{ phase: BeamPhase; until: number }> = [
@@ -68,7 +83,6 @@ const ATTRACT_SEGMENTS: Array<{ phase: BeamPhase; until: number }> = [
   { phase: "idle", until: 9.5 },
 ];
 const ATTRACT_PERIOD = 9.5;
-const STATIC_RAW: [number, number, number] = [0.6, 0.45, 0.3];
 
 const subscribeNoop = () => () => {};
 const getMounted = () => true;
@@ -79,105 +93,91 @@ function clamp01(v: number): number {
 }
 
 function smoothstep01(u: number): number {
-  return u * u * (3 - 2 * u);
+  const c = clamp01(u);
+  return c * c * (3 - 2 * c);
 }
 
-function bandHeight(v: number): number {
-  return 0.08 + 0.9 * v;
+// Raised cosine in cycles: 0 to 1, crest at whole numbers.
+function bump(p: number): number {
+  return 0.5 + 0.5 * Math.cos(2 * Math.PI * p);
 }
 
-function gatedHeight(v: number): number {
-  return clamp01(v * 8) * bandHeight(v);
+function hexToRgb(hex: string, out: Float32Array, at: number) {
+  let h = hex.trim().replace("#", "");
+  if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+  const n = parseInt(h.slice(0, 6), 16);
+  const ok = Number.isFinite(n);
+  out[at] = ok ? (n >> 16) & 255 : 236;
+  out[at + 1] = ok ? (n >> 8) & 255 : 92;
+  out[at + 2] = ok ? n & 255 : 19;
 }
 
 interface PaletteSpec {
-  colors: string[]; // one per lobe
-  composite: GlobalCompositeOperation;
-  alpha: number;
+  key: string;
+  core: string[]; // per phase: idle, listening, thinking, speaking
+  edge: string[];
+  glow: number; // glow and haze strength
+  gain: number; // line opacity gain: light surfaces need a firmer line
 }
 
 function resolvePalette(palette: HandoffBeamProps["palette"], tone: BjorkTone): PaletteSpec {
   const dark = tone === "dark";
   const tokens = BJORK_PALETTE[tone];
-  if (Array.isArray(palette)) {
-    const colors = [0, 1, 2, 3, 4].map((i) => palette[Math.min(i, palette.length - 1)] ?? tokens.accent);
-    return { colors, composite: dark ? "lighter" : "source-over", alpha: dark ? 0.9 : 0.55 };
+  if (Array.isArray(palette) && palette.length > 0) {
+    const c = (i: number) => palette[Math.min(i, palette.length - 1)] ?? tokens.accent;
+    return {
+      key: `custom:${tone}:${palette.join(",")}`,
+      core: [c(0), c(0), c(2), c(0)],
+      edge: [c(0), c(3), c(1), c(4)],
+      glow: dark ? 1 : 0.6,
+      gain: dark ? 1 : 1.7,
+    };
   }
   if (palette === "mono") {
-    return {
-      colors: [tokens.text, tokens.text, tokens.text, tokens.text, tokens.text],
-      composite: dark ? "lighter" : "source-over",
-      alpha: dark ? 0.7 : 0.5,
-    };
+    const t = tokens.text;
+    return { key: `mono:${tone}`, core: [t, t, t, t], edge: [t, t, t, t], glow: dark ? 0.8 : 0.45, gain: dark ? 1 : 1.2 };
   }
   if (dark) {
     return {
-      colors: [tokens.accent, "#ff8a3d", "#ff8a3d", "#ff5ea8", "#ffd1a1"],
-      composite: "lighter",
-      alpha: 0.9,
+      key: "ember:dark",
+      core: ["#ec5c13", "#ff7a2e", "#ffd1a1", "#ff8a3d"],
+      edge: ["#ec5c13", "#ff5ea8", "#ff8a3d", "#ffb36b"],
+      glow: 1,
+      gain: 1,
     };
   }
   return {
-    colors: ["#d4541a", "#ef7a2e", "#ef7a2e", "#e2488e", "#f2a65c"],
-    // Light surfaces wash a soft glow out; full-strength multiply keeps it ember (acceptance 6: saturation 0.38).
-    composite: "multiply",
-    alpha: 1,
+    // Saturated, deeper ember: on a cream surface a pale glow washes out (light saturation stays above 0.35).
+    key: "ember:light",
+    core: ["#dc4a0c", "#e0601c", "#ec7d2e", "#d4541a"],
+    edge: ["#dc4a0c", "#d63c86", "#d4541a", "#e8862f"],
+    glow: 0.6,
+    gain: 1.7,
   };
 }
 
-// Pre-rendered radial bloom: white, alpha 1 to 0 on a smoothstep falloff.
-function makeBaseSprite(): HTMLCanvasElement {
-  const canvas = document.createElement("canvas");
-  canvas.width = SPRITE_SIZE;
-  canvas.height = SPRITE_SIZE;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return canvas;
-  const half = SPRITE_SIZE / 2;
-  const gradient = ctx.createRadialGradient(half, half, 0, half, half, half);
-  const stops = 10;
-  for (let k = 0; k <= stops; k++) {
-    const u = k / stops;
-    gradient.addColorStop(u, `rgba(255,255,255,${(1 - smoothstep01(u)).toFixed(4)})`);
-  }
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
-  return canvas;
-}
-
-function makeTintedSprite(base: HTMLCanvasElement, color: string): HTMLCanvasElement {
-  const canvas = document.createElement("canvas");
-  canvas.width = SPRITE_SIZE;
-  canvas.height = SPRITE_SIZE;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return canvas;
-  ctx.drawImage(base, 0, 0);
-  ctx.globalCompositeOperation = "source-in";
-  ctx.fillStyle = color;
-  ctx.fillRect(0, 0, SPRITE_SIZE, SPRITE_SIZE);
-  return canvas;
-}
-
 interface Engine {
-  gather: SpringState;
-  spread: SpringState;
-  env: [number, number, number];
+  w: [SpringState, SpringState, SpringState, SpringState];
+  env: Float32Array; // attack/release envelope per band
+  lvl: Float32Array; // envelope smoothed once more, what the shape reads
   raw: [number, number, number];
-  out: [number, number, number];
-  bands: [number, number, number];
-  now: number; // loop clock, seconds
-  inputAt: number; // loop clock of the last pointer or key input, -Infinity if none
+  clock: number; // own clock, so a loop restart never jumps the motion
+  now: number;
+  inputAt: number;
   attractT: number;
-  sweepT: number; // seconds spent thinking, so the sweep starts centred on gather
+  shimmerT: number;
   lastPhase: BeamPhase | null;
-  heights: Float32Array; // lobe heights, reused every frame
+  ys: Float32Array; // curve height above the baseline, px
+  win: Float32Array; // taper per sample
+  colors: Float32Array; // core rgb x4 then edge rgb x4
+  colorKey: string;
   voiceListen: () => [number, number, number];
   voiceSpeak: () => [number, number, number];
   analyserNode: AnalyserNode | null;
-  buf: Uint8Array | null;
-  bins: Int32Array; // [lowLo, lowHi, midLo, midHi, highLo, highHi]
-  spriteBase: HTMLCanvasElement | null;
-  spriteColors: string[];
-  tints: HTMLCanvasElement[];
+  buf: Uint8Array<ArrayBuffer> | null;
+  bins: Int32Array;
+  ramp: HTMLCanvasElement | null;
+  rampData: ImageData | null;
 }
 
 interface Latest {
@@ -188,7 +188,7 @@ interface Latest {
   reduce: boolean;
   palette: PaletteSpec;
   intensity: number;
-  gatherOffset: number;
+  center: number;
   heldLevel: number;
   attack: number;
   release: number;
@@ -199,28 +199,36 @@ interface Latest {
 }
 
 function createEngine(phase: BeamPhase): Engine {
-  const settled = phase === "idle" ? 0 : 1;
+  const k = PHASE_INDEX[phase];
+  const spring = (i: number): SpringState => ({ x: i === k ? 1 : 0, v: 0 });
+  const win = new Float32Array(POINTS + 1);
+  for (let i = 0; i <= POINTS; i++) {
+    const u = (i / POINTS) * 2 - 1;
+    const q = 1 - u * u;
+    win[i] = q * q;
+  }
   return {
-    gather: { x: phase === "thinking" ? 1 : 0, v: 0 },
-    spread: { x: settled, v: 0 },
-    env: [0, 0, 0],
+    w: [spring(0), spring(1), spring(2), spring(3)],
+    env: new Float32Array(3),
+    lvl: new Float32Array(3),
     raw: [0, 0, 0],
-    out: [0, 0, 0],
-    bands: [0, 0, 0],
+    clock: 0,
     now: 0,
     inputAt: Number.NEGATIVE_INFINITY,
     attractT: 0,
-    sweepT: 0,
+    shimmerT: 0,
     lastPhase: null,
-    heights: new Float32Array(5),
+    ys: new Float32Array(POINTS + 1),
+    win,
+    colors: new Float32Array(24),
+    colorKey: "",
     voiceListen: createSimulatedVoice(11),
     voiceSpeak: createSimulatedVoice(29),
     analyserNode: null,
     buf: null,
     bins: new Int32Array(6),
-    spriteBase: null,
-    spriteColors: [],
-    tints: [],
+    ramp: null,
+    rampData: null,
   };
 }
 
@@ -266,28 +274,60 @@ function readAnalyser(e: Engine, node: AnalyserNode) {
   }
 }
 
-function ensureSprites(e: Engine, colors: string[]) {
-  const same =
-    e.tints.length === colors.length && colors.every((c, i) => e.spriteColors[i] === c);
-  if (same) return;
-  if (!e.spriteBase) e.spriteBase = makeBaseSprite();
-  const base = e.spriteBase;
-  const cache = new Map<string, HTMLCanvasElement>();
-  e.tints = colors.map((c) => {
-    let tinted = cache.get(c);
-    if (!tinted) {
-      tinted = makeTintedSprite(base, c);
-      cache.set(c, tinted);
-    }
-    return tinted;
-  });
-  e.spriteColors = colors.slice();
+// Parses the palette once per palette change, and makes the ramp canvas once.
+function ensureColors(e: Engine, spec: PaletteSpec) {
+  if (e.colorKey === spec.key) return;
+  for (let k = 0; k < 4; k++) {
+    hexToRgb(spec.core[k], e.colors, k * 3);
+    hexToRgb(spec.edge[k], e.colors, 12 + k * 3);
+  }
+  e.colorKey = spec.key;
+  if (!e.ramp) {
+    e.ramp = document.createElement("canvas");
+    e.ramp.width = RAMP;
+    e.ramp.height = 1;
+    const rctx = e.ramp.getContext("2d");
+    e.rampData = rctx ? rctx.createImageData(RAMP, 1) : null;
+  }
+}
+
+// Half-thickness factor: a plain taper (shimmerAt NaN), or a gaussian lens around the shimmer.
+function thickness(e: Engine, i: number, shimmerAt: number): number {
+  if (Number.isNaN(shimmerAt)) return 0.25 + 0.75 * Math.sqrt(e.win[i]);
+  const u = (i / POINTS) * 2 - 1;
+  const d = (u - shimmerAt) / SHIMMER_W;
+  return Math.exp(-d * d) * e.win[i];
+}
+
+// Traces a ribbon around the curve: top edge left to right, bottom edge back. The thickness
+// follows the taper, so the ends close to a point and need no caps.
+function ribbon(
+  ctx: CanvasRenderingContext2D,
+  e: Engine,
+  x0: number,
+  dx: number,
+  base: number,
+  half: number,
+  shimmerAt: number,
+) {
+  ctx.beginPath();
+  for (let i = 0; i <= POINTS; i++) {
+    const y = base - e.ys[i] - half * thickness(e, i, shimmerAt);
+    if (i === 0) ctx.moveTo(x0, y);
+    else ctx.lineTo(x0 + i * dx, y);
+  }
+  for (let i = POINTS; i >= 0; i--) {
+    ctx.lineTo(x0 + i * dx, base - e.ys[i] + half * thickness(e, i, shimmerAt));
+  }
+  ctx.closePath();
+  ctx.fill();
 }
 
 /**
- * Wraps a host (a composer, an input, a card) and draws one light along its bottom edge.
- * The light listens, gathers into a single thought, then speaks. It never swaps or blinks.
- * Canvas 2D only. The beam is drawn in the host's own bounds and clipped by `radius`.
+ * Wraps a host (a composer, an input, a card) and lights a hairline along its bottom edge.
+ * It listens (soft crests draw in towards the centre), thinks (a shimmer travels the line) and
+ * speaks (calm ripples flow outwards). Every parameter is a mix of the four phases on one
+ * critically damped spring, so it morphs between them and never swaps. Canvas 2D only.
  */
 export function HandoffBeam({
   phase,
@@ -295,13 +335,13 @@ export function HandoffBeam({
   analyser = null,
   children,
   radius = 32,
-  reach = 120,
+  reach = 22,
   intensity = 1,
   palette = "ember",
   gatherOffset = 0.5,
   heldLevel = 0.45,
-  attack = 40,
-  release = 220,
+  attack = 70,
+  release = 260,
   threshold = 0.06,
   sensitivity = 1.4,
   phaseLabels,
@@ -324,7 +364,7 @@ export function HandoffBeam({
   const paletteSpec = resolvePalette(palette, resolvedTone);
   const labels = { ...DEFAULT_LABELS, ...phaseLabels };
 
-  // The engine holds mutable simulation state, so it lives in a ref. It is created on first use, in the loop or on input.
+  // The engine holds mutable simulation state, so it lives in a ref. It is created on first use.
   const getEngine = (): Engine => {
     if (!engineRef.current) engineRef.current = createEngine(latest.current?.phase ?? phase);
     return engineRef.current;
@@ -341,7 +381,7 @@ export function HandoffBeam({
       reduce,
       palette: paletteSpec,
       intensity,
-      gatherOffset,
+      center: gatherOffset,
       heldLevel,
       attack,
       release,
@@ -352,45 +392,62 @@ export function HandoffBeam({
     };
   });
 
-  const frame = (dt: number, t: number) => {
+  const frame = (dtIn: number) => {
     const L = latest.current;
     const canvas = canvasRef.current;
     if (!L || !canvas) return;
     const e = getEngine();
-    e.now = t;
+    const dt = L.reduce ? 0 : dtIn;
+    e.clock += dt;
+    e.now += dtIn;
+    const t = L.reduce ? STATIC_CLOCK : e.clock;
 
     const cssW = L.cssW;
     const cssH = L.cssH;
     if (cssW <= 0 || cssH <= 0) return;
 
     // Attract drives the phase and level, unless the user is interacting.
-    const inputActive = t >= e.inputAt && t - e.inputAt < RESUME_IDLE_S;
+    const inputActive = e.now >= e.inputAt && e.now - e.inputAt < RESUME_IDLE_S;
     let phaseNow: BeamPhase = L.phase;
     let levelSource: BeamLevel | undefined = L.level;
     let analyserNode: AnalyserNode | null = L.analyser;
-    let staticFrame = false;
-    if (L.attract) {
+    if (L.attract && !inputActive) {
       if (L.reduce) {
         phaseNow = "listening";
-        staticFrame = true;
-        analyserNode = null;
-      } else if (!inputActive) {
+      } else {
         e.attractT = (e.attractT + dt) % ATTRACT_PERIOD;
         let seg = ATTRACT_SEGMENTS[0];
         for (let k = 0; k < ATTRACT_SEGMENTS.length; k++) {
           if (e.attractT < ATTRACT_SEGMENTS[k].until) { seg = ATTRACT_SEGMENTS[k]; break; }
         }
         phaseNow = seg.phase;
-        analyserNode = null;
         levelSource = seg.phase === "speaking" ? e.voiceSpeak : e.voiceListen;
       }
+      analyserNode = null;
     }
-    // Each thought starts centred: the sweep restarts when thinking begins.
-    if (phaseNow === "thinking" && e.lastPhase !== "thinking") e.sweepT = 0;
+    // Each thought starts at the left: the shimmer restarts off-span when thinking begins.
+    if (phaseNow === "thinking" && e.lastPhase !== "thinking") e.shimmerT = 0;
     e.lastPhase = phaseNow;
 
-    // Levels: raw input, then the envelope (or a direct copy under reduced motion).
-    if (staticFrame) {
+    // Phase weights.
+    const target = PHASE_INDEX[phaseNow];
+    for (let k = 0; k < 4; k++) {
+      const s = e.w[k];
+      if (L.reduce) {
+        s.x = k === target ? 1 : 0;
+        s.v = 0;
+      } else {
+        stepSpring(s, k === target ? 1 : 0, MORPH, dt);
+      }
+    }
+    const wI = clamp01(e.w[0].x);
+    const wL = clamp01(e.w[1].x);
+    const wT = clamp01(e.w[2].x);
+    const wS = clamp01(e.w[3].x);
+
+    // Levels: raw input, an attack/release envelope, then one more smoothing pass so the
+    // line glides rather than jitters. Speaking smooths more, which is what makes it calm.
+    if (L.reduce && !analyserNode) {
       e.raw[0] = STATIC_RAW[0];
       e.raw[1] = STATIC_RAW[1];
       e.raw[2] = STATIC_RAW[2];
@@ -399,89 +456,142 @@ export function HandoffBeam({
     } else {
       readLevel(e, levelSource);
     }
+    const smoothTau = 0.07 + 0.2 * wS;
     for (let b = 0; b < 3; b++) {
-      const r = e.raw[b] < L.threshold ? 0 : e.raw[b];
+      const r = e.raw[b] < L.threshold ? 0 : clamp01(e.raw[b] * L.sensitivity);
       if (L.reduce) {
         e.env[b] = r;
+        e.lvl[b] = r;
       } else {
-        const tau = Math.max(1, r > e.env[b] ? L.attack : L.release);
-        e.env[b] += (r - e.env[b]) * (1 - Math.exp(-(dt * 1000) / tau));
+        const tau = Math.max(1, r > e.env[b] ? L.attack : L.release) / 1000;
+        e.env[b] += (r - e.env[b]) * (1 - Math.exp(-dtIn / tau));
+        e.lvl[b] += (e.env[b] - e.lvl[b]) * (1 - Math.exp(-dtIn / smoothTau));
       }
-      e.out[b] = clamp01(e.env[b] * L.sensitivity);
+    }
+    const low = e.lvl[0];
+    const mid = e.lvl[1];
+    const high = e.lvl[2];
+    const energy = clamp01(low * 0.5 + mid * 0.3 + high * 0.2);
+
+    if (!L.reduce) e.shimmerT += dt * (0.35 + 0.65 * wT);
+    // The shimmer enters off-span on the left and leaves off-span on the right, so the wrap is unseen.
+    const shimmerAt = L.reduce ? 0 : -1.4 + 2.8 * ((e.shimmerT / SHIMMER_S) % 1);
+    const breath = L.reduce ? 0 : Math.sin(2 * Math.PI * IDLE_BREATH_HZ * t);
+
+    // The mixed pose.
+    const span = wI * SPAN[0] + wL * SPAN[1] + wT * SPAN[2] + wS * SPAN[3];
+    const bright =
+      wI * (BRIGHT[0] + 0.1 * breath) +
+      wL * (BRIGHT[1] + BRIGHT_GAIN[1] * energy) +
+      wT * BRIGHT[2] +
+      wS * (BRIGHT[3] + BRIGHT_GAIN[3] * energy);
+    const amp = cssH * 0.7;
+    const speakAmp = 0.28 + 0.72 * energy;
+    const held = clamp01(L.heldLevel);
+
+    // Curve heights. Listening crests travel inwards, speaking crests travel outwards.
+    for (let i = 0; i <= POINTS; i++) {
+      const u = (i / POINTS) * 2 - 1;
+      // A softened |u|, so the centre is a smooth crest, never a kink.
+      const d = Math.sqrt(u * u + 0.004);
+      const listen =
+        LISTEN_FLOOR * bump(1.1 * d + 0.55 * t) +
+        low * 0.75 * bump(1.1 * d + 0.55 * t) +
+        mid * 0.4 * bump(2.3 * d + 0.95 * t + 0.18 * u) +
+        high * 0.24 * bump(3.8 * d + 1.5 * t - 0.3 * u);
+      const speak = speakAmp * (0.22 + 0.5 * bump(1.25 * d - 0.62 * t) + 0.12 * bump(2.6 * d - 1.24 * t));
+      const sd = (u - shimmerAt) / (SHIMMER_W * 1.6);
+      const think = held * (0.12 + 0.4 * Math.exp(-sd * sd));
+      e.ys[i] = amp * e.win[i] * (wL * listen + wS * speak + wT * think);
     }
 
-    // Gather and spread glide with springs, so phase changes are continuous.
-    const gatherTarget = phaseNow === "thinking" ? 1 : 0;
-    const spreadTarget = phaseNow === "idle" ? 0 : 1;
-    if (L.reduce) {
-      e.gather.x = gatherTarget;
-      e.spread.x = spreadTarget;
-      e.gather.v = 0;
-      e.spread.v = 0;
-    } else {
-      stepSpring(e.gather, gatherTarget, GATHER_SPRING, dt);
-      stepSpring(e.spread, spreadTarget, GATHER_SPRING, dt);
+    // Colour ramp across the span: core in the middle, edge colour at the ends, the alpha taper,
+    // and a lift where the shimmer is. Written into a preallocated ImageData.
+    ensureColors(e, L.palette);
+    const ramp = e.ramp;
+    const data = e.rampData;
+    if (!ramp || !data) return;
+    const C = e.colors;
+    let cr = 0, cg = 0, cb = 0, er = 0, eg = 0, eb = 0;
+    for (let k = 0; k < 4; k++) {
+      const wk = clamp01(e.w[k].x);
+      cr += wk * C[k * 3];
+      cg += wk * C[k * 3 + 1];
+      cb += wk * C[k * 3 + 2];
+      er += wk * C[12 + k * 3];
+      eg += wk * C[12 + k * 3 + 1];
+      eb += wk * C[12 + k * 3 + 2];
     }
-    const g = clamp01(e.gather.x);
-    const s = clamp01(e.spread.x);
+    const px = data.data;
+    for (let j = 0; j < RAMP; j++) {
+      const u = ((j + 0.5) / RAMP) * 2 - 1;
+      const d = u < 0 ? -u : u;
+      const m = smoothstep01((d - 0.15) / 0.75);
+      const sd = (u - shimmerAt) / SHIMMER_W;
+      const lift = wT * Math.exp(-sd * sd);
+      const q = 1 - d * d;
+      const a = clamp01(bright * L.palette.gain * L.intensity * q * Math.sqrt(q) * (1 + 0.55 * lift));
+      const o = j * 4;
+      px[o] = cr + (er - cr) * m;
+      px[o + 1] = cg + (eg - cg) * m;
+      px[o + 2] = cb + (eb - cb) * m;
+      px[o + 3] = a * 255;
+    }
+    const rctx = ramp.getContext("2d");
+    if (!rctx) return;
+    rctx.putImageData(data, 0, 0);
 
-    // Thinking holds every band at heldLevel. The blend follows gather, so entry and exit are continuous.
-    for (let b = 0; b < 3; b++) e.bands[b] = e.out[b] * (1 - g) + L.heldLevel * g;
-
-    // Lobe heights. Lobe 0 breathes while idle, and the other lobes sit at 0 until spread lifts them.
-    const breath = L.reduce ? 0.12 : 0.12 + 0.04 * Math.sin(2 * Math.PI * IDLE_BREATH_HZ * t);
-    // Silence gates a lobe to 0, so a quiet listening state never out-glows idle (acceptance 2).
-    const heights = e.heights;
-    heights[0] = s * gatedHeight(e.bands[0]) + (1 - s) * breath;
-    for (let i = 1; i < 5; i++) heights[i] = s * gatedHeight(e.bands[LOBE_BAND[i]]);
-
-    // Pixel buffer at half the CSS height, scaled up. The glow is soft, so this costs nothing visible.
     const dpr = Math.min(typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1, DPR_CAP);
     const bw = Math.max(1, Math.round(cssW * dpr));
-    const bh = Math.max(1, Math.round(cssH * dpr * 0.5));
+    const bh = Math.max(1, Math.round(cssH * dpr));
     if (canvas.width !== bw) canvas.width = bw;
     if (canvas.height !== bh) canvas.height = bh;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    ensureSprites(e, L.palette.colors);
     ctx.setTransform(bw / cssW, 0, 0, bh / cssH, 0, 0);
+    ctx.globalCompositeOperation = "source-over";
+    ctx.globalAlpha = 1;
     ctx.clearRect(0, 0, cssW, cssH);
 
-    const widthScale = 1 - 0.75 * g;
-    ctx.globalCompositeOperation = L.palette.composite;
-    ctx.globalAlpha = L.palette.alpha * L.intensity;
-    for (let i = 0; i < 5; i++) {
-      const h = heights[i];
-      if (h <= 0.002) continue;
-      const x = L.gatherOffset + (0.5 + (LOBE_X[i] - 0.5) * s - L.gatherOffset) * (1 - g);
-      const w = LOBE_W[i] * cssW * widthScale;
-      const height = h * cssH;
-      const tint = e.tints[i];
-      if (tint) ctx.drawImage(tint, x * cssW - w / 2, cssH - height, w, height);
+    const spanPx = Math.max(8, span * cssW);
+    const x0 = Math.min(cssW - spanPx, Math.max(0, L.center * cssW - spanPx / 2));
+    const dx = spanPx / POINTS;
+    const base = cssH - 1; // the line sits on the host's bottom border
+    const glow = L.palette.glow;
+
+    // Mask in white: a faint haze under the curve, two soft glow ribbons and a hairline core.
+    ctx.fillStyle = "#fff";
+    for (let layer = 1; layer <= 3; layer++) {
+      const f = layer / 3;
+      ctx.globalAlpha = 0.045 * glow;
+      ctx.beginPath();
+      ctx.moveTo(x0, base);
+      for (let i = 0; i <= POINTS; i++) ctx.lineTo(x0 + i * dx, base - e.ys[i] * f);
+      ctx.lineTo(x0 + spanPx, base);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.globalAlpha = 0.07 * glow;
+    ribbon(ctx, e, x0, dx, base, 5.5, Number.NaN);
+    ctx.globalAlpha = 0.26 * glow;
+    ribbon(ctx, e, x0, dx, base, 2.2, Number.NaN);
+    ctx.globalAlpha = 1;
+    ribbon(ctx, e, x0, dx, base, 0.85, Number.NaN);
+    if (wT > 0.01) {
+      ctx.globalAlpha = 0.5 * wT;
+      ribbon(ctx, e, x0, dx, base, 1.6, shimmerAt);
     }
 
-    // Sweep: a narrower highlight that travels across the gathered lobe. Only while thinking, never under reduced motion.
-    if (phaseNow === "thinking" && !L.reduce) e.sweepT += dt;
-    if (!L.reduce && g > 0.01 && e.tints[0]) {
-      const sx = L.gatherOffset + SWEEP_SPAN * Math.sin((2 * Math.PI * e.sweepT) / SWEEP_PERIOD);
-      const sw = 0.1 * cssW;
-      const sh = bandHeight(L.heldLevel) * cssH;
-      ctx.globalAlpha = 0.5 * g * L.palette.alpha * L.intensity;
-      ctx.drawImage(e.tints[0], sx * cssW - sw / 2, cssH - sh, sw, sh);
-    }
-
-    // Edge line: 1px along the bottom, its span and alpha follow the energy.
-    const energy = clamp01((e.bands[0] + e.bands[1] + e.bands[2]) / 3);
-    const span = (0.2 + 0.6 * energy) * cssW;
+    // Tint: keep the mask's alpha, take colour and taper from the ramp.
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-in";
+    ctx.imageSmoothingEnabled = true;
+    ctx.drawImage(ramp, x0, 0, spanPx, cssH);
     ctx.globalCompositeOperation = "source-over";
-    ctx.globalAlpha = (0.35 + 0.65 * energy) * L.intensity;
-    ctx.fillStyle = L.palette.colors[0];
-    ctx.fillRect((cssW - span) / 2, cssH - 1, span, 1);
   };
 
   useVisibleLoop(rootRef, frame, {
-    fpsCap: reduce ? 10 : !attract && phase === "idle" ? 30 : 0,
+    fpsCap: reduce ? 10 : 0,
   });
 
   // Pointer or key input inside the beam pauses attract for RESUME_IDLE_S seconds.
