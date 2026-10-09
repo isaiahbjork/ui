@@ -309,8 +309,18 @@ export function ModelSelector({
     const onDown = (e: PointerEvent) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
     };
+    // Escape from anywhere, for a menu opened without focus inside it (defaultOpen or controlled).
+    const onKey = (e: globalThis.KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      setOpen(false);
+      if (wrapRef.current?.contains(document.activeElement)) triggerRef.current?.focus();
+    };
     document.addEventListener("pointerdown", onDown);
-    return () => document.removeEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [isOpen, setOpen]);
 
   const move = (delta: number) => {

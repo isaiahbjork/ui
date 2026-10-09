@@ -158,7 +158,7 @@ export function PromptComposer({
   const menuId = `${baseId}-commands`;
   const hintId = `${baseId}-hint`;
 
-  const slash = commands.length > 0 ? slashAt(text, caret) : null;
+  const slash = commands.length > 0 ? slashAt(text, Math.min(caret, text.length)) : null;
   const matches = slash ? filterCommands(commands, slash.query) : [];
   const menuOpen = slash !== null && dismissedAt !== slash.start && !disabled;
   const active = matches.length ? Math.min(activeIndex, matches.length - 1) : -1;
