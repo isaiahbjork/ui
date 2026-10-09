@@ -70,9 +70,9 @@ const componentRoutes: ComponentGroup[] = [
       { name: "AI Voice Input", path: "/ai/ai-voice-input" },
       { name: "Agent Trace", path: "/ai/agent-trace" },
 
-      // @slot handoff-beam
+      { name: "Handoff Beam", path: "/ai/handoff-beam" },
 
-      // @slot lattice-orb
+      { name: "Lattice Orb", path: "/ai/lattice-orb" },
 
     ],
   },
@@ -171,7 +171,7 @@ const componentRoutes: ComponentGroup[] = [
       { name: "Chromatic Text", path: "/text/chromatic-text" },
       // @slot plane-type
 
-      // @slot scatter-rewind
+      { name: "Scatter Rewind", path: "/text/scatter-rewind" },
 
     ],
   },
@@ -218,9 +218,9 @@ const componentRoutes: ComponentGroup[] = [
     routes: [
       { name: "Hover Image Gallery", path: "/galleries/hover-image-gallery" },
       { name: "Portfolio Gallery", path: "/galleries/portfolio-gallery" },
-      // @slot mosaic-settle
+      { name: "Mosaic Settle", path: "/galleries/mosaic-settle" },
 
-      // @slot torn-edge-reveal
+      { name: "Torn Edge Reveal", path: "/galleries/torn-edge-reveal" },
 
     ],
   },

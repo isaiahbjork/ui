@@ -1110,13 +1110,57 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork104 handoff-beam
+  {
+    id: "bjork104",
+    slug: "handoff-beam",
+    title: "Handoff beam",
+    route: "/ai/handoff-beam",
+    sourcePath: "components/bjork-ui/ai/handoff-beam.tsx",
+    tier: "lab",
+    collection: "AI",
+    preview: "orb",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
-  // @slot bjork105 lattice-orb
+  {
+    id: "bjork105",
+    slug: "lattice-orb",
+    title: "Lattice orb",
+    route: "/ai/lattice-orb",
+    sourcePath: "components/bjork-ui/ai/lattice-orb.tsx",
+    tier: "lab",
+    collection: "AI",
+    preview: "orb",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
-  // @slot bjork106 torn-edge-reveal
+  {
+    id: "bjork106",
+    slug: "torn-edge-reveal",
+    title: "Torn edge reveal",
+    route: "/galleries/torn-edge-reveal",
+    sourcePath: "components/bjork-ui/galleries/torn-edge-reveal.tsx",
+    tier: "copy",
+    collection: "Galleries",
+    preview: "gallery",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
-  // @slot bjork107 mosaic-settle
+  {
+    id: "bjork107",
+    slug: "mosaic-settle",
+    title: "Mosaic settle",
+    route: "/galleries/mosaic-settle",
+    sourcePath: "components/bjork-ui/galleries/mosaic-settle.tsx",
+    tier: "lab",
+    collection: "Galleries",
+    preview: "gallery",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   {
     id: "bjork108",
@@ -1157,7 +1201,18 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 
-  // @slot bjork111 scatter-rewind
+  {
+    id: "bjork111",
+    slug: "scatter-rewind",
+    title: "Scatter rewind",
+    route: "/text/scatter-rewind",
+    sourcePath: "components/bjork-ui/text/scatter-rewind.tsx",
+    tier: "lab",
+    collection: "Text",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 
   {
     id: "bjork112",
