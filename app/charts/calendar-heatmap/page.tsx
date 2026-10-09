@@ -104,7 +104,7 @@ export default function Page() {
           <CalendarHeatmap data={DATASETS.deploys.data} unit={DATASETS.deploys.unit} formatValue={whole} activeDate="2026-05-13" maxCell={14} ariaLabel={DATASETS.deploys.label} />
         </div>
       ) : (
-        <DemoColumn width={820}>
+        <DemoColumn width={760}>
           <CalendarHeatmap data={ds.data} unit={ds.unit} formatValue={whole} weekStart={weekStart} scale={scale} ariaLabel={ds.label} />
           <ControlRow>
             <OptionGroup

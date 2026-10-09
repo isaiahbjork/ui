@@ -61,7 +61,7 @@ export interface CalendarHeatmapProps {
 }
 
 const DAY = 86400000;
-const GUTTER_L = 30;
+const GUTTER_L = 28;
 const MONTH_H = 20;
 const GAP = 2;
 const PAD_B = 3; // room for the hover ring under the last row
@@ -271,7 +271,7 @@ export function CalendarHeatmap({
   formatValue = defaultFormatValue,
   onSelect,
   activeDate,
-  minCell = 10,
+  minCell = 7,
   maxCell = 16,
   summary = true,
   legend = true,
