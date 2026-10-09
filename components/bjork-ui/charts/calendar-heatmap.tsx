@@ -679,8 +679,9 @@ export function CalendarHeatmap({
             if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
             if (e.pointerType === "touch") onPointerMove(e);
           }}
-          onPointerLeave={() => {
-            if (st.current.source === "pointer") setHover(null, null);
+          onPointerLeave={(e) => {
+            // A touch tap fires leave right after up; keep the tapped day until the next tap.
+            if (e.pointerType !== "touch" && st.current.source === "pointer") setHover(null, null);
           }}
           onClick={onClick}
           onKeyDown={onKeyDown}

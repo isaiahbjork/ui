@@ -981,9 +981,10 @@ export function GroupedBarChart({
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
           if (e.pointerType === "touch") onPointerMove(e);
         }}
-        onPointerLeave={() => {
+        onPointerLeave={(e) => {
           rectRef.current = null;
-          setHover(null, null);
+          // A touch tap fires leave right after up; keep the tapped bar until the next tap.
+          if (e.pointerType !== "touch") setHover(null, null);
         }}
         onKeyDown={onKeyDown}
         className={cn("relative min-h-0 flex-1 touch-pan-y rounded-[10px]", chartFocusRing)}

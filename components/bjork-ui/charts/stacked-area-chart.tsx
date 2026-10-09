@@ -1264,8 +1264,9 @@ export function StackedAreaChart({
         onPointerMove={onPointerMove}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
-        onPointerLeave={() => {
-          if (st.current.source === "pointer") setCursor(null, null);
+        onPointerLeave={(e) => {
+          // A touch tap or scrub fires leave on lift; keep the crosshair until the next touch.
+          if (e.pointerType !== "touch" && st.current.source === "pointer") setCursor(null, null);
         }}
         onDoubleClick={onDoubleClick}
         onKeyDown={onKeyDown}
