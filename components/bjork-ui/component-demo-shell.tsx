@@ -16,7 +16,6 @@ import {
   Home,
   Maximize2,
   Minimize2,
-  Monitor,
   Moon,
   RefreshCcw,
   RotateCw,
@@ -204,11 +203,15 @@ export function ComponentDemoShell({
   const reducedMotionPreference = useReducedMotion();
   const shouldReduceMotion = isMounted && reducedMotionPreference === true;
   const { resolvedTheme, setTheme, theme } = useTheme();
-  // Desktop-only demos swap to their still below md. CSS hides the live stage
-  // from the first paint; once hydrated on a phone it is not mounted at all.
+  // Desktop-only demos never render on a phone. CSS hides the page from the
+  // first paint and, once hydrated, the phone is sent back to the library.
   const desktopOnly = isDesktopOnly(item);
   const isPhoneViewport = useIsPhoneViewport();
-  const showStillOnly = desktopOnly && isPhoneViewport;
+  const phoneBlocked = desktopOnly && isPhoneViewport;
+  const shellRouter = useRouter();
+  useEffect(() => {
+    if (phoneBlocked) shellRouter.replace("/");
+  }, [shellRouter, phoneBlocked]);
 
   const setSidebarOpen = useCallback((open: boolean) => {
     setSidebarOpenState(open);
@@ -317,7 +320,7 @@ export function ComponentDemoShell({
   };
 
   return (
-    <div className={cn("relative min-h-dvh lg:h-screen lg:overflow-hidden", palette.root)}>
+    <div className={cn("relative min-h-dvh lg:h-screen lg:overflow-hidden", desktopOnly && "max-md:hidden", palette.root)}>
       <div className={cn("pointer-events-none fixed inset-0", palette.wash)} />
 
       <ComponentIndexOverlay
@@ -531,9 +534,8 @@ export function ComponentDemoShell({
                   desktopOnly && "max-md:hidden",
                 )}
               >
-                {showStillOnly ? null : children}
+                {phoneBlocked ? null : children}
               </div>
-              {desktopOnly && <DesktopOnlyStill item={item} isLight={isLightPreview} />}
             </div>
           </motion.div>
 
@@ -703,42 +705,6 @@ function useIsPhoneViewport() {
     },
     () => window.matchMedia(phoneViewportQuery).matches,
     () => false
-  );
-}
-
-function DesktopOnlyStill({ item, isLight }: { item: GalleryItem; isLight: boolean }) {
-  return (
-    <div className="flex w-full flex-col gap-4 md:hidden">
-      <div
-        className={cn(
-          "relative aspect-[900/520] w-full overflow-hidden rounded-[8px] border",
-          isLight ? "border-[#eee6db] bg-[#f7f5ef]" : "border-[#1c1c1c] bg-[#111]"
-        )}
-      >
-        <Image
-          src={`/component-previews/${item.slug}${isLight ? "-light" : ""}.png`}
-          alt={`${item.title}, as it looks on a larger screen`}
-          fill
-          sizes="100vw"
-          className="object-cover"
-          unoptimized
-        />
-      </div>
-      <div className="space-y-1.5 px-1 pb-1">
-        <p
-          className={cn(
-            "flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.08em]",
-            isLight ? "text-[#171717]/60" : "text-[#ededed]/42"
-          )}
-        >
-          <Monitor className="size-3.5" aria-hidden />
-          Best on a larger screen
-        </p>
-        <p className={cn("text-sm leading-6", isLight ? "text-[#171717]/60" : "text-[#ededed]/42")}>
-          This one needs room to work. Open it on a tablet or desktop to try it live.
-        </p>
-      </div>
-    </div>
   );
 }
 
