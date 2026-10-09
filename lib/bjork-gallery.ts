@@ -1443,6 +1443,30 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork184",
+    slug: "integration-card",
+    title: "Integration card",
+    route: "/cards/integration-card",
+    sourcePath: "components/bjork-ui/cards/integration-card.tsx",
+    tier: "copy",
+    collection: "Cards",
+    preview: "gallery",
+    accent: "#ec5c13",
+    isNew: true,
+  },
+  {
+    id: "bjork185",
+    slug: "metric-card",
+    title: "Metric card",
+    route: "/cards/metric-card",
+    sourcePath: "components/bjork-ui/cards/metric-card.tsx",
+    tier: "copy",
+    collection: "Cards",
+    preview: "radial",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {
