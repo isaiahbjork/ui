@@ -563,15 +563,19 @@ export function FunnelChart({
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!n) return;
     const s = st.current;
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "ArrowRight" || e.key === "ArrowLeft") {
       e.preventDefault();
-      const down = e.key === "ArrowDown";
+      // Right walks down the funnel like Down, so either axis steps the flow.
+      const down = e.key === "ArrowDown" || e.key === "ArrowRight";
       const next = s.hover === null ? (down ? 0 : n - 1) : clamp(s.hover + (down ? 1 : -1), 0, n - 1);
       setHover(next, "keyboard");
     } else if (e.key === "Home" || e.key === "End") {
       e.preventDefault();
       setHover(e.key === "Home" ? 0 : n - 1, "keyboard");
-    } else if (e.key === "Escape") setHover(null, null);
+    } else if (e.key === "Escape" && s.hover !== null) {
+      e.preventDefault();
+      setHover(null, null);
+    }
   };
 
   const tableCols = useMemo(
@@ -617,7 +621,7 @@ export function FunnelChart({
         ref={wrapperRef}
         role="group"
         aria-roledescription="chart"
-        aria-label={`${ariaLabel}. Up and down move between steps.`}
+        aria-label={`${ariaLabel}. Arrow keys move between steps, Home and End jump to the first and last, Escape clears.`}
         tabIndex={0}
         onPointerEnter={() => {
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
@@ -631,6 +635,7 @@ export function FunnelChart({
           // A touch tap fires leave right after up; keep the tapped mark until the next tap.
           if (e.pointerType !== "touch") setHover(null, null);
         }}
+        onBlur={() => setHover(null, null)}
         onKeyDown={onKeyDown}
         className={cn("absolute inset-0 touch-pan-y rounded-[10px]", chartFocusRing)}
       >
