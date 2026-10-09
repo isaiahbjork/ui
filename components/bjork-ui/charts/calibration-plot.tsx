@@ -40,6 +40,7 @@ export interface CalibrationBin {
 
 export interface CalibrationPlotProps {
   forecasts: Forecast[];
+  /** Equal-width bin count (4 to 20). Controlled when set. */
   bins?: number;
   defaultBins?: number;
   onBinsChange?: (bins: number) => void;
@@ -80,17 +81,28 @@ function wilson(k: number, n: number): [number, number] {
   return [Math.max(0, c - m), Math.min(1, c + m)];
 }
 
+/**
+ * Equal-width reliability bins over [0, 1] (p = 1 lands in the last bin). Each bin reports its mean
+ * forecast, observed rate and a 95% Wilson interval; empty bins are dropped. Brier is the mean squared
+ * error of the forecasts; ECE is the count-weighted mean |observed − mean forecast| over the bins.
+ * Forecasts with a non-finite p are ignored, and p is clamped to [0, 1].
+ */
 export function calibrate(forecasts: Forecast[], count: number): { bins: CalibrationBin[]; brier: number; ece: number; n: number } {
+  count = Math.max(1, Math.round(count) || 1);
   const sums = Array.from({ length: count }, () => ({ p: 0, k: 0, n: 0 }));
   let brier = 0;
+  let N = 0;
   for (const f of forecasts) {
-    const b = clamp(Math.floor(f.p * count), 0, count - 1);
-    sums[b].p += f.p;
-    sums[b].k += f.outcome;
+    if (!Number.isFinite(f.p)) continue;
+    const p = clamp(f.p, 0, 1);
+    const o = f.outcome ? 1 : 0;
+    const b = Math.min(count - 1, Math.floor(p * count));
+    sums[b].p += p;
+    sums[b].k += o;
     sums[b].n++;
-    brier += (f.p - f.outcome) ** 2;
+    brier += (p - o) ** 2;
+    N++;
   }
-  const N = forecasts.length;
   let ece = 0;
   const bins: CalibrationBin[] = [];
   sums.forEach((s, i) => {
@@ -408,6 +420,9 @@ export function CalibrationPlot({
       e.preventDefault();
       const cur = s.hover !== null && s.source !== "attract" ? s.hover : e.key === "ArrowRight" ? -1 : n;
       setHover(clamp(cur + (e.key === "ArrowRight" ? 1 : -1), 0, n - 1), "keyboard");
+    } else if ((e.key === "Home" || e.key === "End") && n) {
+      e.preventDefault();
+      setHover(e.key === "Home" ? 0 : n - 1, "keyboard");
     } else if (e.key === "[" || e.key === "]") {
       e.preventDefault();
       setBins(binCount + (e.key === "[" ? -1 : 1));
