@@ -160,7 +160,7 @@ export default function Page() {
     return (
       <SimpleComponentDemoPage
         item={item}
-        description="One light along the bottom edge of an input that listens, gathers into a single thought, and speaks."
+        description="A hairline of light on the bottom edge of an input. It listens, thinks and speaks."
         previewScaleClassName="w-[360px]"
         previewCaptureScaleClassName="w-[560px] scale-[1.2]"
       >
@@ -176,7 +176,7 @@ export default function Page() {
   return (
     <SimpleComponentDemoPage
       item={item}
-      description="One light along the bottom edge of an input that listens, gathers into a single thought, and speaks. It never blinks or swaps."
+      description="A hairline of light on the bottom edge of an input. It listens, thinks and speaks, and morphs between them without a blink."
       usageCode={`import { HandoffBeam } from "@/components/bjork-ui/ai/handoff-beam";
 
 <HandoffBeam phase="listening" level={() => voice.level()} radius={32}>

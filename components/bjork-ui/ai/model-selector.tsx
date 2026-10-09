@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import { Lock, Search } from "lucide-react";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import {
@@ -50,6 +50,11 @@ export interface ModelSelectorProps {
   side?: "top" | "bottom";
   /** Edge of the trigger the menu lines up with before it is kept inside the viewport. Default "start". */
   align?: "start" | "end";
+  /**
+   * Element the menu lines up under instead of the trigger, such as the composer card the picker sits in. The menu
+   * takes its width and left edge from it, and opens below its bottom edge. Omit it to anchor to the trigger.
+   */
+  anchorRef?: RefObject<HTMLElement | null>;
   /** Accessible name of the trigger and list. Default "Model". */
   label?: string;
   disabled?: boolean;
@@ -143,7 +148,8 @@ const CAPABILITY_LABEL: Record<ModelCapability, string> = {
 const SPEED_LEVEL: Record<ModelSpeed, number> = { fast: 3, balanced: 2, deliberate: 1 };
 // Room kept between the menu and the viewport edge.
 const EDGE = 12;
-const GAP = 6;
+// Room between the trigger and the menu. Matches the house popover spacing (8px).
+const GAP = 8;
 
 function monogram(provider: string): string {
   const words = provider.split(/\s+/).filter(Boolean);
@@ -183,6 +189,7 @@ export function ModelSelector({
   onOpenChange,
   side = "bottom",
   align = "start",
+  anchorRef,
   label = "Model",
   disabled = false,
   tone: toneProp,
@@ -254,34 +261,50 @@ export function ModelSelector({
       const trigger = triggerRef.current;
       const panel = panelRef.current;
       const list = listRef.current;
-      if (!trigger || !panel || !list) return;
+      const wrap = wrapRef.current;
+      if (!trigger || !panel || !list || !wrap) return;
       const r = trigger.getBoundingClientRect();
+      // The edge the menu lines up with: the composer when one is given, otherwise the trigger.
+      const a = anchorRef?.current?.getBoundingClientRect() ?? r;
+      const w = wrap.getBoundingClientRect();
+      // Screen pixels to the wrapper's own CSS pixels, so offsets stay right inside a scaled preview.
+      const k = wrap.offsetWidth > 0 ? w.width / wrap.offsetWidth : 1;
+      const local = (px: number) => px / k;
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const below = vh - r.bottom - GAP - EDGE;
-      const above = r.top - GAP - EDGE;
+      const below = vh - a.bottom - GAP - EDGE;
+      const above = a.top - GAP - EDGE;
       const chrome = panel.offsetHeight - list.offsetHeight;
       const want = Math.min(list.scrollHeight, 340);
       const fitsPreferred = (side === "bottom" ? below : above) >= want + chrome;
       const placeBelow = side === "bottom" ? fitsPreferred || below >= above : !(fitsPreferred || above >= below);
       const room = Math.max(120, (placeBelow ? below : above) - chrome);
-      list.style.maxHeight = `${Math.min(340, room)}px`;
+      list.style.maxHeight = `${Math.min(340, local(room))}px`;
       panel.dataset.side = placeBelow ? "bottom" : "top";
-      panel.style.top = placeBelow ? `calc(100% + ${GAP}px)` : "auto";
-      panel.style.bottom = placeBelow ? "auto" : `calc(100% + ${GAP}px)`;
+      // Offsets are measured from the wrapper, which is the menu's containing block.
+      panel.style.top = placeBelow ? `${local(a.bottom + GAP - w.top)}px` : "auto";
+      panel.style.bottom = placeBelow ? "auto" : `${local(w.bottom - a.top + GAP)}px`;
+      if (anchorRef?.current) {
+        panel.style.width = `${local(Math.min(a.width, vw - EDGE * 2))}px`;
+      } else {
+        panel.style.width = "";
+      }
       const width = panel.offsetWidth;
-      const wantLeft = align === "start" ? r.left : r.right - width;
-      const left = Math.min(Math.max(EDGE, wantLeft), Math.max(EDGE, vw - EDGE - width));
-      panel.style.left = `${left - r.left}px`;
+      const wantLeft = anchorRef?.current ? a.left : align === "start" ? r.left : r.right - width * k;
+      const left = Math.min(Math.max(EDGE, wantLeft), Math.max(EDGE, vw - EDGE - width * k));
+      panel.style.left = `${local(left - w.left)}px`;
     };
     place();
+    // On mount the composer ref is attached after this effect runs, so place once more on the next frame.
+    const frame = requestAnimationFrame(place);
     window.addEventListener("resize", place);
     window.addEventListener("scroll", place, true);
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener("resize", place);
       window.removeEventListener("scroll", place, true);
     };
-  }, [isOpen, side, align, groups]);
+  }, [isOpen, side, align, groups, anchorRef]);
 
   // Focus moves into the search field only when the user opened the menu, never on mount.
   useEffect(() => {
@@ -408,14 +431,15 @@ export function ModelSelector({
         <div
           ref={panelRef}
           data-side={side}
+          data-anchor={anchorRef ? "container" : "trigger"}
           className={cn(
-            "absolute left-0 top-[calc(100%+6px)] z-40 flex w-[min(380px,calc(100vw-24px))] flex-col overflow-hidden rounded-[14px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-menu)] shadow-[var(--bjork-shadow-menu)] backdrop-blur-md",
+            "absolute left-0 top-[calc(100%+8px)] z-40 flex w-[min(380px,calc(100vw-24px))] flex-col overflow-hidden rounded-[14px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-menu)] shadow-[var(--bjork-shadow-menu)] backdrop-blur-md",
             "data-[side=bottom]:origin-top data-[side=top]:origin-bottom",
             !reduce && "motion-safe:animate-[bjork-model-pop_180ms_cubic-bezier(0.23,1,0.32,1)]",
           )}
         >
           <style href="bjork-model-selector-pop" precedence="default">
-            {"@keyframes bjork-model-pop{from{opacity:0;transform:scale(0.97) translateY(-2px)}to{opacity:1;transform:none}}"}
+            {"@keyframes bjork-model-pop{from{opacity:0;transform:scale(0.97)}to{opacity:1;transform:none}}"}
           </style>
           <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[color:var(--bjork-border)] px-3">
             <Search aria-hidden="true" size={14} strokeWidth={1.75} className="shrink-0 text-[color:var(--bjork-text-faint)]" />
