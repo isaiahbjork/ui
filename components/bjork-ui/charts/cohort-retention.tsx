@@ -402,7 +402,7 @@ export function CohortRetention({
     const i = r * P + c;
     const size = r < R ? cohorts[r].size : m.avgSize[c];
     const base = `${cohortName(r)}, ${formatPeriod(c, "long")}: ${rateDigits(m.rate[i])} retained, ${formatCount(m.count[i])} of ${formatCount(size)} users`;
-    return r < R ? `${base}, ${formatSigned(ppOf(r, c), (v) => formatNumber(v, 1))} points vs ${averageLabel.toLowerCase()}` : `${base}, across ${m.avgN[c]} cohorts`;
+    return r < R ? `${base}, ${formatSigned(ppOf(r, c), (v) => formatNumber(v, 1))} points vs ${averageLabel.toLowerCase()}` : `${base}, across ${m.avgN[c]} ${m.avgN[c] === 1 ? "cohort" : "cohorts"}`;
   };
 
   const markLabels = (cell: [number, number] | null, on: boolean) => {
