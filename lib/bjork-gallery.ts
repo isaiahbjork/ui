@@ -1419,6 +1419,30 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork182",
+    slug: "plan-usage-card",
+    title: "Plan usage card",
+    route: "/cards/plan-usage-card",
+    sourcePath: "components/bjork-ui/cards/plan-usage-card.tsx",
+    tier: "copy",
+    collection: "Cards",
+    preview: "schedule",
+    accent: "#ec5c13",
+    isNew: true,
+  },
+  {
+    id: "bjork183",
+    slug: "payment-method-card",
+    title: "Payment method card",
+    route: "/cards/payment-method-card",
+    sourcePath: "components/bjork-ui/cards/payment-method-card.tsx",
+    tier: "copy",
+    collection: "Cards",
+    preview: "gallery",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {
