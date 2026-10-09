@@ -552,3 +552,129 @@ export function useBlockToast(ms = 2600) {
   );
   return { show, node };
 }
+
+export interface BlockDialogProps {
+  open: boolean;
+  onClose: () => void;
+  /** Visible title; also the dialog's accessible name. */
+  title: string;
+  description?: ReactNode;
+  children?: ReactNode;
+  /** Buttons for the footer, right-aligned. */
+  footer?: ReactNode;
+  tone?: "neutral" | "danger";
+  className?: string;
+}
+
+/**
+ * A modal dialog positioned inside the block (not portalled), so a forced theme reaches it. Traps focus, closes
+ * on Escape or a scrim click, and returns focus to the trigger. Mark the block's own content `inert` while open.
+ */
+export function BlockDialog({ open, onClose, title, description, children, footer, tone = "neutral", className }: BlockDialogProps) {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const reduce = useBlockReducedMotion();
+  const titleId = useId();
+  const descId = useId();
+  useFocusTrap(panelRef, open, onClose);
+  return (
+    <div
+      className={cn("absolute inset-0 z-50 grid place-items-center p-4", open ? "pointer-events-auto" : "pointer-events-none")}
+      aria-hidden={!open}
+    >
+      <div
+        className={cn(
+          "absolute inset-0 bg-[var(--blk-scrim)] transition-opacity duration-200 ease-out",
+          open ? "opacity-100" : "opacity-0",
+        )}
+        onClick={onClose}
+      />
+      <div
+        ref={panelRef}
+        role={tone === "danger" ? "alertdialog" : "dialog"}
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={description ? descId : undefined}
+        tabIndex={-1}
+        inert={!open}
+        className={cn(
+          "relative flex max-h-full w-full max-w-[440px] flex-col overflow-hidden rounded-[18px] border border-[color:var(--bjork-border)] bg-[var(--bjork-surface)] shadow-[var(--bjork-shadow-menu)] outline-none",
+          reduce
+            ? cn("transition-opacity duration-150", open ? "opacity-100" : "opacity-0")
+            : cn(
+                "transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                open ? "scale-100 opacity-100" : "scale-[0.97] opacity-0",
+              ),
+          className,
+        )}
+      >
+        <div className="overflow-y-auto px-5 pb-4 pt-5">
+          <h2 id={titleId} className="text-[16px] font-semibold tracking-[-0.015em]">
+            {title}
+          </h2>
+          {description && (
+            <div id={descId} className="mt-1.5 text-[13px] leading-[1.55] text-[color:var(--bjork-text-muted)]">
+              {description}
+            </div>
+          )}
+          {children && <div className="mt-4">{children}</div>}
+        </div>
+        {footer && (
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-[color:var(--bjork-border)] bg-[var(--bjork-panel)] px-5 py-3">
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export interface BlockSwitchProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onChange"> {
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  /** Accessible name when there is no visible label wired with aria-labelledby. */
+  label?: string;
+}
+
+/** A role="switch" toggle. Space and Enter flip it; it reads as on/off to assistive tech. */
+export const BlockSwitch = forwardRef<HTMLButtonElement, BlockSwitchProps>(function BlockSwitch(
+  { checked, onCheckedChange, label, className, disabled, ...props },
+  ref,
+) {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={() => onCheckedChange(!checked)}
+      className={cn(
+        "relative inline-flex h-[22px] w-[38px] shrink-0 cursor-pointer items-center rounded-full border transition-[background-color,border-color] duration-200 ease-out disabled:cursor-not-allowed disabled:opacity-45 motion-reduce:transition-none",
+        checked
+          ? "border-transparent bg-[var(--blk-accent-fill)]"
+          : "border-[color:var(--bjork-border-strong)] bg-[var(--bjork-field-inset)] shadow-[var(--bjork-shadow-inset)]",
+        focusRing,
+        className,
+      )}
+      {...props}
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "absolute left-[2px] size-4 rounded-full bg-white shadow-[0_1px_2px_rgba(0,0,0,0.3)] transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
+          checked ? "translate-x-4" : "translate-x-0",
+        )}
+      />
+    </button>
+  );
+});
+
+export function BlockSpinner({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 16 16" aria-hidden="true" className={cn("animate-spin motion-reduce:animate-[spin_1.6s_linear_infinite]", className)}>
+      <circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" strokeOpacity="0.25" strokeWidth="1.8" />
+      <path d="M14 8a6 6 0 0 0-6-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
