@@ -14,6 +14,7 @@ import {
 import { useReducedMotion } from "framer-motion";
 import { BJORK_PALETTE, type BjorkTone } from "@/components/bjork-ui/_core/palette";
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
+import { surfaceVars } from "@/components/bjork-ui/_core/surface";
 
 export type { BjorkTone };
 export type BjorkPalette = (typeof BJORK_PALETTE)[BjorkTone];
@@ -43,8 +44,8 @@ export function useReduceMotion(): boolean {
 export function useAiTone(toneProp?: BjorkTone) {
   const tone = useBjorkTone(toneProp);
   const pal = BJORK_PALETTE[tone];
-  const light = tone === "light";
   const style = {
+    ...surfaceVars(tone),
     "--bjork-text": pal.text,
     "--bjork-text-medium": pal.textMedium,
     "--bjork-text-muted": pal.textMuted,
@@ -66,15 +67,6 @@ export function useAiTone(toneProp?: BjorkTone) {
     "--bjork-warning": pal.warning,
     "--bjork-error": pal.error,
     "--bjork-ring-offset": pal.bg,
-    "--bjork-field": light ? "rgba(255, 252, 246, 0.96)" : "rgba(18, 18, 18, 0.95)",
-    "--bjork-field-inset": light ? "rgba(239, 231, 216, 0.72)" : "rgba(9, 9, 9, 0.75)",
-    "--bjork-menu": light ? "rgba(255, 252, 246, 0.98)" : "rgba(18, 18, 18, 0.98)",
-    "--bjork-shadow-menu": light
-      ? "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), 0 22px 44px -26px rgba(66, 52, 33, 0.22)"
-      : "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
-    "--bjork-shadow-surface": light
-      ? "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), 0 14px 22px -9px rgba(66, 52, 33, 0.11)"
-      : "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
     colorScheme: tone,
   } as CSSProperties;
   return { tone, pal, style };
@@ -154,3 +146,9 @@ export const SHIMMER_TEXT_CSS =
   "@keyframes bjork-ai-shimmer{from{background-position:100% 0}to{background-position:0% 0}}" +
   ".bjork-ai-shimmer{background-image:linear-gradient(90deg,var(--bjork-text-muted) 0%,var(--bjork-text-muted) 40%,var(--bjork-text) 50%,var(--bjork-text-muted) 60%,var(--bjork-text-muted) 100%);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:bjork-ai-shimmer 1.8s linear infinite}" +
   "@media (prefers-reduced-motion: reduce){.bjork-ai-shimmer{animation:none;background:none;color:var(--bjork-text-muted)}}";
+
+/** CANON §2. Panel = a component's own root surface; Card = a standalone card; Tile = a card inside a panel; Well = recessed code/field. */
+export const AI_PANEL = "rounded-[20px] border border-[color:var(--bjork-border-muted)] bg-[color:var(--bjork-surface)] p-4 shadow-[var(--bjork-shadow-surface)]";
+export const AI_CARD = "rounded-[18px] border border-[color:var(--bjork-border-muted)] bg-[color:var(--bjork-surface)] shadow-[var(--bjork-shadow-surface)]";
+export const AI_TILE = "rounded-[12px] border border-[color:var(--bjork-border-muted)] bg-[color:var(--bjork-surface)] shadow-[var(--bjork-shadow-surface)]";
+export const AI_WELL = "rounded-[8px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-field-inset)] shadow-[var(--bjork-shadow-inset)]";

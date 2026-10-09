@@ -50,8 +50,8 @@ export function useBjorkTableIsDark(
 export function getBjorkTablePalette(isDark: boolean) {
   return {
     container: isDark
-      ? "border-[#232323] bg-[#111]"
-      : "border-[#f1e8dc] bg-[#fffcf6] shadow-[var(--bjork-shadow-surface)]",
+      ? "border-[#1c1c1c] bg-[#121212] shadow-[inset_0_7px_14px_rgba(255,255,255,0.03),inset_0_0.5px_0.5px_rgba(255,255,255,0.06),0_14px_20px_-6px_rgba(0,0,0,0.45)]"
+      : "border-[#f5ede2] bg-[#fffcf6] shadow-[inset_0_7px_14px_rgba(88,72,49,0.045),inset_0_0.5px_0.5px_rgba(255,255,255,0.92),inset_1px_0_0_rgba(88,72,49,0.026),inset_-1px_0_0_rgba(255,255,255,0.68),0_14px_22px_-9px_rgba(66,52,33,0.11)]",
     header: isDark
       ? "border-[#232323] bg-[#181818] text-[#ededed]/42"
       : "border-[#f1e8dc] bg-[#fbf7ef] text-[#171717]/60",
@@ -62,11 +62,11 @@ export function getBjorkTablePalette(isDark: boolean) {
       ? "border-[#2a2a2a] bg-[#181818]"
       : "border-[#eadfce] bg-[#f8f2e7]",
     control: isDark
-      ? "border-[#232323] bg-[#181818] text-[#ededed]/70 hover:bg-[#202020]"
+      ? "border-[#232323] bg-[#181818] text-[#ededed]/70 hover:bg-[#202020] shadow-[inset_0_1px_0_rgba(255,255,255,0.045)]"
       : "border-[#eadfce] bg-[#fffcf6] text-[#171717]/68 shadow-[var(--bjork-shadow-soft)] hover:bg-[#f8f2e7]",
     menu: isDark
-      ? "border-[#232323] bg-[#181818] text-[#ededed]/76 shadow-[0_18px_60px_rgba(0,0,0,0.42)]"
-      : "border-[#eadfce] bg-[#fffcf6] text-[#171717]/76 shadow-[0_18px_60px_rgba(62,52,38,0.12)]",
+      ? "border-[#232323] bg-[#181818] text-[#ededed]/76 shadow-[inset_0_1px_0_rgba(255,255,255,0.055),inset_0_12px_24px_rgba(255,255,255,0.018),0_22px_42px_-22px_rgba(0,0,0,0.9)]"
+      : "border-[#eadfce] bg-[#fffcf6] text-[#171717]/76 shadow-[inset_0_1px_0_rgba(88,72,49,0.04),inset_0_12px_24px_rgba(88,72,49,0.022),0_22px_44px_-26px_rgba(66,52,33,0.22)]",
     menuItem: isDark ? "hover:bg-[#232323]" : "hover:bg-[#f8f2e7]",
     menuActive: isDark ? "bg-[#232323]" : "bg-[#f8f2e7]",
     divider: isDark ? "border-[#232323]" : "border-[#f1e8dc]",
