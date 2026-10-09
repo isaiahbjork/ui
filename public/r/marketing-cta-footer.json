@@ -1,0 +1,189 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "marketing-cta-footer",
+  "title": "Marketing CTA and footer",
+  "description": "Marketing CTA and footer is a production-ready blocks component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "lucide-react",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/blocks/marketing-cta-footer.tsx",
+      "content": "\"use client\";\n\nimport { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from \"react\";\nimport { AnimatePresence, motion } from \"framer-motion\";\nimport { ArrowRight, Check, Copy } from \"lucide-react\";\nimport {\n  blockFrame,\n  blockToneProps,\n  CtaLink,\n  focusRing,\n  Reveal,\n  SampleMark,\n  useBlockReducedMotion,\n  type BlockLink,\n  type BlockTone,\n} from \"@/components/bjork-ui/blocks/marketing-kit\";\nimport { cn } from \"@/lib/utils\";\n\nexport interface FooterColumn {\n  title: string;\n  links: BlockLink[];\n}\n\nexport interface MarketingCtaFooterProps {\n  cta: {\n    title: ReactNode;\n    description?: ReactNode;\n    primary: BlockLink;\n    secondary?: BlockLink;\n    /** A shell command with a copy button, such as an install line. */\n    command?: string;\n  };\n  brand: { name: string; href: string; logo?: ReactNode; tagline?: string };\n  columns: FooterColumn[];\n  newsletter?: {\n    label: string;\n    description?: string;\n    placeholder?: string;\n    submitLabel?: string;\n    successMessage?: string;\n    /** Resolve to confirm, throw to show `error.message`. Without it the form only validates. */\n    onSubscribe?: (email: string) => Promise<void> | void;\n  };\n  /** Status pill in the bottom bar. */\n  status?: { label: string; href: string; state?: \"ok\" | \"degraded\" | \"down\" };\n  legal: string;\n  legalLinks?: BlockLink[];\n  /** Draw the brand name large across the bottom edge. */\n  wordmark?: boolean;\n  tone?: BlockTone;\n  /** Play the in-view motion. Turn off for screenshots. */\n  animate?: boolean;\n  className?: string;\n}\n\nexport const MARKETING_CTA_FOOTER_SAMPLE: MarketingCtaFooterProps = {\n  cta: {\n    title: \"Your next incident is already in a trace.\",\n    description: \"Install the SDK, ship one run, and see every step it took. Free up to 10,000 traces a month.\",\n    primary: { label: \"Start tracing free\", href: \"#signup\" },\n    secondary: { label: \"Talk to an engineer\", href: \"#contact\" },\n    command: \"npm install @tracewell/sdk\",\n  },\n  brand: {\n    name: \"Tracewell\",\n    href: \"#\",\n    tagline: \"Traces, replays and alerts for AI agents in production.\",\n  },\n  columns: [\n    {\n      title: \"Product\",\n      links: [\n        { label: \"Traces\", href: \"#traces\" },\n        { label: \"Replay\", href: \"#replay\" },\n        { label: \"Alerts\", href: \"#alerts\" },\n        { label: \"Pricing\", href: \"#pricing\" },\n        { label: \"Changelog\", href: \"#changelog\" },\n      ],\n    },\n    {\n      title: \"Developers\",\n      links: [\n        { label: \"Documentation\", href: \"#docs\" },\n        { label: \"SDK reference\", href: \"#sdk\" },\n        { label: \"OpenTelemetry\", href: \"#otel\" },\n        { label: \"Examples\", href: \"#examples\" },\n      ],\n    },\n    {\n      title: \"Company\",\n      links: [\n        { label: \"About\", href: \"#about\" },\n        { label: \"Customers\", href: \"#customers\" },\n        { label: \"Careers\", href: \"#careers\" },\n        { label: \"Contact\", href: \"#contact\" },\n      ],\n    },\n  ],\n  newsletter: {\n    label: \"Field notes\",\n    description: \"One email a month on running agents in production. No launches dressed up as advice.\",\n    placeholder: \"you@company.com\",\n    submitLabel: \"Subscribe\",\n    successMessage: \"You are on the list. The next issue goes out on the first Tuesday.\",\n  },\n  status: { label: \"All systems normal\", href: \"#status\", state: \"ok\" },\n  legal: \"© 2026 Tracewell Labs, Inc.\",\n  legalLinks: [\n    { label: \"Privacy\", href: \"#privacy\" },\n    { label: \"Terms\", href: \"#terms\" },\n    { label: \"Security\", href: \"#security\" },\n  ],\n  wordmark: true,\n};\n\nconst STATUS_DOT = {\n  ok: \"bg-[#3fa774]\",\n  degraded: \"bg-[#f2b544]\",\n  down: \"bg-[#ff5c4d]\",\n} as const;\n\nconst EMAIL_PATTERN = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n\n/**\n * The end of a landing page: a closing call to action with an install command you can copy, then the\n * site footer with link columns, a newsletter form, a status pill, legal links and an oversized wordmark.\n */\nexport function MarketingCtaFooter({\n  cta,\n  brand,\n  columns,\n  newsletter,\n  status,\n  legal,\n  legalLinks,\n  wordmark = true,\n  tone = \"auto\",\n  animate = true,\n  className,\n}: MarketingCtaFooterProps) {\n  const ctaTitleId = useId();\n  const toneProps = blockToneProps(tone);\n\n  const ctaCard = (\n    <section\n      aria-labelledby={ctaTitleId}\n      className=\"relative isolate overflow-hidden rounded-[28px] border border-[color:var(--bjork-border)] bg-[var(--bjork-surface)] px-6 py-14 shadow-[var(--bjork-shadow-panel)] @2xl:px-12 @2xl:py-20\"\n    >\n      <CtaBackdrop />\n      <div className=\"mx-auto flex max-w-[720px] flex-col items-center text-center\">\n        <h2\n          id={ctaTitleId}\n          className=\"text-balance font-bjork-display text-[34px] font-semibold leading-[1.02] tracking-[-0.04em] @xl:text-[48px] @4xl:text-[56px]\"\n        >\n          {cta.title}\n        </h2>\n        {cta.description ? (\n          <p className=\"mt-5 max-w-[50ch] text-pretty text-[16px] leading-7 text-[color:var(--bjork-text-medium)] @xl:text-[17px]\">\n            {cta.description}\n          </p>\n        ) : null}\n        <div className=\"mt-9 flex w-full flex-col items-stretch justify-center gap-3 @md:w-auto @md:flex-row @md:items-center\">\n          <CtaLink link={cta.primary} arrow />\n          {cta.secondary ? <CtaLink link={cta.secondary} variant=\"secondary\" /> : null}\n        </div>\n        {cta.command ? <CommandCopy command={cta.command} /> : null}\n      </div>\n    </section>\n  );\n\n  return (\n    <div\n      {...toneProps}\n      className={cn(\n        \"@container w-full bg-[var(--bjork-bg)] font-bjork-alpha text-[color:var(--bjork-text)]\",\n        toneProps.className,\n        className,\n      )}\n    >\n      <div className={cn(blockFrame, \"pt-16 @3xl:pt-24\")}>{animate ? <Reveal>{ctaCard}</Reveal> : ctaCard}</div>\n\n      <footer className=\"relative mt-20 overflow-hidden border-t border-[color:var(--bjork-border)] @3xl:mt-28\">\n        <h2 className=\"sr-only\">Site footer</h2>\n        <div className={cn(blockFrame, \"grid gap-12 py-14 @4xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1.6fr)] @4xl:gap-16 @4xl:py-16\")}>\n          <div className=\"flex flex-col gap-8\">\n            <div>\n              <a\n                href={brand.href}\n                className={cn(\"inline-flex items-center gap-2.5 rounded-[8px] text-[16px] font-semibold tracking-[-0.02em]\", focusRing)}\n              >\n                {brand.logo ?? <SampleMark />}\n                {brand.name}\n              </a>\n              {brand.tagline ? (\n                <p className=\"mt-3 max-w-[36ch] text-[14px] leading-6 text-[color:var(--bjork-text-muted)]\">{brand.tagline}</p>\n              ) : null}\n            </div>\n            {newsletter ? <Newsletter {...newsletter} /> : null}\n          </div>\n\n          <nav aria-label=\"Footer\" className=\"grid grid-cols-2 gap-x-6 gap-y-10 @xl:grid-cols-3\">\n            {columns.map((column) => (\n              <FooterLinks key={column.title} column={column} />\n            ))}\n          </nav>\n        </div>\n\n        <div className={blockFrame}>\n        <div className=\"flex flex-col gap-4 border-t border-[color:var(--bjork-border-muted)] py-6 @2xl:flex-row @2xl:items-center @2xl:justify-between\">\n          <div className=\"flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-[color:var(--bjork-text-muted)]\">\n            <p>{legal}</p>\n            {legalLinks && legalLinks.length > 0 ? (\n              <ul className=\"flex flex-wrap gap-x-4 gap-y-1\">\n                {legalLinks.map((link) => (\n                  <li key={link.href}>\n                    <a\n                      href={link.href}\n                      onClick={link.onClick}\n                      className={cn(\"rounded-[4px] transition-colors duration-150 hover:text-[color:var(--bjork-text)]\", focusRing)}\n                    >\n                      {link.label}\n                    </a>\n                  </li>\n                ))}\n              </ul>\n            ) : null}\n          </div>\n          {status ? (\n            <a\n              href={status.href}\n              className={cn(\n                \"inline-flex w-fit items-center gap-2 rounded-full border border-[color:var(--bjork-border)] bg-[var(--bjork-surface)] px-3 py-1.5 text-[12.5px] text-[color:var(--bjork-text-medium)] transition-colors duration-150 hover:text-[color:var(--bjork-text)]\",\n                focusRing,\n              )}\n            >\n              <span aria-hidden className={cn(\"size-1.5 rounded-full\", STATUS_DOT[status.state ?? \"ok\"])} />\n              {status.label}\n            </a>\n          ) : null}\n        </div>\n        </div>\n\n        {wordmark ? (\n          <div aria-hidden className=\"pointer-events-none select-none overflow-hidden\">\n            <p\n              className=\"-mb-[0.22em] text-center font-bjork-display font-semibold leading-[0.8] tracking-[-0.06em] text-transparent\"\n              style={{\n                fontSize: \"clamp(72px, 19cqw, 280px)\",\n                WebkitTextStroke: \"1px var(--bjork-border-strong)\",\n                backgroundImage: \"linear-gradient(to bottom, var(--bjork-border-muted), transparent 85%)\",\n                WebkitBackgroundClip: \"text\",\n                backgroundClip: \"text\",\n              }}\n            >\n              {brand.name}\n            </p>\n          </div>\n        ) : null}\n      </footer>\n    </div>\n  );\n}\n\nfunction CtaBackdrop() {\n  return (\n    <div aria-hidden className=\"pointer-events-none absolute inset-0 -z-10\">\n      <div\n        className=\"absolute inset-0 opacity-70\"\n        style={{\n          backgroundImage: \"radial-gradient(var(--bjork-border-strong) 1px, transparent 1px)\",\n          backgroundSize: \"18px 18px\",\n          maskImage: \"radial-gradient(ellipse 70% 80% at 50% 100%, #000 10%, transparent 70%)\",\n          WebkitMaskImage: \"radial-gradient(ellipse 70% 80% at 50% 100%, #000 10%, transparent 70%)\",\n        }}\n      />\n      <div\n        className=\"absolute bottom-[-40%] left-1/2 h-[80%] w-[80%] -translate-x-1/2 rounded-[50%] blur-[70px]\"\n        style={{ background: \"radial-gradient(closest-side, var(--bjork-accent-soft), transparent)\" }}\n      />\n    </div>\n  );\n}\n\nfunction CommandCopy({ command }: { command: string }) {\n  const [copied, setCopied] = useState(false);\n  const reduce = useBlockReducedMotion();\n  const timer = useRef<number | undefined>(undefined);\n\n  useEffect(() => () => window.clearTimeout(timer.current), []);\n\n  const copy = async () => {\n    try {\n      await navigator.clipboard.writeText(command);\n      setCopied(true);\n      window.clearTimeout(timer.current);\n      timer.current = window.setTimeout(() => setCopied(false), 1800);\n    } catch {\n      setCopied(false);\n    }\n  };\n\n  return (\n    <div className=\"mt-8 flex w-full max-w-[420px] items-center gap-2 rounded-[14px] border border-[color:var(--bjork-border)] bg-[var(--bjork-panel)] py-1.5 pl-4 pr-1.5 shadow-[var(--bjork-shadow-inset)]\">\n      <span aria-hidden className=\"font-mono text-[13px] text-[color:var(--bjork-text-faint)]\">\n        $\n      </span>\n      <code className=\"min-w-0 flex-1 truncate text-left font-mono text-[13px] text-[color:var(--bjork-text-strong)]\">{command}</code>\n      <button\n        type=\"button\"\n        onClick={copy}\n        aria-label={copied ? \"Copied\" : `Copy command: ${command}`}\n        className={cn(\n          \"relative grid size-8 shrink-0 place-items-center rounded-[9px] text-[color:var(--bjork-text-muted)] transition-[transform,color,background-color] duration-150 hover:bg-[var(--bjork-surface-hover)] hover:text-[color:var(--bjork-text)] active:scale-[0.94] motion-reduce:transition-none\",\n          focusRing,\n        )}\n      >\n        <AnimatePresence mode=\"popLayout\" initial={false}>\n          <motion.span\n            key={copied ? \"done\" : \"copy\"}\n            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6, filter: \"blur(2px)\" }}\n            animate={{ opacity: 1, scale: 1, filter: \"blur(0px)\" }}\n            exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.6, filter: \"blur(2px)\" }}\n            transition={{ duration: 0.16, ease: [0.23, 1, 0.32, 1] }}\n            className=\"grid place-items-center\"\n          >\n            {copied ? (\n              <Check aria-hidden className=\"size-4 text-[color:var(--bjork-accent)]\" />\n            ) : (\n              <Copy aria-hidden className=\"size-4\" />\n            )}\n          </motion.span>\n        </AnimatePresence>\n      </button>\n      <span role=\"status\" aria-live=\"polite\" className=\"sr-only\">\n        {copied ? \"Command copied to clipboard\" : \"\"}\n      </span>\n    </div>\n  );\n}\n\nfunction FooterLinks({ column }: { column: FooterColumn }) {\n  const headingId = useId();\n  return (\n    <div>\n      <h3 id={headingId} className=\"font-mono text-[10.5px] uppercase tracking-[0.12em] text-[color:var(--bjork-text-soft)]\">\n        {column.title}\n      </h3>\n      <ul aria-labelledby={headingId} className=\"mt-4 flex flex-col gap-2.5\">\n        {column.links.map((link) => (\n          <li key={link.href}>\n            <a\n              href={link.href}\n              onClick={link.onClick}\n              className={cn(\n                \"rounded-[4px] text-[14px] text-[color:var(--bjork-text-medium)] transition-colors duration-150 hover:text-[color:var(--bjork-text)]\",\n                focusRing,\n              )}\n            >\n              {link.label}\n            </a>\n          </li>\n        ))}\n      </ul>\n    </div>\n  );\n}\n\ntype FormState = { kind: \"idle\" } | { kind: \"sending\" } | { kind: \"done\" } | { kind: \"error\"; message: string };\n\nfunction Newsletter({\n  label,\n  description,\n  placeholder = \"you@company.com\",\n  submitLabel = \"Subscribe\",\n  successMessage = \"Thanks, you are subscribed.\",\n  onSubscribe,\n}: NonNullable<MarketingCtaFooterProps[\"newsletter\"]>) {\n  const [email, setEmail] = useState(\"\");\n  const [state, setState] = useState<FormState>({ kind: \"idle\" });\n  const inputId = useId();\n  const descriptionId = useId();\n  const messageId = useId();\n  const reduce = useBlockReducedMotion();\n\n  const submit = async (event: FormEvent<HTMLFormElement>) => {\n    event.preventDefault();\n    const value = email.trim();\n    if (!EMAIL_PATTERN.test(value)) {\n      setState({ kind: \"error\", message: \"Enter an email address like name@company.com.\" });\n      return;\n    }\n    setState({ kind: \"sending\" });\n    try {\n      await onSubscribe?.(value);\n      setState({ kind: \"done\" });\n    } catch (error) {\n      setState({ kind: \"error\", message: error instanceof Error ? error.message : \"That did not go through. Try again.\" });\n    }\n  };\n\n  const invalid = state.kind === \"error\";\n\n  return (\n    <form onSubmit={submit} noValidate className=\"max-w-[420px]\">\n      <label htmlFor={inputId} className=\"text-[14px] font-medium text-[color:var(--bjork-text)]\">\n        {label}\n      </label>\n      {description ? (\n        <p id={descriptionId} className=\"mt-1 text-[13px] leading-5 text-[color:var(--bjork-text-muted)]\">\n          {description}\n        </p>\n      ) : null}\n      <AnimatePresence mode=\"wait\" initial={false}>\n        {state.kind === \"done\" ? (\n          <motion.p\n            key=\"done\"\n            initial={{ opacity: 0, y: reduce ? 0 : 4 }}\n            animate={{ opacity: 1, y: 0 }}\n            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}\n            className=\"mt-3 flex items-start gap-2 rounded-[13px] border border-[color:var(--bjork-border)] bg-[var(--bjork-surface)] px-3.5 py-3 text-[13.5px] leading-5 text-[color:var(--bjork-text-medium)]\"\n          >\n            <Check aria-hidden className=\"mt-0.5 size-4 shrink-0 text-[color:var(--bjork-accent)]\" />\n            {successMessage}\n          </motion.p>\n        ) : (\n          <motion.div key=\"form\" exit={{ opacity: 0, transition: { duration: 0.12 } }} className=\"mt-3 flex gap-2\">\n            <input\n              id={inputId}\n              type=\"email\"\n              name=\"email\"\n              autoComplete=\"email\"\n              inputMode=\"email\"\n              required\n              placeholder={placeholder}\n              value={email}\n              onChange={(event) => {\n                setEmail(event.target.value);\n                if (state.kind === \"error\") setState({ kind: \"idle\" });\n              }}\n              aria-invalid={invalid || undefined}\n              aria-describedby={[description ? descriptionId : null, invalid ? messageId : null].filter(Boolean).join(\" \") || undefined}\n              className={cn(\n                \"h-11 min-w-0 flex-1 rounded-[13px] border bg-[var(--bjork-field)] px-3.5 text-[14px] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-inset)] transition-colors duration-150 placeholder:text-[color:var(--bjork-text-soft)]\",\n                invalid ? \"border-[#d9634f]\" : \"border-[color:var(--bjork-border)]\",\n                focusRing,\n              )}\n            />\n            <button\n              type=\"submit\"\n              disabled={state.kind === \"sending\"}\n              className={cn(\n                \"inline-flex h-11 shrink-0 items-center gap-1.5 rounded-[13px] border border-[color:var(--bjork-border-strong)] bg-[var(--bjork-surface)] px-4 text-[14px] font-medium text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)] transition-[transform,background-color] duration-150 hover:bg-[var(--bjork-surface-hover)] active:scale-[0.97] disabled:opacity-60 motion-reduce:transition-none\",\n                focusRing,\n              )}\n            >\n              {state.kind === \"sending\" ? \"Sending\" : submitLabel}\n              <ArrowRight aria-hidden className=\"size-4\" />\n            </button>\n          </motion.div>\n        )}\n      </AnimatePresence>\n      <p id={messageId} role=\"status\" aria-live=\"polite\" className={cn(\"mt-2 min-h-5 text-[12.5px]\", invalid ? \"text-[#d9634f]\" : \"sr-only\")}>\n        {invalid ? state.message : state.kind === \"done\" ? successMessage : \"\"}\n      </p>\n    </form>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/blocks/marketing-cta-footer.tsx"
+    },
+    {
+      "path": "components/bjork-ui/blocks/marketing-kit.tsx",
+      "content": "\"use client\";\n\nimport {\n  useSyncExternalStore,\n  type CSSProperties,\n  type MouseEventHandler,\n  type ReactNode,\n} from \"react\";\nimport { motion, useReducedMotion } from \"framer-motion\";\nimport { ArrowRight } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\";\n\n/**\n * Shared pieces for the marketing blocks: tone scoping, hydration-safe reduced motion,\n * the section heading, call-to-action links and the in-view reveal.\n */\n\nexport type BlockTone = \"light\" | \"dark\" | \"auto\";\n\nconst subscribeNoop = () => () => {};\n\n/** `true` once hydrated and the visitor asked for reduced motion. The server and first client render agree on `false`. */\nexport function useBlockReducedMotion(): boolean {\n  const hydrated = useSyncExternalStore(subscribeNoop, () => true, () => false);\n  const prefers = useReducedMotion();\n  return hydrated && prefers === true;\n}\n\n/**\n * Scopes the library tokens to one block. \"light\" and \"dark\" re-declare every `--bjork-*` token on the\n * section through the `.light` / `.dark` classes; \"auto\" inherits whatever the page sets.\n * Blocks only colour through these tokens, never through `dark:` variants, so a forced tone holds.\n */\nexport function blockToneProps(tone: BlockTone): { className?: string; style?: CSSProperties } {\n  if (tone === \"auto\") return {};\n  return { className: tone, style: { colorScheme: tone } };\n}\n\n/** Focus ring used by every interactive element in the blocks. */\nexport const focusRing =\n  \"outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)]\";\n\n/** Section padding and width that every block shares, so stacked blocks line up. */\nexport const blockFrame = \"mx-auto w-full max-w-[1200px] px-5 @2xl:px-8 @5xl:px-10\";\n\nexport interface BlockLink {\n  label: string;\n  href: string;\n  /** Optional click handler; the link still navigates unless you call `preventDefault`. */\n  onClick?: MouseEventHandler<HTMLAnchorElement>;\n}\n\nexport function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {\n  return (\n    <p\n      className={cn(\n        \"flex items-center gap-2 font-mono text-[11px] uppercase leading-4 tracking-[0.12em] text-[color:var(--bjork-text-muted)]\",\n        className,\n      )}\n    >\n      <span aria-hidden className=\"size-1.5 rounded-full bg-[color:var(--bjork-accent)]\" />\n      {children}\n    </p>\n  );\n}\n\nexport interface SectionHeaderProps {\n  id: string;\n  eyebrow?: ReactNode;\n  title: ReactNode;\n  description?: ReactNode;\n  align?: \"start\" | \"center\";\n  as?: \"h1\" | \"h2\" | \"h3\";\n  className?: string;\n  children?: ReactNode;\n}\n\nexport function SectionHeader({\n  id,\n  eyebrow,\n  title,\n  description,\n  align = \"start\",\n  as: Heading = \"h2\",\n  className,\n  children,\n}: SectionHeaderProps) {\n  return (\n    <div\n      className={cn(\n        \"flex flex-col gap-4\",\n        align === \"center\" ? \"items-center text-center\" : \"items-start text-left\",\n        className,\n      )}\n    >\n      {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}\n      <Heading\n        id={id}\n        className=\"max-w-[20ch] text-balance font-bjork-display text-[34px] font-semibold leading-[1.02] tracking-[-0.035em] text-[color:var(--bjork-text)] @xl:text-[44px] @4xl:text-[52px]\"\n      >\n        {title}\n      </Heading>\n      {description ? (\n        <p className=\"max-w-[58ch] text-pretty text-[16px] leading-7 text-[color:var(--bjork-text-medium)] @xl:text-[17px]\">\n          {description}\n        </p>\n      ) : null}\n      {children}\n    </div>\n  );\n}\n\ntype CtaVariant = \"primary\" | \"secondary\" | \"ghost\";\n\nconst ctaBase =\n  \"group/cta relative inline-flex h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[13px] px-[18px] text-[14px] font-medium tracking-[-0.01em] transition-[transform,background-color,border-color,color] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100\";\n\nconst ctaVariants: Record<CtaVariant, string> = {\n  primary: \"bjork-layered-button-accent text-white\",\n  secondary:\n    \"border border-[color:var(--bjork-border-strong)] bg-[var(--bjork-surface)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)] hover:border-[color:var(--bjork-text-faint)] hover:bg-[var(--bjork-surface-hover)]\",\n  ghost:\n    \"px-2 text-[color:var(--bjork-text-medium)] hover:text-[color:var(--bjork-text)]\",\n};\n\nexport function CtaLink({\n  link,\n  variant = \"primary\",\n  arrow = false,\n  className,\n}: {\n  link: BlockLink;\n  variant?: CtaVariant;\n  arrow?: boolean;\n  className?: string;\n}) {\n  return (\n    <a\n      href={link.href}\n      onClick={link.onClick}\n      className={cn(ctaBase, ctaVariants[variant], focusRing, className)}\n    >\n      <span>{link.label}</span>\n      {arrow ? (\n        <ArrowRight\n          aria-hidden\n          className=\"size-4 transition-transform duration-200 ease-out group-hover/cta:translate-x-0.5 motion-reduce:transition-none\"\n        />\n      ) : null}\n    </a>\n  );\n}\n\n/**\n * Fades and lifts its children the first time they scroll into view. Under reduced motion only the\n * fade runs, with no movement.\n */\nexport function Reveal({\n  children,\n  delay = 0,\n  className,\n  as = \"div\",\n}: {\n  children: ReactNode;\n  delay?: number;\n  className?: string;\n  as?: \"div\" | \"li\";\n}) {\n  const reduce = useBlockReducedMotion();\n  const Component = as === \"li\" ? motion.li : motion.div;\n  return (\n    <Component\n      className={className}\n      initial={{ opacity: 0, y: 14 }}\n      whileInView={{ opacity: 1, y: 0 }}\n      viewport={{ once: true, amount: 0.2 }}\n      transition={{\n        opacity: { duration: reduce ? 0.2 : 0.5, ease: [0.23, 1, 0.32, 1], delay: reduce ? 0 : delay },\n        y: reduce ? { duration: 0 } : { type: \"spring\", stiffness: 260, damping: 30, mass: 0.9, delay },\n      }}\n    >\n      {children}\n    </Component>\n  );\n}\n\n/** A small product mark used by the sample content. Swap it for your logo. */\nexport function SampleMark({ className }: { className?: string }) {\n  return (\n    <svg viewBox=\"0 0 24 24\" aria-hidden className={cn(\"size-6\", className)}>\n      <rect x=\"1\" y=\"1\" width=\"22\" height=\"22\" rx=\"7\" fill=\"var(--bjork-text)\" />\n      <path\n        d=\"M6.5 15.5h3l2-7 2 7h4\"\n        fill=\"none\"\n        stroke=\"var(--bjork-bg)\"\n        strokeWidth=\"1.9\"\n        strokeLinecap=\"round\"\n        strokeLinejoin=\"round\"\n      />\n      <circle cx=\"17.5\" cy=\"15.5\" r=\"1.6\" fill=\"var(--bjork-accent)\" />\n    </svg>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/blocks/marketing-kit.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Blocks",
+    "registryUrl": "https://ui.isaiahbjork.com/marketing-cta-footer.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/marketing-cta-footer.json"
+  },
+  "type": "registry:block"
+}

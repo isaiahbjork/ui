@@ -1,0 +1,189 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "marketing-testimonials-wall",
+  "title": "Marketing testimonials wall",
+  "description": "Marketing testimonials wall is a production-ready blocks component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "lucide-react",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/blocks/marketing-testimonials-wall.tsx",
+      "content": "\"use client\";\n\nimport { useId, useState, type CSSProperties, type ReactNode } from \"react\";\nimport { Pause, Play } from \"lucide-react\";\nimport {\n  blockFrame,\n  blockToneProps,\n  focusRing,\n  Reveal,\n  SectionHeader,\n  useBlockReducedMotion,\n  type BlockTone,\n} from \"@/components/bjork-ui/blocks/marketing-kit\";\nimport { cn } from \"@/lib/utils\";\n\nexport interface Testimonial {\n  id: string;\n  quote: string;\n  name: string;\n  role: string;\n  company: string;\n  /** Image URL. Without it the card shows initials. */\n  avatar?: string;\n  /** A headline number for the quote, such as \"41% fewer failed runs\". */\n  metric?: { value: string; label: string };\n}\n\nexport interface WallStat {\n  value: string;\n  label: string;\n}\n\nexport interface MarketingTestimonialsWallProps {\n  eyebrow?: string;\n  title: ReactNode;\n  description?: ReactNode;\n  stats?: WallStat[];\n  testimonials: Testimonial[];\n  /** \"drift\" scrolls the columns slowly on wide screens; \"static\" lays them out as a masonry wall. */\n  motion?: \"drift\" | \"static\";\n  /** Seconds for one column to loop. Columns run at slightly different speeds. Default 60. */\n  speed?: number;\n  /** Cards shown on phones before \"Show all\". Default 4. */\n  collapsedCount?: number;\n  tone?: BlockTone;\n  className?: string;\n}\n\nexport const MARKETING_TESTIMONIALS_SAMPLE: MarketingTestimonialsWallProps = {\n  eyebrow: \"Customers\",\n  title: \"Teams ship agents with fewer surprises.\",\n  description: \"From two-person startups to support teams answering a million tickets a month.\",\n  stats: [\n    { value: \"41%\", label: \"fewer failed runs in the first month\" },\n    { value: \"3.2x\", label: \"faster to find the step that broke\" },\n    { value: \"1,800\", label: \"teams tracing in production\" },\n  ],\n  testimonials: [\n    {\n      id: \"t1\",\n      quote:\n        \"We used to find out a refund agent was looping from the bill. Now the alert fires on the third retry and the trace shows us exactly which tool returned garbage.\",\n      name: \"Maya Okafor\",\n      role: \"Head of Support Engineering\",\n      company: \"Northbay Outfitters\",\n      metric: { value: \"41%\", label: \"fewer failed runs\" },\n    },\n    {\n      id: \"t2\",\n      quote: \"Replay is the feature. Rewind to the step before it broke, change the prompt, run it again. That loop used to take an afternoon.\",\n      name: \"Tomás Ferreira\",\n      role: \"Staff Engineer\",\n      company: \"Ledgerline\",\n    },\n    {\n      id: \"t3\",\n      quote: \"Two lines in, and our first trace showed a search call we had forgotten we were making on every turn.\",\n      name: \"Priya Raman\",\n      role: \"Founding Engineer\",\n      company: \"Quillstack\",\n    },\n    {\n      id: \"t4\",\n      quote: \"Cost per run changed how we review prompts. A pull request that doubles token spend now gets caught before it merges.\",\n      name: \"Jonah Lindqvist\",\n      role: \"Engineering Manager\",\n      company: \"Fernway Health\",\n      metric: { value: \"$18k\", label: \"saved in the first quarter\" },\n    },\n    {\n      id: \"t5\",\n      quote: \"Masking happens in the SDK, which was the only way legal would let us send traces anywhere at all.\",\n      name: \"Adaeze Nwosu\",\n      role: \"Security Lead\",\n      company: \"Copperleaf Bank\",\n    },\n    {\n      id: \"t6\",\n      quote: \"The waterfall made the slow step obvious. It was never the model. It was the CRM lookup, every single time.\",\n      name: \"Lena Brandt\",\n      role: \"Platform Engineer\",\n      company: \"Tidewater Freight\",\n    },\n    {\n      id: \"t7\",\n      quote: \"I keep it open on a second screen during launches. J and K through the steps, R to replay. It feels like a debugger, not a dashboard.\",\n      name: \"Kenji Moriyama\",\n      role: \"AI Engineer\",\n      company: \"Halcyon Labs\",\n    },\n    {\n      id: \"t8\",\n      quote: \"We moved three agents and four teams onto one project in a week. Everyone looks at the same trace when something goes wrong.\",\n      name: \"Sofia Marchetti\",\n      role: \"Director of Engineering\",\n      company: \"Brightmoor\",\n    },\n    {\n      id: \"t9\",\n      quote: \"Alerts that read like sentences sounds like marketing until you get paged at 2am and the page tells you what actually happened.\",\n      name: \"Daniel Achterberg\",\n      role: \"SRE\",\n      company: \"Parcelpoint\",\n    },\n  ],\n};\n\nconst WALL_KEYFRAMES =\n  \"@keyframes bjork-wall-drift { from { transform: translate3d(0,0,0); } to { transform: translate3d(0,-50%,0); } }\";\n\n// Muted tints for initials, picked by name so a person keeps their colour.\nconst TINTS = [\"#ec5c13\", \"#5f9f78\", \"#6f86c9\", \"#c49a3a\", \"#a8749b\", \"#4f9aa6\"];\n\nfunction tintFor(name: string) {\n  let hash = 0;\n  for (let i = 0; i < name.length; i += 1) hash = (hash * 31 + name.charCodeAt(i)) >>> 0;\n  return TINTS[hash % TINTS.length];\n}\n\nfunction initials(name: string) {\n  return name\n    .split(/\\s+/)\n    .map((part) => part[0])\n    .slice(0, 2)\n    .join(\"\")\n    .toUpperCase();\n}\n\nfunction toColumns<T>(items: T[], count: number): T[][] {\n  const columns: T[][] = Array.from({ length: count }, () => []);\n  items.forEach((item, index) => columns[index % count].push(item));\n  return columns;\n}\n\n/**\n * A wall of customer quotes. On wide screens the columns drift upward at slightly different speeds,\n * pause on hover or focus, and carry a pause button; on phones and under reduced motion the wall is a\n * still list with a \"Show all\" control.\n */\nexport function MarketingTestimonialsWall({\n  eyebrow,\n  title,\n  description,\n  stats,\n  testimonials,\n  motion = \"drift\",\n  speed = 60,\n  collapsedCount = 4,\n  tone = \"auto\",\n  className,\n}: MarketingTestimonialsWallProps) {\n  const titleId = useId();\n  const listId = useId();\n  const toneProps = blockToneProps(tone);\n  const reduce = useBlockReducedMotion();\n  const [paused, setPaused] = useState(false);\n  const [expanded, setExpanded] = useState(false);\n  const drift = motion === \"drift\" && !reduce;\n  const visibleOnPhone = expanded ? testimonials : testimonials.slice(0, collapsedCount);\n  const hiddenCount = testimonials.length - collapsedCount;\n\n  return (\n    <section\n      aria-labelledby={titleId}\n      {...toneProps}\n      className={cn(\n        \"@container w-full overflow-hidden bg-[var(--bjork-bg)] py-20 font-bjork-alpha text-[color:var(--bjork-text)] @3xl:py-28\",\n        toneProps.className,\n        className,\n      )}\n    >\n      <style>{WALL_KEYFRAMES}</style>\n      <div className={blockFrame}>\n        <div className=\"flex flex-col gap-10 @4xl:flex-row @4xl:items-end @4xl:justify-between\">\n          <SectionHeader id={titleId} eyebrow={eyebrow} title={title} description={description} />\n          {stats && stats.length > 0 ? (\n            <dl className=\"grid grid-cols-1 gap-x-8 gap-y-5 @md:grid-cols-3 @4xl:max-w-[520px] @4xl:shrink-0\">\n              {stats.map((stat) => (\n                <div key={stat.label} className=\"flex flex-col-reverse gap-1 border-l border-[color:var(--bjork-border-strong)] pl-4\">\n                  <dt className=\"text-[12.5px] leading-5 text-[color:var(--bjork-text-muted)]\">{stat.label}</dt>\n                  <dd className=\"font-bjork-display text-[30px] font-semibold leading-none tracking-[-0.04em] tabular-nums\">\n                    {stat.value}\n                  </dd>\n                </div>\n              ))}\n            </dl>\n          ) : null}\n        </div>\n\n        {/* Phones: a still list with a disclosure. */}\n        <div className=\"mt-12 @2xl:hidden\">\n          <ul id={listId} className=\"flex flex-col gap-3\">\n            {visibleOnPhone.map((testimonial) => (\n              <li key={testimonial.id}>\n                <QuoteCard testimonial={testimonial} />\n              </li>\n            ))}\n          </ul>\n          {hiddenCount > 0 ? (\n            <button\n              type=\"button\"\n              aria-expanded={expanded}\n              aria-controls={listId}\n              onClick={() => setExpanded((value) => !value)}\n              className={cn(\n                \"mt-4 h-11 w-full rounded-[13px] border border-[color:var(--bjork-border-strong)] bg-[var(--bjork-surface)] text-[14px] font-medium text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)] transition-transform duration-150 active:scale-[0.98] motion-reduce:transition-none\",\n                focusRing,\n              )}\n            >\n              {expanded ? \"Show fewer\" : `Show all ${testimonials.length} stories`}\n            </button>\n          ) : null}\n        </div>\n\n        {/* Tablets and up. */}\n        <div className=\"relative mt-14 hidden @2xl:block\">\n          {drift ? (\n            <>\n              <div className=\"mb-4 flex justify-end\">\n                <button\n                  type=\"button\"\n                  aria-pressed={paused}\n                  onClick={() => setPaused((value) => !value)}\n                  className={cn(\n                    \"inline-flex h-8 items-center gap-1.5 rounded-full border border-[color:var(--bjork-border)] bg-[var(--bjork-surface)] px-3 text-[12px] text-[color:var(--bjork-text-medium)] transition-colors duration-150 hover:text-[color:var(--bjork-text)]\",\n                    focusRing,\n                  )}\n                >\n                  {paused ? <Play aria-hidden className=\"size-3\" /> : <Pause aria-hidden className=\"size-3\" />}\n                  {paused ? \"Play\" : \"Pause\"}\n                  <span className=\"sr-only\"> scrolling quotes</span>\n                </button>\n              </div>\n              <DriftWall testimonials={testimonials} paused={paused} speed={speed} columns={3} className=\"hidden @5xl:grid\" />\n              <DriftWall testimonials={testimonials} paused={paused} speed={speed} columns={2} className=\"grid @5xl:hidden\" />\n            </>\n          ) : (\n            <>\n              <StaticWall testimonials={testimonials} columns={3} className=\"hidden @5xl:grid\" />\n              <StaticWall testimonials={testimonials} columns={2} className=\"grid @5xl:hidden\" />\n            </>\n          )}\n        </div>\n      </div>\n    </section>\n  );\n}\n\nfunction DriftWall({\n  testimonials,\n  paused,\n  speed,\n  columns,\n  className,\n}: {\n  testimonials: Testimonial[];\n  paused: boolean;\n  speed: number;\n  columns: number;\n  className?: string;\n}) {\n  const lanes = toColumns(testimonials, columns);\n  return (\n    <div\n      className={cn(\"group/wall relative h-[680px] gap-3 overflow-hidden\", className)}\n      style={{\n        gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,\n        maskImage: \"linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent)\",\n        WebkitMaskImage: \"linear-gradient(to bottom, transparent, #000 12%, #000 88%, transparent)\",\n      }}\n    >\n      {lanes.map((lane, laneIndex) => (\n        <div key={laneIndex} className=\"min-w-0\">\n          <div\n            className=\"flex flex-col will-change-transform [animation-play-state:var(--wall-state)] group-hover/wall:[animation-play-state:paused] group-focus-within/wall:[animation-play-state:paused]\"\n            style={\n              {\n                animationName: \"bjork-wall-drift\",\n                animationDuration: `${speed * (1 + laneIndex * 0.18)}s`,\n                animationTimingFunction: \"linear\",\n                animationIterationCount: \"infinite\",\n                animationDelay: `${-laneIndex * 7}s`,\n                \"--wall-state\": paused ? \"paused\" : \"running\",\n              } as CSSProperties\n            }\n          >\n            {/* The second copy closes the loop. Screen readers and keyboards only meet the first. */}\n            {[0, 1].map((copy) => (\n              <ul\n                key={copy}\n                aria-hidden={copy === 1 ? true : undefined}\n                inert={copy === 1 ? true : undefined}\n                className=\"flex flex-col gap-3 pb-3\"\n              >\n                {lane.map((testimonial) => (\n                  <li key={testimonial.id}>\n                    <QuoteCard testimonial={testimonial} />\n                  </li>\n                ))}\n              </ul>\n            ))}\n          </div>\n        </div>\n      ))}\n    </div>\n  );\n}\n\nfunction StaticWall({ testimonials, columns, className }: { testimonials: Testimonial[]; columns: number; className?: string }) {\n  const lanes = toColumns(testimonials, columns);\n  return (\n    <div className={cn(\"gap-3\", className)} style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>\n      {lanes.map((lane, laneIndex) => (\n        <ul key={laneIndex} className=\"flex min-w-0 flex-col gap-3\">\n          {lane.map((testimonial, index) => (\n            <Reveal key={testimonial.id} as=\"li\" delay={(laneIndex + index) * 0.05}>\n              <QuoteCard testimonial={testimonial} />\n            </Reveal>\n          ))}\n        </ul>\n      ))}\n    </div>\n  );\n}\n\nfunction QuoteCard({ testimonial }: { testimonial: Testimonial }) {\n  const featured = Boolean(testimonial.metric);\n  const tint = tintFor(testimonial.name);\n  return (\n    <figure\n      className={cn(\n        \"flex flex-col gap-5 rounded-[20px] border p-6\",\n        featured\n          ? \"border-[color:var(--bjork-border-strong)] bg-[var(--bjork-surface)] shadow-[var(--bjork-shadow-surface)]\"\n          : \"border-[color:var(--bjork-border)] bg-[var(--bjork-surface)] shadow-[var(--bjork-shadow-panel)]\",\n      )}\n    >\n      {testimonial.metric ? (\n        <div className=\"flex items-baseline gap-2.5 border-b border-[color:var(--bjork-border-muted)] pb-4\">\n          <span className=\"font-bjork-display text-[34px] font-semibold leading-none tracking-[-0.045em] text-[color:var(--bjork-accent)] tabular-nums\">\n            {testimonial.metric.value}\n          </span>\n          <span className=\"text-[13px] leading-5 text-[color:var(--bjork-text-muted)]\">{testimonial.metric.label}</span>\n        </div>\n      ) : null}\n      <blockquote\n        className={cn(\n          \"text-pretty text-[color:var(--bjork-text-strong)]\",\n          featured ? \"text-[16.5px] leading-7 tracking-[-0.01em]\" : \"text-[15px] leading-[1.65]\",\n        )}\n      >\n        <p>&ldquo;{testimonial.quote}&rdquo;</p>\n      </blockquote>\n      <figcaption className=\"flex items-center gap-3\">\n        {testimonial.avatar ? (\n          // eslint-disable-next-line @next/next/no-img-element\n          <img src={testimonial.avatar} alt=\"\" className=\"size-9 shrink-0 rounded-full object-cover\" />\n        ) : (\n          <span\n            aria-hidden\n            className=\"grid size-9 shrink-0 place-items-center rounded-full text-[12px] font-semibold\"\n            style={{\n              color: tint,\n              background: `color-mix(in srgb, ${tint} 14%, transparent)`,\n              boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${tint} 26%, transparent)`,\n            }}\n          >\n            {initials(testimonial.name)}\n          </span>\n        )}\n        <span className=\"min-w-0\">\n          <span className=\"block truncate text-[14px] font-medium text-[color:var(--bjork-text)]\">{testimonial.name}</span>\n          <span className=\"block truncate text-[12.5px] text-[color:var(--bjork-text-muted)]\">\n            {testimonial.role}, {testimonial.company}\n          </span>\n        </span>\n      </figcaption>\n    </figure>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/blocks/marketing-testimonials-wall.tsx"
+    },
+    {
+      "path": "components/bjork-ui/blocks/marketing-kit.tsx",
+      "content": "\"use client\";\n\nimport {\n  useSyncExternalStore,\n  type CSSProperties,\n  type MouseEventHandler,\n  type ReactNode,\n} from \"react\";\nimport { motion, useReducedMotion } from \"framer-motion\";\nimport { ArrowRight } from \"lucide-react\";\nimport { cn } from \"@/lib/utils\";\n\n/**\n * Shared pieces for the marketing blocks: tone scoping, hydration-safe reduced motion,\n * the section heading, call-to-action links and the in-view reveal.\n */\n\nexport type BlockTone = \"light\" | \"dark\" | \"auto\";\n\nconst subscribeNoop = () => () => {};\n\n/** `true` once hydrated and the visitor asked for reduced motion. The server and first client render agree on `false`. */\nexport function useBlockReducedMotion(): boolean {\n  const hydrated = useSyncExternalStore(subscribeNoop, () => true, () => false);\n  const prefers = useReducedMotion();\n  return hydrated && prefers === true;\n}\n\n/**\n * Scopes the library tokens to one block. \"light\" and \"dark\" re-declare every `--bjork-*` token on the\n * section through the `.light` / `.dark` classes; \"auto\" inherits whatever the page sets.\n * Blocks only colour through these tokens, never through `dark:` variants, so a forced tone holds.\n */\nexport function blockToneProps(tone: BlockTone): { className?: string; style?: CSSProperties } {\n  if (tone === \"auto\") return {};\n  return { className: tone, style: { colorScheme: tone } };\n}\n\n/** Focus ring used by every interactive element in the blocks. */\nexport const focusRing =\n  \"outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)]\";\n\n/** Section padding and width that every block shares, so stacked blocks line up. */\nexport const blockFrame = \"mx-auto w-full max-w-[1200px] px-5 @2xl:px-8 @5xl:px-10\";\n\nexport interface BlockLink {\n  label: string;\n  href: string;\n  /** Optional click handler; the link still navigates unless you call `preventDefault`. */\n  onClick?: MouseEventHandler<HTMLAnchorElement>;\n}\n\nexport function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {\n  return (\n    <p\n      className={cn(\n        \"flex items-center gap-2 font-mono text-[11px] uppercase leading-4 tracking-[0.12em] text-[color:var(--bjork-text-muted)]\",\n        className,\n      )}\n    >\n      <span aria-hidden className=\"size-1.5 rounded-full bg-[color:var(--bjork-accent)]\" />\n      {children}\n    </p>\n  );\n}\n\nexport interface SectionHeaderProps {\n  id: string;\n  eyebrow?: ReactNode;\n  title: ReactNode;\n  description?: ReactNode;\n  align?: \"start\" | \"center\";\n  as?: \"h1\" | \"h2\" | \"h3\";\n  className?: string;\n  children?: ReactNode;\n}\n\nexport function SectionHeader({\n  id,\n  eyebrow,\n  title,\n  description,\n  align = \"start\",\n  as: Heading = \"h2\",\n  className,\n  children,\n}: SectionHeaderProps) {\n  return (\n    <div\n      className={cn(\n        \"flex flex-col gap-4\",\n        align === \"center\" ? \"items-center text-center\" : \"items-start text-left\",\n        className,\n      )}\n    >\n      {eyebrow ? <Eyebrow>{eyebrow}</Eyebrow> : null}\n      <Heading\n        id={id}\n        className=\"max-w-[20ch] text-balance font-bjork-display text-[34px] font-semibold leading-[1.02] tracking-[-0.035em] text-[color:var(--bjork-text)] @xl:text-[44px] @4xl:text-[52px]\"\n      >\n        {title}\n      </Heading>\n      {description ? (\n        <p className=\"max-w-[58ch] text-pretty text-[16px] leading-7 text-[color:var(--bjork-text-medium)] @xl:text-[17px]\">\n          {description}\n        </p>\n      ) : null}\n      {children}\n    </div>\n  );\n}\n\ntype CtaVariant = \"primary\" | \"secondary\" | \"ghost\";\n\nconst ctaBase =\n  \"group/cta relative inline-flex h-11 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-[13px] px-[18px] text-[14px] font-medium tracking-[-0.01em] transition-[transform,background-color,border-color,color] duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none motion-reduce:active:scale-100\";\n\nconst ctaVariants: Record<CtaVariant, string> = {\n  primary: \"bjork-layered-button-accent text-white\",\n  secondary:\n    \"border border-[color:var(--bjork-border-strong)] bg-[var(--bjork-surface)] text-[color:var(--bjork-text)] shadow-[var(--bjork-shadow-soft)] hover:border-[color:var(--bjork-text-faint)] hover:bg-[var(--bjork-surface-hover)]\",\n  ghost:\n    \"px-2 text-[color:var(--bjork-text-medium)] hover:text-[color:var(--bjork-text)]\",\n};\n\nexport function CtaLink({\n  link,\n  variant = \"primary\",\n  arrow = false,\n  className,\n}: {\n  link: BlockLink;\n  variant?: CtaVariant;\n  arrow?: boolean;\n  className?: string;\n}) {\n  return (\n    <a\n      href={link.href}\n      onClick={link.onClick}\n      className={cn(ctaBase, ctaVariants[variant], focusRing, className)}\n    >\n      <span>{link.label}</span>\n      {arrow ? (\n        <ArrowRight\n          aria-hidden\n          className=\"size-4 transition-transform duration-200 ease-out group-hover/cta:translate-x-0.5 motion-reduce:transition-none\"\n        />\n      ) : null}\n    </a>\n  );\n}\n\n/**\n * Fades and lifts its children the first time they scroll into view. Under reduced motion only the\n * fade runs, with no movement.\n */\nexport function Reveal({\n  children,\n  delay = 0,\n  className,\n  as = \"div\",\n}: {\n  children: ReactNode;\n  delay?: number;\n  className?: string;\n  as?: \"div\" | \"li\";\n}) {\n  const reduce = useBlockReducedMotion();\n  const Component = as === \"li\" ? motion.li : motion.div;\n  return (\n    <Component\n      className={className}\n      initial={{ opacity: 0, y: 14 }}\n      whileInView={{ opacity: 1, y: 0 }}\n      viewport={{ once: true, amount: 0.2 }}\n      transition={{\n        opacity: { duration: reduce ? 0.2 : 0.5, ease: [0.23, 1, 0.32, 1], delay: reduce ? 0 : delay },\n        y: reduce ? { duration: 0 } : { type: \"spring\", stiffness: 260, damping: 30, mass: 0.9, delay },\n      }}\n    >\n      {children}\n    </Component>\n  );\n}\n\n/** A small product mark used by the sample content. Swap it for your logo. */\nexport function SampleMark({ className }: { className?: string }) {\n  return (\n    <svg viewBox=\"0 0 24 24\" aria-hidden className={cn(\"size-6\", className)}>\n      <rect x=\"1\" y=\"1\" width=\"22\" height=\"22\" rx=\"7\" fill=\"var(--bjork-text)\" />\n      <path\n        d=\"M6.5 15.5h3l2-7 2 7h4\"\n        fill=\"none\"\n        stroke=\"var(--bjork-bg)\"\n        strokeWidth=\"1.9\"\n        strokeLinecap=\"round\"\n        strokeLinejoin=\"round\"\n      />\n      <circle cx=\"17.5\" cy=\"15.5\" r=\"1.6\" fill=\"var(--bjork-accent)\" />\n    </svg>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/blocks/marketing-kit.tsx"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "Blocks",
+    "registryUrl": "https://ui.isaiahbjork.com/marketing-testimonials-wall.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/marketing-testimonials-wall.json"
+  },
+  "type": "registry:block"
+}

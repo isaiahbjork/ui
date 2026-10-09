@@ -233,7 +233,7 @@ function createRegistryItem(item) {
 
   return stripEmpty({
     name: item.slug,
-    type: "registry:component",
+    type: item.collection === "Blocks" ? "registry:block" : "registry:component",
     title: item.title,
     description: describeItem(item),
     homepage: `${homepage}${item.route}`,
