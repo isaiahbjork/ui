@@ -28,13 +28,21 @@ export interface ViolinGroup {
 export type ViolinMode = "violin" | "box" | "strip";
 
 export interface ViolinPlotProps {
+  /**
+   * One violin per group. Each violin is a Gaussian KDE (Silverman bandwidth) clipped to its own data
+   * range, and every group shares one density scale: each shape has the same area, so widths compare
+   * shape, not sample size (n is printed under each label). Strip mode draws at most 260 evenly spaced
+   * quantile dots per group. Box whiskers are Tukey (1.5 IQR); quartiles interpolate linearly.
+   */
   groups: ViolinGroup[];
+  /** Controlled view. */
   mode?: ViolinMode;
   defaultMode?: ViolinMode;
   onModeChange?: (mode: ViolinMode) => void;
-  /** Group drawn in the accent. */
+  /** Group drawn in the accent. Controlled when set. */
   highlightId?: string | null;
   onHighlightChange?: (id: string | null) => void;
+  /** Fixed value domain. Auto (nice, shared by all groups) by default. */
   yDomain?: [number, number];
   formatValue?: (v: number) => string;
   unit?: string;
@@ -76,6 +84,7 @@ interface GroupStats {
   wHi: number;
   mean: number;
   profile: Float32Array; // density at PROFILE y samples across the domain
+  samples: number[]; // the profile grid plus exact q1/q3 edges, so box corners stay square
   outliers: number[];
   dots: { v: number; j: number }[]; // value and jitter in [-1, 1]
 }
@@ -131,11 +140,20 @@ function computeViolinStats(groups: ViolinGroup[], yDomain: [number, number] | u
         wHi,
         mean: n ? sorted.reduce((a, b) => a + b, 0) / n : 0,
         profile,
+        samples: [] as number[],
         outliers: sorted.filter((v) => v < wLo || v > wHi),
         dots,
       };
     });
     for (const s2 of out) for (let k = 0; k < PROFILE; k++) s2.profile[k] /= maxD;
+    const span = hi - lo;
+    const eps = span * 1e-4;
+    for (const s2 of out) {
+      const samples: number[] = [];
+      for (let k = 0; k < PROFILE; k++) samples.push(lo + (span * k) / (PROFILE - 1));
+      if (s2.n) samples.push(s2.q1 - eps, s2.q1, s2.q3, s2.q3 + eps);
+      s2.samples = samples.sort((a, b) => a - b);
+    }
     return { groups: out, lo, hi };
 }
 
@@ -180,7 +198,9 @@ export function ViolinPlot({
   const [hlState, setHlState] = useState<string | null>(null);
   const highlightId = highlightProp !== undefined ? highlightProp : hlState;
 
-  const stats = useMemo(() => computeViolinStats(groups, yDomain), [groups, yDomain]);
+  const d0 = yDomain?.[0];
+  const d1 = yDomain?.[1];
+  const stats = useMemo(() => computeViolinStats(groups, d0 === undefined || d1 === undefined ? undefined : [d0, d1]), [groups, d0, d1]);
 
   const cfg = useRef({ stats, mode, highlightId, reduce, pal, formatValue, unit, attract });
   useEffect(() => {
@@ -253,6 +273,11 @@ export function ViolinPlot({
     ctx.stroke();
     writeLabels(yPool.current, s.yCache, ticks.map((v) => ({ text: c.formatValue(v), x: plot.l - 8, y: yOf(v), ax: -100 })));
 
+    // Values outside a fixed yDomain are clipped at the plot edge rather than drawn over the labels.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(plot.l, plot.t - 6, plot.r - plot.l, plot.b - plot.t + 6);
+    ctx.clip();
     for (let i = 0; i < G.length; i++) {
       const g = G[i];
       if (!g.n) continue;
@@ -267,7 +292,6 @@ export function ViolinPlot({
       const vy = (v: number) => yMed + (yOf(v) - yMed) * grow;
 
       // The shape: violin profile morphing to the IQR rectangle, faded back in strip mode.
-      // Samples are the profile grid plus exact q1/q3 edges, so the box corners stay square.
       const span = S.hi - S.lo;
       const profileAt = (v: number) => {
         const f = clamp(((v - S.lo) / span) * (PROFILE - 1), 0, PROFILE - 1);
@@ -280,14 +304,16 @@ export function ViolinPlot({
         const box = v >= g.q1 && v <= g.q3 ? boxHalf : 0;
         return (violin * (wV + wS) + box * wB) * grow;
       };
-      const eps = span * 1e-4;
-      const samples: number[] = [];
-      for (let k = 0; k < PROFILE; k++) samples.push(S.lo + (span * k) / (PROFILE - 1));
-      samples.push(g.q1 - eps, g.q1, g.q3, g.q3 + eps);
-      samples.sort((a, b) => a - b);
+      const samples = g.samples;
       // Trim zero-width ends so the outline never runs down the axis.
-      let first = samples.findIndex((v) => halfAt(v) > 0.05);
-      let last = samples.length - 1 - [...samples].reverse().findIndex((v) => halfAt(v) > 0.05);
+      let first = -1;
+      let last = -1;
+      for (let k = 0; k < samples.length; k++) {
+        if (halfAt(samples[k]) > 0.05) {
+          if (first < 0) first = k;
+          last = k;
+        }
+      }
       if (first < 0) {
         first = 0;
         last = -1;
@@ -372,6 +398,7 @@ export function ViolinPlot({
       }
       ctx.globalAlpha = 1;
     }
+    ctx.restore();
 
     // Value probe: a hairline at the pointer with the value in the gutter.
     const probe = probeRef.current;
@@ -478,6 +505,10 @@ export function ViolinPlot({
       s.probeY = null;
       const cur = s.hover ?? (e.key === "ArrowRight" ? -1 : n);
       setHover(clamp(cur + (e.key === "ArrowRight" ? 1 : -1), 0, n - 1), "keyboard");
+    } else if (e.key === "Home" || e.key === "End") {
+      e.preventDefault();
+      s.probeY = null;
+      setHover(e.key === "Home" ? 0 : n - 1, "keyboard");
     } else if (e.key === "Enter" || e.key === " ") {
       if (s.hover === null) return;
       e.preventDefault();
