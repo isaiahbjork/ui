@@ -67,7 +67,7 @@ export function Demo() {
   );
 }`}
       previewScaleClassName="w-[380px]"
-      previewCaptureScaleClassName="w-[620px] scale-[0.8]"
+      previewCaptureScaleClassName="w-[620px] scale-[0.7]"
     >
       <Demo />
     </SimpleComponentDemoPage>

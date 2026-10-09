@@ -9,8 +9,8 @@ import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("memory-viewer");
 
-// The preview trims to five memories across three groups so the frame stays balanced.
-const POSE_IDS = ["m1", "m3", "m4", "m6", "m7"];
+// The preview trims to four memories across three groups so the frame stays balanced.
+const POSE_IDS = ["m1", "m3", "m4", "m6"];
 const POSE_MEMORIES = SAMPLE_MEMORIES.filter((m) => POSE_IDS.includes(m.id));
 
 function Demo() {
@@ -81,7 +81,7 @@ export function Settings() {
   );
 }`}
       previewScaleClassName="w-[360px]"
-      previewCaptureScaleClassName="w-[520px] scale-[0.92]"
+      previewCaptureScaleClassName="w-[520px] scale-[0.84]"
     >
       <Demo />
     </SimpleComponentDemoPage>

@@ -288,7 +288,12 @@ export function SourceList({
         {shown.map((source, i) => (
           <motion.li
             key={source.id}
-            className="min-w-0 max-w-full"
+            // The blur-in leaves a filter, so every item is its own stacking context. The item with an open card is
+            // lifted above its later siblings.
+            className={cn(
+              "relative min-w-0 max-w-full hover:z-20 focus-within:z-20",
+              hot === source.id && "z-20",
+            )}
             initial={i >= visibleCount && !reduce ? { opacity: 0, y: 4, filter: "blur(4px)" } : false}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={reduce ? { duration: 0 } : { ...springs.blurIn, delay: Math.max(0, i - visibleCount) * 0.03 }}

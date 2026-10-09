@@ -79,7 +79,7 @@ function Demo() {
       <div className="flex w-[min(560px,calc(100vw-56px))] flex-col items-stretch">
         <ToolCallGroup>
           <ToolCallCard {...first} />
-          <ToolCallCard {...second} defaultOpen maxLines={14} />
+          <ToolCallCard {...second} defaultOpen maxLines={7} />
           <ToolCallCard {...third} startedAt={POSE} now={POSE + 1800} />
         </ToolCallGroup>
       </div>
@@ -147,7 +147,7 @@ export function Demo() {
   );
 }`}
       previewScaleClassName="w-[360px]"
-      previewCaptureScaleClassName="w-[560px] scale-[0.92]"
+      previewCaptureScaleClassName="w-[560px] scale-[0.84]"
     >
       <Demo />
     </SimpleComponentDemoPage>

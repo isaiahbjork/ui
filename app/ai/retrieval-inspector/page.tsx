@@ -17,9 +17,9 @@ function Demo() {
     <div className="flex w-[min(680px,calc(100vw-56px))] flex-col items-stretch gap-6">
       <RetrievalInspector
         {...SAMPLE_RETRIEVAL}
-        threshold={threshold}
+        // The pose raises the cut so two chunks read as filtered.
+        threshold={isPreview ? 0.8 : threshold}
         onThresholdChange={setThreshold}
-        defaultExpandedId={isPreview ? "c3" : undefined}
       />
       {!isPreview && (
         <div className="flex flex-wrap items-center justify-center gap-2">
@@ -60,7 +60,7 @@ export function Demo() {
   );
 }`}
       previewScaleClassName="w-[380px]"
-      previewCaptureScaleClassName="w-[780px] scale-[0.6]"
+      previewCaptureScaleClassName="w-[680px] scale-[0.66]"
     >
       <Demo />
     </SimpleComponentDemoPage>
