@@ -1,0 +1,214 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "suggested-prompts",
+  "title": "Suggested prompts",
+  "description": "Suggested prompts is a production-ready ai component from BJORK UI, packaged for shadcn registries.",
+  "dependencies": [
+    "clsx",
+    "framer-motion",
+    "lucide-react",
+    "next-themes",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "components/bjork-ui/ai/suggested-prompts.tsx",
+      "content": "\"use client\";\n\nimport { useRef, useState, type KeyboardEvent } from \"react\";\nimport { AnimatePresence, motion, type Variants } from \"framer-motion\";\nimport { ArrowUpRight, Shuffle } from \"lucide-react\";\nimport { LiveRegion, VisuallyHidden } from \"@/components/bjork-ui/_core/a11y\";\nimport { ease } from \"@/components/bjork-ui/_core/motion\";\nimport { FOCUS_RING, PRESS, useAiTone, useReduceMotion, type BjorkTone } from \"@/components/bjork-ui/ai/_shared\";\nimport { cn } from \"@/lib/utils\";\n\nexport interface SuggestedPrompt {\n  id: string;\n  /** The visible label. Also what is sent, unless `prompt` is set. */\n  title: string;\n  /** One quiet line under the title. Cards only. */\n  subtitle?: string;\n  /** Short tag such as \"Plan\" or \"Code\". Cards only. */\n  category?: string;\n  /** The full prompt to send, when it differs from the title. */\n  prompt?: string;\n}\n\nexport interface SuggestedPromptsProps {\n  prompts: SuggestedPrompt[];\n  /** \"cards\" for an empty chat, \"chips\" for follow-ups under an answer. Default \"cards\". */\n  variant?: \"cards\" | \"chips\";\n  onSelect?: (prompt: SuggestedPrompt) => void;\n  /** Show skeletons while suggestions stream in. */\n  loading?: boolean;\n  /** Card columns at full width. Narrow containers fall back to one column. Default 2. */\n  columns?: 1 | 2 | 3;\n  /** Small heading above the set, such as \"Try asking\" or \"Follow up\". */\n  label?: string;\n  /** Shows a Shuffle button. Swap `prompts` in the handler; the new set crossfades in. */\n  onShuffle?: () => void;\n  tone?: BjorkTone;\n  className?: string;\n}\n\nexport const SAMPLE_STARTERS: SuggestedPrompt[] = [\n  {\n    id: \"offsite\",\n    category: \"Plan\",\n    title: \"Plan a three-day team offsite\",\n    subtitle: \"Twelve people near Lisbon, under €9k\",\n  },\n  {\n    id: \"trace\",\n    category: \"Code\",\n    title: \"Explain this stack trace\",\n    subtitle: \"A hydration error from the Fieldnotes web build\",\n  },\n  {\n    id: \"launch\",\n    category: \"Write\",\n    title: \"Draft a launch note\",\n    subtitle: \"For the Lumen Labs offline sync release\",\n  },\n  {\n    id: \"vectors\",\n    category: \"Research\",\n    title: \"Compare vector databases\",\n    subtitle: \"Latency and cost at ten million embeddings\",\n  },\n];\n\n/** A second starter set, for Shuffle. */\nexport const SAMPLE_STARTERS_ALT: SuggestedPrompt[] = [\n  { id: \"sql\", category: \"Data\", title: \"Write a cohort retention query\", subtitle: \"Weekly cohorts from the events table\" },\n  { id: \"review\", category: \"Code\", title: \"Review a pull request\", subtitle: \"Spot race conditions in a sync worker\" },\n  { id: \"email\", category: \"Write\", title: \"Reply to a tricky email\", subtitle: \"Decline a deadline without burning trust\" },\n  { id: \"learn\", category: \"Learn\", title: \"Teach me CRDTs in ten minutes\", subtitle: \"With one worked example, no jargon\" },\n];\n\nexport const SAMPLE_FOLLOWUPS: SuggestedPrompt[] = [\n  { id: \"table\", title: \"Show it as a table\" },\n  { id: \"tradeoffs\", title: \"What are the trade-offs?\" },\n  { id: \"shorter\", title: \"Make it shorter\" },\n  { id: \"tests\", title: \"Write tests for this\" },\n  { id: \"sources\", title: \"Which sources did you use?\" },\n];\n\nconst COLS = { 1: \"\", 2: \"@[480px]:grid-cols-2\", 3: \"@[480px]:grid-cols-2 @[680px]:grid-cols-3\" } as const;\n\n/**\n * Starter prompts for an empty chat and follow-ups after an answer. Cards or chips, arrow-key navigation, a quick\n * staggered entrance, skeletons while suggestions load, and an optional Shuffle that crossfades to a new set.\n */\nexport function SuggestedPrompts({\n  prompts,\n  variant = \"cards\",\n  onSelect,\n  loading = false,\n  columns = 2,\n  label,\n  onShuffle,\n  tone: toneProp,\n  className,\n}: SuggestedPromptsProps) {\n  const { style } = useAiTone(toneProp);\n  const reduce = useReduceMotion();\n  const listRef = useRef<HTMLDivElement>(null);\n  const cards = variant === \"cards\";\n  const setKey = prompts.map((p) => p.id).join(\"|\");\n\n  // Roving tabindex: one stop for the whole set, arrows move within it. Reset when the set changes.\n  const [active, setActive] = useState({ key: setKey, index: 0 });\n  const activeIndex = active.key === setKey ? Math.min(active.index, Math.max(0, prompts.length - 1)) : 0;\n\n  const [announce, setAnnounce] = useState({ loading, key: setKey, message: \"\" });\n  if (announce.loading !== loading || announce.key !== setKey) {\n    setAnnounce({\n      loading,\n      key: setKey,\n      message: loading ? \"Loading suggestions\" : `${prompts.length} suggestions`,\n    });\n  }\n\n  const focusAt = (index: number) => {\n    const items = listRef.current?.querySelectorAll<HTMLButtonElement>(\"[data-prompt]\");\n    if (!items || items.length === 0) return;\n    const next = (index + items.length) % items.length;\n    setActive({ key: setKey, index: next });\n    items[next].focus();\n  };\n\n  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {\n    const items = listRef.current?.querySelectorAll<HTMLButtonElement>(\"[data-prompt]\");\n    if (!items || items.length === 0) return;\n    const from = Array.from(items).indexOf(document.activeElement as HTMLButtonElement);\n    if (from === -1) return;\n    // Columns as laid out right now, so Up and Down follow the real grid at any container width.\n    const top = items[0].offsetTop;\n    let perRow = 0;\n    while (perRow < items.length && items[perRow].offsetTop === top) perRow++;\n    const vertical = cards ? Math.max(1, perRow) : 1;\n    const moves: Record<string, number> = {\n      ArrowRight: 1,\n      ArrowLeft: -1,\n      ArrowDown: vertical,\n      ArrowUp: -vertical,\n    };\n    if (e.key in moves) {\n      e.preventDefault();\n      const target = from + moves[e.key];\n      if (cards && (target < 0 || target >= items.length) && vertical > 1) return;\n      focusAt(target);\n    } else if (e.key === \"Home\") {\n      e.preventDefault();\n      focusAt(0);\n    } else if (e.key === \"End\") {\n      e.preventDefault();\n      focusAt(items.length - 1);\n    }\n  };\n\n  const container: Variants = {\n    hidden: {},\n    show: { transition: { staggerChildren: reduce ? 0 : Math.min(0.04, 0.16 / Math.max(1, prompts.length)) } },\n    exit: { opacity: 0, transition: { duration: 0.12, ease: ease.out } },\n  };\n  const itemVariants: Variants = reduce\n    ? {\n        hidden: { opacity: 0, filter: \"blur(0px)\" },\n        show: { opacity: 1, filter: \"blur(0px)\", transition: { duration: 0.15, ease: ease.out } },\n      }\n    : {\n        hidden: { opacity: 0, y: 6, filter: \"blur(4px)\" },\n        show: { opacity: 1, y: 0, filter: \"blur(0px)\", transition: { duration: 0.22, ease: ease.out } },\n      };\n\n  const skeletonCount = cards ? Math.max(2, columns * 2) : 4;\n\n  return (\n    <div\n      aria-busy={loading || undefined}\n      className={cn(\"@container w-full font-bjork-alpha text-[color:var(--bjork-text)]\", className)}\n      style={style}\n    >\n      <style href=\"bjork-suggested-prompts\" precedence=\"default\">\n        {SKELETON_CSS}\n      </style>\n\n      {(label || onShuffle) && (\n        <div className=\"mb-2.5 flex min-h-7 items-center justify-between gap-3\">\n          {label ? (\n            <h3 className=\"font-mono text-[10px] font-normal uppercase leading-4 tracking-[0.08em] text-[color:var(--bjork-text-faint)]\">\n              {label}\n            </h3>\n          ) : (\n            <span />\n          )}\n          {onShuffle && (\n            <button\n              type=\"button\"\n              onClick={onShuffle}\n              disabled={loading}\n              className={cn(\n                \"-mr-1.5 flex h-7 cursor-pointer items-center gap-1.5 rounded-[7px] px-1.5 text-[12px] font-medium text-[color:var(--bjork-text-muted)] transition-colors hover:bg-[var(--bjork-surface-active)] hover:text-[color:var(--bjork-text)] disabled:opacity-40\",\n                FOCUS_RING,\n                PRESS,\n              )}\n            >\n              <Shuffle size={13} strokeWidth={1.75} aria-hidden=\"true\" />\n              Shuffle\n            </button>\n          )}\n        </div>\n      )}\n\n      <AnimatePresence mode=\"wait\" initial={true}>\n        {loading ? (\n          <motion.div\n            key=\"loading\"\n            initial={{ opacity: 0 }}\n            animate={{ opacity: 1 }}\n            exit={{ opacity: 0, transition: { duration: 0.1 } }}\n            aria-hidden=\"true\"\n            className={cn(cards ? cn(\"grid grid-cols-1 gap-2\", COLS[columns]) : \"flex flex-wrap gap-2\")}\n          >\n            {Array.from({ length: skeletonCount }, (_, i) =>\n              cards ? (\n                <div key={i} className=\"h-[86px] rounded-[12px] border border-[color:var(--bjork-border)] p-3\">\n                  <div className=\"bjork-sp-skel h-2 w-10 rounded-full\" />\n                  <div className=\"bjork-sp-skel mt-3 h-3 w-[72%] rounded-full\" />\n                  <div className=\"bjork-sp-skel mt-2.5 h-2.5 w-[54%] rounded-full\" />\n                </div>\n              ) : (\n                <div\n                  key={i}\n                  className=\"bjork-sp-skel h-8 rounded-full\"\n                  style={{ width: [148, 112, 176, 128][i % 4] }}\n                />\n              ),\n            )}\n          </motion.div>\n        ) : (\n          <motion.div\n            key={setKey}\n            ref={listRef}\n            role=\"group\"\n            aria-label={label ?? (cards ? \"Suggested prompts\" : \"Suggested follow-ups\")}\n            onKeyDown={onKeyDown}\n            variants={container}\n            initial=\"hidden\"\n            animate=\"show\"\n            exit=\"exit\"\n            className={cn(cards ? cn(\"grid grid-cols-1 gap-2\", COLS[columns]) : \"flex flex-wrap gap-2\")}\n          >\n            {prompts.map((p, i) => (\n              <motion.button\n                key={p.id}\n                type=\"button\"\n                data-prompt=\"\"\n                variants={itemVariants}\n                tabIndex={i === activeIndex ? 0 : -1}\n                onFocus={() => setActive({ key: setKey, index: i })}\n                onClick={() => onSelect?.(p)}\n                className={cn(\n                  \"group relative min-w-0 cursor-pointer text-left transition-[background-color,border-color,color] duration-150\",\n                  cards\n                    ? \"flex min-h-[86px] flex-col rounded-[12px] border border-[color:var(--bjork-border)] p-3 pr-8 hover:border-[color:var(--bjork-border-strong)] hover:bg-[var(--bjork-surface-active)]\"\n                    : \"inline-flex h-8 max-w-full items-center gap-1.5 rounded-full border border-[color:var(--bjork-border)] pl-3 pr-2.5 text-[13px] font-medium text-[color:var(--bjork-text-medium)] hover:border-[color:var(--bjork-border-strong)] hover:bg-[var(--bjork-surface-active)] hover:text-[color:var(--bjork-text)]\",\n                  FOCUS_RING,\n                  PRESS,\n                )}\n              >\n                {cards ? (\n                  <>\n                    {p.category && (\n                      <span className=\"font-mono text-[10px] uppercase leading-4 tracking-[0.08em] text-[color:var(--bjork-text-faint)]\">\n                        {p.category}\n                      </span>\n                    )}\n                    <span className=\"mt-1.5 text-[14px] font-medium leading-5 text-[color:var(--bjork-text)]\">\n                      {p.title}\n                    </span>\n                    {p.subtitle && (\n                      <span className=\"mt-0.5 truncate text-[12px] leading-[18px] text-[color:var(--bjork-text-soft)]\">\n                        {p.subtitle}\n                      </span>\n                    )}\n                    <ArrowUpRight\n                      aria-hidden=\"true\"\n                      size={14}\n                      strokeWidth={1.75}\n                      className=\"absolute right-3 top-3 text-[color:var(--bjork-text-faint)] opacity-0 transition-[opacity,transform,color] duration-150 group-hover:translate-x-px group-hover:-translate-y-px group-hover:text-[color:var(--bjork-accent-ink)] group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none\"\n                    />\n                  </>\n                ) : (\n                  <>\n                    <span className=\"truncate\">{p.title}</span>\n                    <ArrowUpRight\n                      aria-hidden=\"true\"\n                      size={13}\n                      strokeWidth={1.75}\n                      className=\"shrink-0 text-[color:var(--bjork-text-faint)] transition-[transform,color] duration-150 group-hover:translate-x-px group-hover:-translate-y-px group-hover:text-[color:var(--bjork-accent-ink)] motion-reduce:transition-none\"\n                    />\n                  </>\n                )}\n                {p.prompt && p.prompt !== p.title && <VisuallyHidden>{`, sends: ${p.prompt}`}</VisuallyHidden>}\n              </motion.button>\n            ))}\n          </motion.div>\n        )}\n      </AnimatePresence>\n\n      <LiveRegion message={announce.message} />\n    </div>\n  );\n}\n\nconst SKELETON_CSS =\n  \"@keyframes bjork-sp-skel{from{background-position:100% 0}to{background-position:0% 0}}\" +\n  \".bjork-sp-skel{background-image:linear-gradient(90deg,var(--bjork-surface-active) 0%,var(--bjork-surface-active) 35%,var(--bjork-border-strong) 50%,var(--bjork-surface-active) 65%,var(--bjork-surface-active) 100%);background-size:300% 100%;animation:bjork-sp-skel 1.5s linear infinite}\" +\n  \"@media (prefers-reduced-motion: reduce){.bjork-sp-skel{animation:none;background:var(--bjork-surface-active)}}\";\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/ai/suggested-prompts.tsx"
+    },
+    {
+      "path": "components/bjork-ui/_core/a11y.tsx",
+      "content": "import type { ReactNode } from \"react\";\n\n// Text for assistive tech only.\nexport function VisuallyHidden({ children }: { children: ReactNode }) {\n  return <span className=\"sr-only\">{children}</span>;\n}\n\n// Announces `message` when it changes. Same text re-rendered does not re-announce.\nexport function LiveRegion({\n  message,\n  politeness = \"polite\",\n}: {\n  message: string;\n  politeness?: \"polite\" | \"assertive\";\n}) {\n  return (\n    <span role=\"status\" aria-live={politeness} aria-atomic=\"true\" className=\"sr-only\">\n      {message}\n    </span>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/a11y.tsx"
+    },
+    {
+      "path": "components/bjork-ui/_core/motion.ts",
+      "content": "// Shared springs, easings and durations. Components import these instead of inventing values.\n\nexport const springs = {\n  press: { type: \"spring\", stiffness: 500, damping: 30, mass: 0.6 },\n  snappy: { type: \"spring\", stiffness: 400, damping: 25, mass: 1 },\n  standard: { type: \"spring\", stiffness: 300, damping: 30, mass: 0.8 },\n  soft: { type: \"spring\", stiffness: 200, damping: 25, mass: 1.2 },\n  settle: { type: \"spring\", stiffness: 380, damping: 30, mass: 0.8 },\n  blurIn: { type: \"spring\", stiffness: 400, damping: 28, mass: 0.6 },\n} as const;\n\nexport const ease = {\n  out: [0.23, 1, 0.32, 1],\n  inOut: [0.77, 0, 0.175, 1],\n  drawer: [0.32, 0.72, 0, 1],\n} as const;\n\nexport const easeCss = {\n  out: \"cubic-bezier(0.23,1,0.32,1)\",\n  inOut: \"cubic-bezier(0.77,0,0.175,1)\",\n  drawer: \"cubic-bezier(0.32,0.72,0,1)\",\n} as const;\n\nexport const durations = { press: 140, tooltip: 160, menu: 200, panel: 280 } as const; // ms\n\n// Cubic bezier easing for canvas and rAF code. Returns progress y for input x in [0, 1].\nexport function cubicBezier(x1: number, y1: number, x2: number, y2: number): (t: number) => number {\n  const cx = 3 * x1;\n  const bx = 3 * (x2 - x1) - cx;\n  const ax = 1 - cx - bx;\n  const cy = 3 * y1;\n  const by = 3 * (y2 - y1) - cy;\n  const ay = 1 - cy - by;\n  const sampleX = (s: number) => ((ax * s + bx) * s + cx) * s;\n  const sampleY = (s: number) => ((ay * s + by) * s + cy) * s;\n  const sampleDX = (s: number) => (3 * ax * s + 2 * bx) * s + cx;\n\n  const solveX = (x: number) => {\n    let s = x;\n    for (let i = 0; i < 8; i++) {\n      const err = sampleX(s) - x;\n      if (Math.abs(err) < 1e-6) return s;\n      const d = sampleDX(s);\n      if (Math.abs(d) < 1e-6) break;\n      s -= err / d;\n    }\n    let lo = 0;\n    let hi = 1;\n    s = x;\n    while (lo < hi) {\n      const v = sampleX(s);\n      if (Math.abs(v - x) < 1e-6) return s;\n      if (x > v) lo = s;\n      else hi = s;\n      s = (lo + hi) / 2;\n      if (hi - lo < 1e-7) break;\n    }\n    return s;\n  };\n\n  return (t: number) => {\n    if (t <= 0) return 0;\n    if (t >= 1) return 1;\n    return sampleY(solveX(t));\n  };\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/motion.ts"
+    },
+    {
+      "path": "components/bjork-ui/ai/_shared.ts",
+      "content": "\"use client\";\n\n// Shared plumbing for the bjork-ui AI components: tone tokens, reduced motion, controllable state and\n// number formatting. Every AI component imports from here so they read as one family.\n\nimport {\n  useCallback,\n  useLayoutEffect,\n  useRef,\n  useState,\n  useSyncExternalStore,\n  type CSSProperties,\n} from \"react\";\nimport { useReducedMotion } from \"framer-motion\";\nimport { BJORK_PALETTE, type BjorkTone } from \"@/components/bjork-ui/_core/palette\";\nimport { useBjorkTone } from \"@/components/bjork-ui/_core/tone\";\n\nexport type { BjorkTone };\nexport type BjorkPalette = (typeof BJORK_PALETTE)[BjorkTone];\n\nconst noopSubscribe = () => () => {};\n\n/** False on the server and the first client render, true after hydration. */\nexport function useHydrated(): boolean {\n  return useSyncExternalStore(\n    noopSubscribe,\n    () => true,\n    () => false,\n  );\n}\n\n/** Hydration-safe reduced motion: both sides report \"not reduced\" until mount, then the real value applies. */\nexport function useReduceMotion(): boolean {\n  const hydrated = useHydrated();\n  const reduced = useReducedMotion();\n  return hydrated && reduced === true;\n}\n\n/**\n * Resolves the tone and returns the CSS custom properties for it. Spread `style` on the component root so an\n * explicit `tone` prop wins over the page theme, and status colours (success, warning, error) are always defined.\n */\nexport function useAiTone(toneProp?: BjorkTone) {\n  const tone = useBjorkTone(toneProp);\n  const pal = BJORK_PALETTE[tone];\n  const light = tone === \"light\";\n  const style = {\n    \"--bjork-text\": pal.text,\n    \"--bjork-text-medium\": pal.textMedium,\n    \"--bjork-text-muted\": pal.textMuted,\n    \"--bjork-text-soft\": pal.textSoft,\n    \"--bjork-text-faint\": pal.textFaint,\n    \"--bjork-hair\": pal.hair,\n    \"--bjork-border\": pal.border,\n    \"--bjork-border-strong\": pal.borderStrong,\n    \"--bjork-surface\": pal.surface,\n    \"--bjork-raised\": pal.raised,\n    \"--bjork-surface-active\": pal.active,\n    \"--bjork-accent\": pal.accent,\n    \"--bjork-accent-ink\": pal.accentInk,\n    \"--bjork-accent-fill\": pal.accentFill,\n    \"--bjork-accent-soft\": pal.accentSoft,\n    \"--bjork-accent-muted\": pal.accentMuted,\n    \"--bjork-accent-foreground\": pal.accentFg,\n    \"--bjork-success\": pal.success,\n    \"--bjork-warning\": pal.warning,\n    \"--bjork-error\": pal.error,\n    \"--bjork-ring-offset\": pal.bg,\n    \"--bjork-field\": light ? \"rgba(255, 252, 246, 0.96)\" : \"rgba(18, 18, 18, 0.95)\",\n    \"--bjork-field-inset\": light ? \"rgba(239, 231, 216, 0.72)\" : \"rgba(9, 9, 9, 0.75)\",\n    \"--bjork-menu\": light ? \"rgba(255, 252, 246, 0.98)\" : \"rgba(18, 18, 18, 0.98)\",\n    \"--bjork-shadow-menu\": light\n      ? \"inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), 0 22px 44px -26px rgba(66, 52, 33, 0.22)\"\n      : \"inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), 0 22px 42px -22px rgba(0, 0, 0, 0.9)\",\n    \"--bjork-shadow-surface\": light\n      ? \"inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), 0 14px 22px -9px rgba(66, 52, 33, 0.11)\"\n      : \"inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)\",\n    colorScheme: tone,\n  } as CSSProperties;\n  return { tone, pal, style };\n}\n\n/** Classes for the shared keyboard focus ring. */\nexport const FOCUS_RING =\n  \"outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)]\";\n\n/** Classes for the shared press feedback. */\nexport const PRESS = \"transition-transform duration-150 ease-out active:scale-[0.97] motion-reduce:transition-none\";\n\n/**\n * Controlled-or-uncontrolled state. Pass `value` to control it; `onChange` fires for every change either way.\n */\nexport function useControllable<T>(\n  value: T | undefined,\n  defaultValue: T,\n  onChange?: (next: T) => void,\n): [T, (next: T) => void] {\n  const controlled = value !== undefined;\n  const [inner, setInner] = useState(defaultValue);\n  const current = controlled ? value : inner;\n  const onChangeRef = useRef(onChange);\n  useLayoutEffect(() => {\n    onChangeRef.current = onChange;\n  });\n  const set = useCallback(\n    (next: T) => {\n      if (!controlled) setInner(next);\n      onChangeRef.current?.(next);\n    },\n    [controlled],\n  );\n  return [current, set];\n}\n\n/** 1234 -> \"1,234\", 18400 -> \"18.4k\", 1_200_000 -> \"1.2M\". */\nexport function formatTokens(n: number): string {\n  if (n < 10_000) return Math.round(n).toLocaleString(\"en-US\");\n  if (n < 1_000_000) return `${(n / 1000).toFixed(n < 100_000 ? 1 : 0).replace(/\\.0$/, \"\")}k`;\n  return `${(n / 1_000_000).toFixed(n < 10_000_000 ? 2 : 1).replace(/\\.?0+$/, \"\")}M`;\n}\n\n/** US dollars with sub-cent precision when it matters: 0.0042 -> \"$0.0042\", 12.5 -> \"$12.50\". */\nexport function formatCost(usd: number): string {\n  if (usd === 0) return \"$0.00\";\n  if (Math.abs(usd) < 0.01) return `$${usd.toFixed(4)}`;\n  if (Math.abs(usd) < 1) return `$${usd.toFixed(3)}`;\n  return `$${usd.toLocaleString(\"en-US\", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;\n}\n\n/** 640 -> \"640ms\", 4200 -> \"4.2s\", 95000 -> \"1m 35s\". */\nexport function formatDuration(ms: number): string {\n  if (ms < 1000) return `${Math.round(ms)}ms`;\n  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;\n  const m = Math.floor(ms / 60_000);\n  const s = Math.round((ms % 60_000) / 1000);\n  return `${m}m ${s}s`;\n}\n\n/** 2_400_000 bytes -> \"2.4 MB\". */\nexport function formatBytes(bytes: number): string {\n  if (bytes < 1024) return `${bytes} B`;\n  const units = [\"KB\", \"MB\", \"GB\"];\n  let v = bytes / 1024;\n  let i = 0;\n  while (v >= 1024 && i < units.length - 1) {\n    v /= 1024;\n    i++;\n  }\n  return `${v.toFixed(v < 10 ? 1 : 0)} ${units[i]}`;\n}\n\n/** Shimmer keyframes for \"working\" text. Mount once with <style href=... precedence=\"default\">. */\nexport const SHIMMER_TEXT_CSS =\n  \"@keyframes bjork-ai-shimmer{from{background-position:100% 0}to{background-position:0% 0}}\" +\n  \".bjork-ai-shimmer{background-image:linear-gradient(90deg,var(--bjork-text-muted) 0%,var(--bjork-text-muted) 40%,var(--bjork-text) 50%,var(--bjork-text-muted) 60%,var(--bjork-text-muted) 100%);background-size:300% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:bjork-ai-shimmer 1.8s linear infinite}\" +\n  \"@media (prefers-reduced-motion: reduce){.bjork-ai-shimmer{animation:none;background:none;color:var(--bjork-text-muted)}}\";\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/ai/_shared.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/palette.ts",
+      "content": "export type BjorkTone = \"dark\" | \"light\";\n\n// Canvas, WebGL and SVG attribute colours. DOM code uses the CSS tokens with these as fallbacks.\nexport const BJORK_PALETTE = {\n  dark: {\n    bg: \"#050505\", stage: \"#111111\", surface: \"#121212\", raised: \"#161616\", active: \"#202020\",\n    border: \"#232323\", borderStrong: \"#343434\",\n    text: \"#ededed\", textMedium: \"rgba(237,237,237,0.72)\", textMuted: \"rgba(237,237,237,0.52)\",\n    textSoft: \"rgba(237,237,237,0.36)\", textFaint: \"rgba(237,237,237,0.22)\", hair: \"rgba(237,237,237,0.12)\",\n    accent: \"#ec5c13\", accentInk: \"#ec5c13\", accentFill: \"#b84a12\", accentSoft: \"rgba(236,92,19,0.12)\", accentMuted: \"rgba(236,92,19,0.24)\",\n    accentFg: \"#fff2ea\", success: \"#4cc38a\", warning: \"#f2b544\", error: \"#ff5c4d\",\n  },\n  light: {\n    bg: \"#f7f5ef\", stage: \"#f7f5ef\", surface: \"#fffcf6\", raised: \"#f5efe3\", active: \"#efe7d8\",\n    border: \"#eee6db\", borderStrong: \"#e1d7c8\",\n    text: \"#171717\", textMedium: \"rgba(23,23,23,0.72)\", textMuted: \"rgba(23,23,23,0.52)\",\n    textSoft: \"rgba(23,23,23,0.36)\", textFaint: \"rgba(23,23,23,0.22)\", hair: \"rgba(23,23,23,0.10)\",\n    accent: \"#ec7d43\", accentInk: \"#b4531f\", accentFill: \"#ec7d43\", accentSoft: \"rgba(236,125,67,0.10)\", accentMuted: \"rgba(236,125,67,0.20)\",\n    accentFg: \"#3f2112\", success: \"#1f8a55\", warning: \"#a86b00\", error: \"#c8361f\",\n  },\n} as const;\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/palette.ts"
+    },
+    {
+      "path": "components/bjork-ui/_core/tone.ts",
+      "content": "\"use client\";\n\nimport { useSyncExternalStore } from \"react\";\nimport { useTheme } from \"next-themes\";\nimport type { BjorkTone } from \"./palette\";\n\nconst subscribeNoop = () => () => {};\nconst getMounted = () => true;\nconst getServerMounted = () => false;\n\n/**\n * Resolves the tone for a component. An explicit `tone` always wins.\n * Otherwise it follows next-themes' resolved theme, but only after mount,\n * so the server render and first client render agree on dark.\n */\nexport function useBjorkTone(tone?: BjorkTone): BjorkTone {\n  const { resolvedTheme } = useTheme();\n  const mounted = useSyncExternalStore(subscribeNoop, getMounted, getServerMounted);\n  if (tone) return tone;\n  if (!mounted) return \"dark\";\n  return resolvedTheme === \"light\" ? \"light\" : \"dark\";\n}\n",
+      "type": "registry:component",
+      "target": "@components/bjork-ui/_core/tone.ts"
+    },
+    {
+      "path": "lib/utils.ts",
+      "content": "import { clsx, type ClassValue } from \"clsx\"\nimport { twMerge } from \"tailwind-merge\"\n\nexport function cn(...inputs: ClassValue[]) {\n  return twMerge(clsx(inputs))\n}\n",
+      "type": "registry:lib",
+      "target": "@lib/utils.ts"
+    }
+  ],
+  "cssVars": {
+    "light": {
+      "bjork-bg": "#f7f3ea",
+      "bjork-surface": "#fffcf6",
+      "bjork-surface-muted": "rgba(250, 246, 237, 0.94)",
+      "bjork-surface-hover": "#f5efe3",
+      "bjork-surface-active": "#efe7d8",
+      "bjork-panel": "#f8f2e7",
+      "bjork-menu": "rgba(255, 252, 246, 0.98)",
+      "bjork-field": "rgba(255, 252, 246, 0.96)",
+      "bjork-field-muted": "rgba(248, 242, 231, 0.82)",
+      "bjork-field-inset": "rgba(239, 231, 216, 0.72)",
+      "bjork-error-bg": "#fff0e8",
+      "bjork-text": "#171717",
+      "bjork-text-strong": "rgba(23, 23, 23, 0.9)",
+      "bjork-text-medium": "rgba(23, 23, 23, 0.72)",
+      "bjork-text-muted": "rgba(23, 23, 23, 0.52)",
+      "bjork-text-soft": "rgba(23, 23, 23, 0.36)",
+      "bjork-text-faint": "rgba(23, 23, 23, 0.22)",
+      "bjork-inverted-text": "#fff8f0",
+      "bjork-border": "#eee6db",
+      "bjork-border-muted": "#f5ede2",
+      "bjork-border-strong": "#e1d7c8",
+      "bjork-thumb": "#a49b8e",
+      "bjork-track": "#ded6ca",
+      "bjork-accent": "#ec7d43",
+      "bjork-accent-hover": "#f0935f",
+      "bjork-accent-soft": "rgba(236, 125, 67, 0.1)",
+      "bjork-accent-muted": "rgba(236, 125, 67, 0.2)",
+      "bjork-accent-badge": "rgba(236, 125, 67, 0.16)",
+      "bjork-accent-badge-foreground": "#8d421d",
+      "bjork-accent-foreground": "#3f2112",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.92), inset 1px 0 0 rgba(88, 72, 49, 0.026), inset -1px 0 0 rgba(255, 255, 255, 0.68), 0 14px 22px -9px rgba(66, 52, 33, 0.11)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(88, 72, 49, 0.045), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.86)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.64), 0 18px 38px -30px rgba(66, 52, 33, 0.2)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(88, 72, 49, 0.04), inset 0 12px 24px rgba(88, 72, 49, 0.022), inset 1px 0 0 rgba(88, 72, 49, 0.024), inset -1px 0 0 rgba(255, 255, 255, 0.62), 0 22px 44px -26px rgba(66, 52, 33, 0.22)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(88, 72, 49, 0.12), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.72)",
+      "bjork-ring-offset": "#f7f3ea"
+    },
+    "dark": {
+      "bjork-bg": "#111111",
+      "bjork-surface": "#121212",
+      "bjork-surface-muted": "rgba(22, 22, 22, 0.92)",
+      "bjork-surface-hover": "#161616",
+      "bjork-surface-active": "#202020",
+      "bjork-panel": "#0d0d0d",
+      "bjork-menu": "rgba(18, 18, 18, 0.98)",
+      "bjork-field": "rgba(18, 18, 18, 0.95)",
+      "bjork-field-muted": "rgba(18, 18, 18, 0.55)",
+      "bjork-field-inset": "rgba(9, 9, 9, 0.75)",
+      "bjork-error-bg": "#130d0a",
+      "bjork-text": "#ededed",
+      "bjork-text-strong": "rgba(237, 237, 237, 0.9)",
+      "bjork-text-medium": "rgba(237, 237, 237, 0.72)",
+      "bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+      "bjork-text-soft": "rgba(237, 237, 237, 0.36)",
+      "bjork-text-faint": "rgba(237, 237, 237, 0.22)",
+      "bjork-inverted-text": "#080808",
+      "bjork-border": "#232323",
+      "bjork-border-muted": "#1c1c1c",
+      "bjork-border-strong": "#343434",
+      "bjork-thumb": "#626262",
+      "bjork-track": "#090909",
+      "bjork-accent": "#ec5c13",
+      "bjork-accent-hover": "#f07832",
+      "bjork-accent-soft": "rgba(236, 92, 19, 0.12)",
+      "bjork-accent-muted": "rgba(236, 92, 19, 0.24)",
+      "bjork-accent-badge": "#ec5c13",
+      "bjork-accent-badge-foreground": "#fff2ea",
+      "bjork-accent-foreground": "#fff2ea",
+      "bjork-shadow-surface": "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)",
+      "bjork-shadow-soft": "inset 0 1px 0 rgba(255, 255, 255, 0.045)",
+      "bjork-shadow-panel": "inset 0 1px 0 rgba(255, 255, 255, 0.035), 0 18px 36px -28px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-menu": "inset 0 1px 0 rgba(255, 255, 255, 0.055), inset 0 12px 24px rgba(255, 255, 255, 0.018), inset 0 -18px 26px rgba(0, 0, 0, 0.24), 0 22px 42px -22px rgba(0, 0, 0, 0.9)",
+      "bjork-shadow-inset": "inset 0 1px 10px rgba(0, 0, 0, 0.45)",
+      "bjork-ring-offset": "#080808"
+    }
+  },
+  "css": {
+    ".bjork-range": {
+      "box-shadow": "inset 0 1px 1px rgba(255, 255, 255, 0.04), 0 0 14px rgba(189, 69, 20, 0.06)"
+    },
+    ".bjork-range::-webkit-slider-thumb": {
+      "appearance": "none",
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-range::-moz-range-thumb": {
+      "width": "16px",
+      "height": "8px",
+      "border": "0",
+      "border-radius": "999px",
+      "background": "var(--bjork-thumb)",
+      "box-shadow": "inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.42)"
+    },
+    ".bjork-layered-button-accent, .bjork-layered-button-raised": {
+      "position": "relative",
+      "isolation": "isolate",
+      "appearance": "none",
+      "overflow": "hidden",
+      "border": "0",
+      "border-radius": "13px",
+      "box-shadow": "inset 0 1px 0 #ffffff38, 0 4px 6px -1px #0000001a, 0 2px 4px -2px #0000001a",
+      "transition": "filter 150ms ease-out, box-shadow 150ms ease-out"
+    },
+    ".bjork-layered-button-accent::after, .bjork-layered-button-raised::after": {
+      "position": "absolute",
+      "inset": "0",
+      "pointer-events": "none",
+      "content": "\"\"",
+      "border": "1.5px solid transparent",
+      "border-radius": "inherit",
+      "background": "linear-gradient(#ffffffb8, #0000003d 41% 75%, #ffffff47) border-box",
+      "mix-blend-mode": "overlay",
+      "-webkit-mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "mask-image": "linear-gradient(#000, #000), linear-gradient(#000, #000)",
+      "-webkit-mask-clip": "padding-box, border-box",
+      "mask-clip": "padding-box, border-box",
+      "-webkit-mask-origin": "padding-box, border-box",
+      "mask-origin": "padding-box, border-box",
+      "-webkit-mask-composite": "xor",
+      "mask-composite": "exclude"
+    },
+    ".bjork-layered-button-accent": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000040",
+      "background": "radial-gradient(ellipse at -20px top, rgba(255, 255, 255, 0.14), transparent), linear-gradient(180deg, #ec5c13 0%, #ec5c13 62%, color-mix(in oklab, #ec5c13 84%, black 16%) 100%)"
+    },
+    ".bjork-layered-button-raised": {
+      "color": "oklch(100% 0 0)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, oklch(0.1881 0.006 265), oklch(0.5493 0.0081 265))"
+    },
+    ".dark .bjork-layered-button-raised": {
+      "color": "oklch(0.2574 0.0056 265)",
+      "text-shadow": "0 -1px #00000026",
+      "background": "radial-gradient(ellipse at -20px top, #ffffff38, #fff0), linear-gradient(180deg, color-mix(in oklab, oklch(0.9674 0.0013 265) 80%, oklch(0.2574 0.0056 265) 20%), color-mix(in oklab, oklch(0.669 0.0107 265) 80%, oklch(0.2574 0.0056 265) 20%))"
+    },
+    "@media (hover: hover)": {
+      ".bjork-layered-button-accent:hover": {
+        "filter": "brightness(1.08) saturate(1.04)"
+      },
+      ".bjork-layered-button-raised:hover": {
+        "filter": "brightness(1.08) contrast(0.9)"
+      }
+    }
+  },
+  "meta": {
+    "collection": "AI",
+    "registryUrl": "https://ui.isaiahbjork.com/suggested-prompts.json",
+    "installCommand": "npx shadcn@latest add https://ui.isaiahbjork.com/suggested-prompts.json"
+  },
+  "type": "registry:component"
+}
