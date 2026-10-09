@@ -2,12 +2,12 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { CalendarHeatmap, type CalendarDatum } from "@/components/bjork-ui/charts/calendar-heatmap";
 import { mulberry32 } from "@/components/bjork-ui/_core/random";
 import { formatNumber } from "@/components/bjork-ui/charts/_kit/scale";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("calendar-heatmap");
 
@@ -77,6 +77,12 @@ export default function Page() {
   const [dataset, setDataset] = useState<DatasetId>("deploys");
   const [weekStart, setWeekStart] = useState<"monday" | "sunday">("monday");
   const [scale, setScale] = useState<"quantile" | "linear">("quantile");
+  function reset() {
+    setDataset("deploys");
+    setWeekStart("monday");
+    setScale("quantile");
+  }
+
   const ds = DATASETS[dataset];
 
   return (
@@ -98,6 +104,40 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[720px] scale-[1.12]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSegmented
+            label="Dataset"
+            value={dataset}
+            onChange={setDataset}
+            options={[
+              { label: "Deploys", value: "deploys" },
+              { label: "Orders", value: "orders" },
+              { label: "Incidents", value: "incidents" },
+            ]}
+          />
+          <ShellSegmented
+            label="Week"
+            value={weekStart}
+            onChange={setWeekStart}
+            options={[
+              { label: "Mon", value: "monday" },
+              { label: "Sun", value: "sunday" },
+            ]}
+          />
+          <ShellSegmented
+            label="Steps"
+            value={scale}
+            onChange={setScale}
+            options={[
+              { label: "Quantile", value: "quantile" },
+              { label: "Linear", value: "linear" },
+            ]}
+          />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[720px]">
@@ -106,36 +146,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={760}>
           <CalendarHeatmap data={ds.data} unit={ds.unit} formatValue={whole} weekStart={weekStart} scale={scale} ariaLabel={ds.label} />
-          <ControlRow>
-            <OptionGroup
-              label="Dataset"
-              value={dataset}
-              onChange={setDataset}
-              options={[
-                { label: "Deploys", value: "deploys" },
-                { label: "Orders", value: "orders" },
-                { label: "Incidents", value: "incidents" },
-              ]}
-            />
-            <OptionGroup
-              label="Week starts"
-              value={weekStart}
-              onChange={setWeekStart}
-              options={[
-                { label: "Mon", value: "monday" },
-                { label: "Sun", value: "sunday" },
-              ]}
-            />
-            <OptionGroup
-              label="Steps"
-              value={scale}
-              onChange={setScale}
-              options={[
-                { label: "Quantile", value: "quantile" },
-                { label: "Linear", value: "linear" },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSwitch } from "@/components/bjork-ui/component-demo-shell";
 import { DepthChart, createOrderBook, type BookLevel } from "@/components/bjork-ui/charts/depth-chart";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, ToggleButton } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("depth-chart");
 const PREVIEW_BOOK = createOrderBook(3).snapshot();
@@ -22,23 +22,18 @@ function useLiveBook(running: boolean) {
 }
 
 // The feed lives in its own component, so each update re-renders the chart, not the page shell.
-function LiveDepth() {
-  const [live, setLive] = useState(true);
-  const book = useLiveBook(live);
-  return (
-    <>
-      <DepthChart {...book} height={360} ariaLabel="ACME order book" />
-      <ControlRow>
-        <ToggleButton pressed={live} onClick={() => setLive((v) => !v)}>
-          {live ? "Pause feed" : "Resume feed"}
-        </ToggleButton>
-      </ControlRow>
-    </>
-  );
+function LiveDepth({ running }: { running: boolean }) {
+  const book = useLiveBook(running);
+  return <DepthChart {...book} height={360} ariaLabel="ACME order book" />;
 }
 
 export default function Page() {
   const isPreview = usePreviewMode();
+  const [live, setLive] = useState(true);
+
+  function reset() {
+    setLive(true);
+  }
 
   return (
     <SimpleComponentDemoPage
@@ -53,6 +48,13 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[780px] scale-[1.08]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSwitch label="Feed" checked={live} onCheckedChange={setLive} />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[740px]">
@@ -60,7 +62,7 @@ export default function Page() {
         </div>
       ) : (
         <DemoColumn width={860}>
-          <LiveDepth />
+          <LiveDepth running={live} />
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

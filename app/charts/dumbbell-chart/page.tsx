@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { DumbbellChart, type DumbbellRow, type DumbbellSort } from "@/components/bjork-ui/charts/dumbbell-chart";
 import { formatCompact, formatSigned } from "@/components/bjork-ui/charts/_kit/scale";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("dumbbell-chart");
 
@@ -29,6 +29,10 @@ const gap = (g: number) => formatSigned(g, (n) => `$${formatCompact(n, 0)}`);
 export default function Page() {
   const isPreview = usePreviewMode();
   const [sort, setSort] = useState<DumbbellSort>("gap");
+  function reset() {
+    setSort("gap");
+  }
+
 
   return (
     <SimpleComponentDemoPage
@@ -47,6 +51,23 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[700px] scale-[1.12]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSegmented
+            label="Sort"
+            value={sort}
+            onChange={setSort}
+            options={[
+              { label: "Gap", value: "gap" },
+              { label: "2025", value: "b" },
+              { label: "2020", value: "a" },
+              { label: "Name", value: "label" },
+            ]}
+          />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[660px]">
@@ -55,19 +76,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={720}>
           <DumbbellChart rows={ROWS} labels={YEARS} sort={sort} onSortChange={setSort} formatValue={money} formatGap={gap} rowHeight={34} ariaLabel="Median salary by role" />
-          <ControlRow>
-            <OptionGroup
-              label="Sort"
-              value={sort}
-              onChange={setSort}
-              options={[
-                { label: "Gap", value: "gap" },
-                { label: "2025", value: "b" },
-                { label: "2020", value: "a" },
-                { label: "Name", value: "label" },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

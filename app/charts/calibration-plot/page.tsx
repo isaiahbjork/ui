@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
 import { CalibrationPlot, createForecasts } from "@/components/bjork-ui/charts/calibration-plot";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("calibration-plot");
 const RAW = createForecasts(41, 3000, false);
@@ -15,6 +15,11 @@ export default function Page() {
   const isPreview = usePreviewMode();
   const [which, setWhich] = useState<"raw" | "fixed">("raw");
   const [bins, setBins] = useState(10);
+  function reset() {
+    setWhich("raw");
+    setBins(10);
+  }
+
 
   return (
     <SimpleComponentDemoPage
@@ -26,6 +31,31 @@ export default function Page() {
 <CalibrationPlot forecasts={predictions.map((x) => ({ p: x.probability, outcome: x.won ? 1 : 0 }))} bins={10} />`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[560px] scale-[0.98]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSegmented
+            label="Model"
+            value={which}
+            onChange={setWhich}
+            options={[
+              { label: "Overconfident", value: "raw" },
+              { label: "Recalibrated", value: "fixed" },
+            ]}
+          />
+          <ShellSegmented
+            label="Bins"
+            value={bins}
+            onChange={setBins}
+            options={[
+              { label: "5", value: 5 },
+              { label: "10", value: 10 },
+              { label: "15", value: 15 },
+            ]}
+          />
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[540px]">
@@ -34,27 +64,6 @@ export default function Page() {
       ) : (
         <DemoColumn width={600}>
           <CalibrationPlot forecasts={which === "raw" ? RAW : FIXED} bins={bins} onBinsChange={setBins} ariaLabel="Forecast calibration" />
-          <ControlRow>
-            <OptionGroup
-              label="Forecaster"
-              value={which}
-              onChange={setWhich}
-              options={[
-                { label: "Overconfident", value: "raw" },
-                { label: "Recalibrated", value: "fixed" },
-              ]}
-            />
-            <OptionGroup
-              label="Bins"
-              value={bins}
-              onChange={setBins}
-              options={[
-                { label: "5", value: 5 },
-                { label: "10", value: 10 },
-                { label: "15", value: 15 },
-              ]}
-            />
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>

@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage, ShellSegmented, ShellSwitch, ShellActions } from "@/components/bjork-ui/component-demo-shell";
 import { CandlestickChart, createCandles, type Candle } from "@/components/bjork-ui/charts/candlestick-chart";
 import { mulberry32 } from "@/components/bjork-ui/_core/random";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup, ToggleButton } from "../_demo/controls";
+import { BjorkButton } from "@/components/bjork-ui/primitives/button";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("candlestick-chart");
 const HISTORY = createCandles(11, 160, { base: 142 });
@@ -44,6 +45,12 @@ export default function Page() {
   const [live, setLive] = useState(false);
   const [palette, setPalette] = useState<"ink" | "semantic">("ink");
   const [resetKey, setResetKey] = useState(0);
+  function reset() {
+    setLive(false);
+    setPalette("ink");
+    setResetKey((k) => k + 1);
+  }
+
   const rows = useLiveCandles(live && !isPreview);
   const formatPrice = useMemo(() => (v: number) => v.toFixed(2), []);
 
@@ -59,6 +66,27 @@ export function Demo({ candles }: { candles: { t: number; o: number; h: number; 
 }`}
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[800px] scale-[1.06]"
+      onReset={reset}
+      optionsDefaultOpen={false}
+      controls={
+        <>
+          <ShellSegmented
+            label="Palette"
+            value={palette}
+            onChange={setPalette}
+            options={[
+              { label: "Ink", value: "ink" },
+              { label: "Semantic", value: "semantic" },
+            ]}
+          />
+          <ShellSwitch label="Live" checked={live} onCheckedChange={setLive} />
+          <ShellActions>
+            <BjorkButton size="sm" variant="ghost" onClick={() => setResetKey((k) => k + 1)}>
+              Reset zoom
+            </BjorkButton>
+          </ShellActions>
+        </>
+      }
     >
       {isPreview ? (
         <div className="w-[760px]">
@@ -67,21 +95,6 @@ export function Demo({ candles }: { candles: { t: number; o: number; h: number; 
       ) : (
         <DemoColumn width={880}>
           <CandlestickChart key={resetKey} data={rows} palette={palette} height={380} formatPrice={formatPrice} ariaLabel="ACME daily" />
-          <ControlRow>
-            <OptionGroup
-              label="Palette"
-              value={palette}
-              onChange={setPalette}
-              options={[
-                { label: "Ink", value: "ink" },
-                { label: "Semantic", value: "semantic" },
-              ]}
-            />
-            <ToggleButton pressed={live} onClick={() => setLive((v) => !v)}>
-              {live ? "Stop live" : "Go live"}
-            </ToggleButton>
-            <ToggleButton onClick={() => setResetKey((k) => k + 1)}>Reset zoom</ToggleButton>
-          </ControlRow>
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>
