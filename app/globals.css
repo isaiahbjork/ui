@@ -143,12 +143,6 @@
   display: none;
 }
 
-.bjork-shell-demo-fit {
-  --bjork-demo-base-width: 760;
-  --bjork-demo-mobile-scale: min(1, calc((100vw - 56px) / (var(--bjork-demo-base-width) * 1px)));
-  transform: scale(var(--bjork-demo-mobile-scale));
-}
-
 .bjork-accordion [data-slot="accordion-content"][data-state="open"] > div {
   animation: bjork-accordion-content-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
@@ -193,12 +187,6 @@
   .bjork-accordion [data-slot="accordion-content"] > div {
     animation: none;
     filter: none;
-    transform: none;
-  }
-}
-
-@media (min-width: 1024px) {
-  .bjork-shell-demo-fit {
     transform: none;
   }
 }

@@ -38,6 +38,7 @@ export function Demo() {
   );
 }`}
       previewScaleClassName="w-[760px] scale-[0.68]"
+      fitMinWidth={420}
       previewCaptureScaleClassName="w-[760px] scale-[0.62]"
     >
       <CoachSchedulingCard

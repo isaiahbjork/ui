@@ -44,6 +44,7 @@ export function Demo() {
   return <AnimatedCardStatusList title="Fundamentals" cards={cards} />;
 }`}
       previewScaleClassName="w-[560px] scale-[0.88]"
+      fitMinWidth={420}
     >
       <AnimatedCardStatusList 
         title="Fundamentals Demo"

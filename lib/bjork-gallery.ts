@@ -29,6 +29,12 @@ export interface GalleryItem {
   accent: string;
   isNew?: boolean;
   hasStaticPreview?: boolean;
+  /**
+   * Set to false when the live demo needs a wide screen (wide data tables,
+   * dense dashboards). Below the md breakpoint the item is left out of the
+   * archive and the index, and its page shows the static preview instead.
+   */
+  mobile?: boolean;
 }
 
 export const galleryItems: GalleryItem[] = [
@@ -97,6 +103,7 @@ export const galleryItems: GalleryItem[] = [
     collection: "Tables",
     preview: "table",
     accent: "#ec5c13",
+    mobile: false,
   },
   {
     id: "bjork07",
@@ -439,6 +446,7 @@ export const galleryItems: GalleryItem[] = [
     preview: "table",
     accent: "#ec5c13",
     isNew: true,
+    mobile: false,
   },
   {
     id: "bjork43",
@@ -450,6 +458,7 @@ export const galleryItems: GalleryItem[] = [
     collection: "Tables",
     preview: "table",
     accent: "#ec5c13",
+    mobile: false,
   },
   {
     id: "bjork44",
@@ -461,6 +470,7 @@ export const galleryItems: GalleryItem[] = [
     collection: "Tables",
     preview: "table",
     accent: "#ec5c13",
+    mobile: false,
   },
   {
     id: "bjork45",
@@ -472,6 +482,7 @@ export const galleryItems: GalleryItem[] = [
     collection: "Tables",
     preview: "table",
     accent: "#ec5c13",
+    mobile: false,
   },
   {
     id: "bjork46",
@@ -483,6 +494,7 @@ export const galleryItems: GalleryItem[] = [
     collection: "Tables",
     preview: "table",
     accent: "#ec5c13",
+    mobile: false,
   },
   {
     id: "bjork47",
@@ -2323,6 +2335,10 @@ export const galleryItems: GalleryItem[] = [
     isNew: true,
   },
 ];
+
+export function isDesktopOnly(item: Pick<GalleryItem, "mobile">) {
+  return item.mobile === false;
+}
 
 export function getGalleryItem(slug: string) {
   return galleryItems.find((item) => item.slug === slug);

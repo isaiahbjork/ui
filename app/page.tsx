@@ -18,7 +18,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { galleryItems, type GalleryItem } from "@/lib/bjork-gallery";
+import { galleryItems, isDesktopOnly, type GalleryItem } from "@/lib/bjork-gallery";
 import { SiteHeader } from "@/components/site-header";
 import { WebsiteShaderCanvas } from "@/components/bjork-ui/shaders/website-shader";
 
@@ -178,6 +178,7 @@ export default function Page() {
           <GalleryHeading
             title="Component archive"
             count={filteredItems.length}
+            phoneCount={filteredItems.filter((item) => !isDesktopOnly(item)).length}
             description="Components, shader studies, and product-grade interface fragments grouped by collection."
             isLight={isLight}
           />
@@ -213,7 +214,11 @@ export default function Page() {
               {groupedSections.map((section) => (
                 <motion.section
                   key={section.collection}
-                  className="w-full"
+                  // Desktop-only demos stay out of the archive below md (see GalleryItem.mobile).
+                  className={cn(
+                    "w-full",
+                    section.items.every(isDesktopOnly) && "max-md:hidden"
+                  )}
                   variants={{
                     hidden: { opacity: 0, y: 14 },
                     visible: {
@@ -231,6 +236,7 @@ export default function Page() {
                   <SectionHeading
                     title={section.collection}
                     count={section.items.length}
+                    phoneCount={section.items.filter((item) => !isDesktopOnly(item)).length}
                     isLight={isLight}
                   />
                   <div className="grid w-full grid-flow-dense grid-cols-1 gap-3 md:grid-cols-2">
@@ -405,11 +411,13 @@ function OutputBlock({ isLight }: { isLight: boolean }) {
 function GalleryHeading({
   title,
   count,
+  phoneCount,
   description,
   isLight,
 }: {
   title: string;
   count: number;
+  phoneCount: number;
   description: string;
   isLight: boolean;
 }) {
@@ -421,7 +429,8 @@ function GalleryHeading({
       <h2 className="relative text-[28px] font-medium leading-tight tracking-[-0.025em]">
         {title}
         <span className={cn("absolute top-0 pl-1 text-sm font-normal", isLight ? "text-[#171717]/60" : "text-[#6f7480]")}>
-          [{count || collectionCount}]
+          <span className="md:hidden">[{phoneCount}]</span>
+          <span className="max-md:hidden">[{count || collectionCount}]</span>
         </span>
       </h2>
       <p className={cn("max-w-[540px] text-[15px] leading-[24px]", isLight ? "text-[#171717]/60" : "text-[#ededed]/42")}>
@@ -434,10 +443,12 @@ function GalleryHeading({
 function SectionHeading({
   title,
   count,
+  phoneCount,
   isLight,
 }: {
   title: string;
   count: number;
+  phoneCount: number;
   isLight: boolean;
 }) {
   return (
@@ -445,7 +456,10 @@ function SectionHeading({
       <div>
         <h3 className={cn("text-[22px] font-medium tracking-[-0.025em]", isLight ? "text-[#171717]" : "text-[#ededed]")}>
           {title}
-          <span className={cn("pl-1 text-sm font-normal", isLight ? "text-[#171717]/60" : "text-[#6f7480]")}>[{count}]</span>
+          <span className={cn("pl-1 text-sm font-normal", isLight ? "text-[#171717]/60" : "text-[#6f7480]")}>
+            <span className="md:hidden">[{phoneCount}]</span>
+            <span className="max-md:hidden">[{count}]</span>
+          </span>
         </h3>
       </div>
       <p className={cn("hidden font-mono text-[11px] uppercase tracking-[0.14em] md:block", isLight ? "text-[#171717]/60" : "text-[#ededed]/25")}>
@@ -493,6 +507,7 @@ function GalleryCard({
       }}
       className={cn(
         "group relative flex h-[258px] cursor-pointer flex-col overflow-hidden rounded-[16px] border p-2.5 transition-colors duration-300",
+        isDesktopOnly(item) && "max-md:hidden",
         isLight
           ? "border-[#f5ede2] bg-[#fffcf6] shadow-[inset_0_7px_14px_rgba(88,72,49,0.045),inset_0_0.5px_0.5px_rgba(255,255,255,0.92),inset_1px_0_0_rgba(88,72,49,0.026),inset_-1px_0_0_rgba(255,255,255,0.68),0_14px_22px_-9px_rgba(66,52,33,0.11)] hover:border-[#eee6db] hover:bg-[#fffefa]"
           : "border-white/[0.045] bg-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_16px_34px_-24px_rgba(0,0,0,0.88)] hover:bg-[#151515]"

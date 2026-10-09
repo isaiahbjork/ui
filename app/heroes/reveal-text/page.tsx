@@ -13,6 +13,7 @@ export default function Page() {
       item={item}
       description="A large reveal text animation with delayed overlay motion for title treatments and motion studies."
       previewScaleClassName="w-[860px] scale-[0.7]"
+      fitMinWidth={440}
     >
       <div className="flex h-full min-h-[520px] w-full items-center justify-center overflow-hidden">
         <RevealText

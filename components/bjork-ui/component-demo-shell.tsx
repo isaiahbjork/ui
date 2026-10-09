@@ -16,6 +16,7 @@ import {
   Home,
   Maximize2,
   Minimize2,
+  Monitor,
   Moon,
   RefreshCcw,
   RotateCw,
@@ -29,7 +30,8 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { galleryItems, type GalleryItem } from "@/lib/bjork-gallery";
+import { DemoFit } from "@/components/bjork-ui/demo-fit";
+import { galleryItems, isDesktopOnly, type GalleryItem } from "@/lib/bjork-gallery";
 import { BjorkSlider } from "@/components/bjork-ui/primitives/slider";
 import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
 import { WebsiteShaderCanvas } from "@/components/bjork-ui/shaders/website-shader";
@@ -82,6 +84,8 @@ interface SimpleComponentDemoPageProps {
   note?: ReactNode;
   previewScaleClassName?: string;
   previewCaptureScaleClassName?: string;
+  /** Below lg, lay the demo out at least this wide (px) and scale it down to the stage. */
+  fitMinWidth?: number;
   previewClassName?: string;
   previewInnerClassName?: string;
   previewLayout?: "single" | "list";
@@ -124,6 +128,7 @@ type ShellPalette = (typeof shellPalettes)[keyof typeof shellPalettes];
 const sidebarStorageKey = "bjork-ui-component-index-open";
 const sidebarScrollStorageKey = "bjork-ui-component-index-scroll-top";
 const desktopSidebarMediaQuery = "(min-width: 1024px)";
+const phoneViewportQuery = "(max-width: 767px)";
 const docsScrollStorageKey = "bjork-ui-docs-scroll-top";
 const sidebarSortStorageKey = "bjork-ui-component-index-sort-mode";
 type SidebarSortMode = "collection" | "id";
@@ -199,6 +204,11 @@ export function ComponentDemoShell({
   const reducedMotionPreference = useReducedMotion();
   const shouldReduceMotion = isMounted && reducedMotionPreference === true;
   const { resolvedTheme, setTheme, theme } = useTheme();
+  // Desktop-only demos swap to their still below md. CSS hides the live stage
+  // from the first paint; once hydrated on a phone it is not mounted at all.
+  const desktopOnly = isDesktopOnly(item);
+  const isPhoneViewport = useIsPhoneViewport();
+  const showStillOnly = desktopOnly && isPhoneViewport;
 
   const setSidebarOpen = useCallback((open: boolean) => {
     setSidebarOpenState(open);
@@ -394,6 +404,7 @@ export function ComponentDemoShell({
             isListPreview
               ? "min-h-0 overflow-visible lg:overflow-hidden"
               : "min-h-[520px] overflow-hidden max-lg:overflow-visible",
+            desktopOnly && "max-md:min-h-0",
             isFocusMode && "lg:col-start-2"
           )}
         >
@@ -517,15 +528,17 @@ export function ComponentDemoShell({
                   isListPreview
                     ? "h-auto items-start justify-center overflow-visible lg:my-auto"
                     : "h-full min-h-[520px] items-center justify-center overflow-hidden",
+                  desktopOnly && "max-md:hidden",
                 )}
               >
-                {children}
+                {showStillOnly ? null : children}
               </div>
+              {desktopOnly && <DesktopOnlyStill item={item} isLight={isLightPreview} />}
             </div>
           </motion.div>
 
           {controls && !isListPreview && (
-            <div className={cn("mt-2 rounded-[22px] border p-3 lg:hidden", palette.options)}>
+            <div className={cn("mt-2 rounded-[22px] border p-3 lg:hidden", desktopOnly && "max-md:hidden", palette.options)}>
               <div className="mb-4 flex items-center justify-between text-sm">
                 <span className={palette.optionsText}>Options</span>
                 {showOptionsReset && (
@@ -577,6 +590,7 @@ function SimpleComponentDemoPageContent({
   note,
   previewScaleClassName = "w-[760px] scale-[0.72]",
   previewCaptureScaleClassName,
+  fitMinWidth,
   previewClassName,
   previewInnerClassName,
   previewLayout = "single",
@@ -603,20 +617,16 @@ function SimpleComponentDemoPageContent({
       ? previewCaptureScaleClassName
       : previewScaleClassName;
 
+  // Capture mode renders the raw demo inside its fixed preview frame. The live
+  // page wraps it in DemoFit, which shrinks it to the stage only when it would
+  // otherwise overflow a phone or tablet.
   const demo = isListPreview ? (
-    <div className="w-full min-w-0">{children}</div>
+    <div className="w-full min-w-0">
+      {isPreview ? children : <DemoFit layout="list" minWidth={fitMinWidth}>{children}</DemoFit>}
+    </div>
   ) : (
     <div className="flex h-full w-full min-w-0 items-center justify-center overflow-hidden p-3 sm:p-6">
-      <div
-        className="bjork-shell-demo-fit flex origin-center items-center justify-center lg:contents"
-        style={
-          {
-            "--bjork-demo-base-width": previewFrameClassName.match(/w-\[(\d+)px\]/)?.[1] ?? "760",
-          } as CSSProperties
-        }
-      >
-        {children}
-      </div>
+      {isPreview ? children : <DemoFit minWidth={fitMinWidth}>{children}</DemoFit>}
     </div>
   );
 
@@ -681,6 +691,54 @@ function useIsWideViewport() {
     },
     () => window.matchMedia("(min-width: 768px)").matches,
     () => false
+  );
+}
+
+function useIsPhoneViewport() {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia(phoneViewportQuery);
+      query.addEventListener("change", onChange);
+      return () => query.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia(phoneViewportQuery).matches,
+    () => false
+  );
+}
+
+function DesktopOnlyStill({ item, isLight }: { item: GalleryItem; isLight: boolean }) {
+  return (
+    <div className="flex w-full flex-col gap-4 md:hidden">
+      <div
+        className={cn(
+          "relative aspect-[900/520] w-full overflow-hidden rounded-[8px] border",
+          isLight ? "border-[#eee6db] bg-[#f7f5ef]" : "border-[#1c1c1c] bg-[#111]"
+        )}
+      >
+        <Image
+          src={`/component-previews/${item.slug}${isLight ? "-light" : ""}.png`}
+          alt={`${item.title}, as it looks on a larger screen`}
+          fill
+          sizes="100vw"
+          className="object-cover"
+          unoptimized
+        />
+      </div>
+      <div className="space-y-1.5 px-1 pb-1">
+        <p
+          className={cn(
+            "flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.08em]",
+            isLight ? "text-[#171717]/60" : "text-[#ededed]/42"
+          )}
+        >
+          <Monitor className="size-3.5" aria-hidden />
+          Best on a larger screen
+        </p>
+        <p className={cn("text-sm leading-6", isLight ? "text-[#171717]/60" : "text-[#ededed]/42")}>
+          This one needs room to work. Open it on a tablet or desktop to try it live.
+        </p>
+      </div>
+    </div>
   );
 }
 
@@ -1220,54 +1278,63 @@ function ComponentIndexOverlay({
             palette={palette}
           />
 
-          {groupedItems.map((group) => (
-            <div key={group.collection} className="space-y-[8px]">
-              <div className={cn("flex items-center gap-6 pt-1 font-mono text-[11px] uppercase tracking-[0.12em]", isLight ? "text-[#171717]/60" : "text-[#ededed]/30")}>
-                <span className={cn("h-px w-[62px] shrink-0", isLight ? "bg-[#171717]/12" : "bg-[#ededed]/12")} />
-                <span>{group.collection}</span>
-                <span className={cn("text-[10px]", isLight ? "text-[#171717]/60" : "text-[#ededed]/22")}>
-                  {group.entries.length}
-                </span>
-              </div>
+          {groupedItems.map((group) => {
+            // Below md the index leaves out desktop-only demos (except the open one).
+            const phoneCount = group.entries.filter(
+              (entry) => !isDesktopOnly(entry) || entry.slug === item.slug
+            ).length;
 
-              {group.entries.map((entry) => {
-                const active = entry.slug === item.slug;
+            return (
+              <div key={group.collection} className={cn("space-y-[8px]", phoneCount === 0 && "max-md:hidden")}>
+                <div className={cn("flex items-center gap-6 pt-1 font-mono text-[11px] uppercase tracking-[0.12em]", isLight ? "text-[#171717]/60" : "text-[#ededed]/30")}>
+                  <span className={cn("h-px w-[62px] shrink-0", isLight ? "bg-[#171717]/12" : "bg-[#ededed]/12")} />
+                  <span>{group.collection}</span>
+                  <span className={cn("text-[10px]", isLight ? "text-[#171717]/60" : "text-[#ededed]/22")}>
+                    <span className="md:hidden">{phoneCount}</span>
+                    <span className="max-md:hidden">{group.entries.length}</span>
+                  </span>
+                </div>
 
-                return (
-                  <Link
-                    key={entry.slug}
-                    href={entry.route}
-                    scroll={false}
-                    onClick={handleIndexNavigate}
-                    onFocus={() => prefetchIndexRoute(entry.route)}
-                    onMouseEnter={(event) => {
-                      prefetchIndexRoute(entry.route);
-                      updatePreviewPoint(event);
-                      setHoveredItem(entry);
-                    }}
-                    onMouseMove={updatePreviewPoint}
-                    onMouseLeave={() => setHoveredItem(null)}
-                    className={cn(
-                      "group flex h-[30px] items-center gap-4 rounded-md text-[22px] leading-none tracking-[-0.055em] outline-none transition sm:h-[28px] sm:gap-6 sm:text-[26px] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-[#ec5c13]",
-                      active ? "text-[#ec5c13]" : isLight ? "text-[#171717]/60 hover:text-[#171717]/78" : "text-[#ededed]/27 hover:text-[#ededed]/78"
-                    )}
-                  >
-                    <span
+                {group.entries.map((entry) => {
+                  const active = entry.slug === item.slug;
+
+                  return (
+                    <Link
+                      key={entry.slug}
+                      href={entry.route}
+                      scroll={false}
+                      onClick={handleIndexNavigate}
+                      onFocus={() => prefetchIndexRoute(entry.route)}
+                      onMouseEnter={(event) => {
+                        prefetchIndexRoute(entry.route);
+                        updatePreviewPoint(event);
+                        setHoveredItem(entry);
+                      }}
+                      onMouseMove={updatePreviewPoint}
+                      onMouseLeave={() => setHoveredItem(null)}
                       className={cn(
-                        "h-px w-[38px] shrink-0 transition sm:w-[62px]",
-                        isLight ? "bg-[#171717]/18" : "bg-[#ededed]/18",
-                        active && "w-[68px] bg-[linear-gradient(90deg,#ec5c13,#ff9a4d)] sm:w-[106px]",
-                        !active && (isLight ? "group-hover:w-[58px] group-hover:bg-[#171717]/45 sm:group-hover:w-[92px]" : "group-hover:w-[58px] group-hover:bg-[#ededed]/45 sm:group-hover:w-[92px]")
+                        "group flex h-[30px] items-center gap-4 rounded-md text-[22px] leading-none tracking-[-0.055em] outline-none transition sm:h-[28px] sm:gap-6 sm:text-[26px] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-4 focus-visible:outline-[#ec5c13]",
+                        isDesktopOnly(entry) && !active && "max-md:hidden",
+                        active ? "text-[#ec5c13]" : isLight ? "text-[#171717]/60 hover:text-[#171717]/78" : "text-[#ededed]/27 hover:text-[#ededed]/78"
                       )}
-                    />
-                <span className="truncate pb-1 leading-[1.14]">
-                      {entry.id.replace("bjork", "").padStart(2, "0")} {entry.title}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+                    >
+                      <span
+                        className={cn(
+                          "h-px w-[38px] shrink-0 transition sm:w-[62px]",
+                          isLight ? "bg-[#171717]/18" : "bg-[#ededed]/18",
+                          active && "w-[68px] bg-[linear-gradient(90deg,#ec5c13,#ff9a4d)] sm:w-[106px]",
+                          !active && (isLight ? "group-hover:w-[58px] group-hover:bg-[#171717]/45 sm:group-hover:w-[92px]" : "group-hover:w-[58px] group-hover:bg-[#ededed]/45 sm:group-hover:w-[92px]")
+                        )}
+                      />
+                  <span className="truncate pb-1 leading-[1.14]">
+                        {entry.id.replace("bjork", "").padStart(2, "0")} {entry.title}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            );
+          })}
 
         </nav>
       </div>

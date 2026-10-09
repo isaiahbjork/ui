@@ -11,7 +11,7 @@ export default function BonusesIncentivesCardPage() {
   const isPreview = usePreviewMode();
 
   return (
-    <SimpleComponentDemoPage item={item} description="A bonuses and incentives card with animated circular details and expandable reward-style content." previewScaleClassName="w-[640px] scale-[0.84]">
+    <SimpleComponentDemoPage item={item} description="A bonuses and incentives card with animated circular details and expandable reward-style content." previewScaleClassName="w-[640px] scale-[0.84]" fitMinWidth={400}>
       <BonusesIncentivesCard enableAnimations={!isPreview} />
     </SimpleComponentDemoPage>
   );

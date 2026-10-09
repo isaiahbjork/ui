@@ -99,6 +99,8 @@ const columns: FlapColumn[] = [
 />`}
       previewScaleClassName="w-[1012px] scale-[0.78]"
       previewLayout={isPreview ? "single" : "list"}
+      // Show the whole sm board on phones instead of a cropped, scrolling one.
+      fitMinWidth={700}
       onReset={() => {
         setSizeChoice("sm");
         setCascade("changed");
