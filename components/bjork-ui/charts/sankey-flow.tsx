@@ -79,6 +79,10 @@ const ENTER_MS = 1000;
 const TRACE_TAU = 0.08;
 const ATTRACT_STEP_MS = 2200;
 const ATTRACT_IDLE_MS = 4000;
+// Traced ribbon fill. Kept under half so where traced ribbons overlap the crossing still reads as
+// a darker band, and each traced ribbon gets a hairline edge in the same hue.
+const TRACE_FILL: Record<BjorkTone, number> = { dark: 0.36, light: 0.44 };
+const TRACE_EDGE = 0.6;
 
 const clock = () => performance.now();
 const defaultFormatValue = (v: number) => formatCompact(v, 1);
@@ -243,6 +247,12 @@ interface Run {
   N: LNode[];
   L: LLink[];
   paths: Path2D[];
+  maxX: number;
+  maxCol: number;
+  traceKey: string;
+  traced: Set<number> | null;
+  /** Per node: does any traced link touch it. */
+  touched: Uint8Array;
   w: Float32Array; // displayed trace weight per link
   enter: number;
   hover: { node?: number; link?: number } | null;
@@ -268,7 +278,7 @@ export function SankeyFlow({
   attract = false,
   className,
 }: SankeyFlowProps) {
-  const { pal, reduce, vars } = useChartTheme(toneProp);
+  const { tone, pal, reduce, vars } = useChartTheme(toneProp);
   const announcer = useRef<AnnouncerHandle>(null);
   const tipRef = useRef<TooltipHandle>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -277,33 +287,66 @@ export function SankeyFlow({
   const [hlState, setHlState] = useState<string | null>(defaultHighlightId);
   const highlightId = highlightProp !== undefined ? highlightProp : hlState;
 
-  const cfg = useRef({ nodes, links, highlightId, flow, nodeWidth, nodeGap, reduce, pal, attract, formatValue });
+  // Layout identity, built once per data change rather than every frame.
+  const dataKey = useMemo(
+    () => `${nodes.map((n) => `${n.id}:${n.column ?? ""}`).join(",")}|${links.map((l) => `${l.source}>${l.target}:${l.value}`).join(",")}`,
+    [nodes, links],
+  );
+  const cfg = useRef({ nodes, links, dataKey, highlightId, flow, nodeWidth, nodeGap, reduce, pal, tone, attract, formatValue });
   useEffect(() => {
-    cfg.current = { nodes, links, highlightId, flow, nodeWidth, nodeGap, reduce, pal, attract, formatValue };
+    cfg.current = { nodes, links, dataKey, highlightId, flow, nodeWidth, nodeGap, reduce, pal, tone, attract, formatValue };
   });
 
-  const st = useRef<Run>({ key: "", N: [], L: [], paths: [], w: new Float32Array(0), enter: 0, hover: null, source: null, dash: 0, lastInput: 0, attractAt: 0 });
+  const st = useRef<Run>({
+    key: "",
+    N: [],
+    L: [],
+    paths: [],
+    maxX: 1,
+    maxCol: 1,
+    traceKey: "",
+    traced: null,
+    touched: new Uint8Array(0),
+    w: new Float32Array(0),
+    enter: 0,
+    hover: null,
+    source: null,
+    dash: 0,
+    lastInput: 0,
+    attractAt: 0,
+  });
   const hoverRef = useRef<(h: Run["hover"], source: Run["source"]) => void>(() => {});
 
   const { rootRef, hostRef, canvasRef, wake } = useChartCanvas(({ ctx, w, h, dt }) => {
     const s = st.current;
     const c = cfg.current;
     const p = c.pal;
-    const key = `${w}|${h}|${c.nodes.length}|${c.links.length}|${c.nodeWidth}|${c.nodeGap}|${c.links.map((l) => l.value).join(",")}`;
+    const key = `${w}|${h}|${c.nodeWidth}|${c.nodeGap}|${c.dataKey}`;
     if (key !== s.key) {
       const lay = layoutSankey(c.nodes, c.links, w, h, c.nodeWidth, c.nodeGap);
       s.N = lay.N;
       s.L = lay.L;
       s.paths = lay.L.map((l) => ribbon(l, lay.N));
+      s.maxX = Math.max(1, ...lay.N.map((n) => n.x1));
+      s.maxCol = Math.max(1, ...lay.N.map((n) => n.col));
       if (s.w.length !== lay.L.length) s.w = new Float32Array(lay.L.length);
+      if (s.touched.length !== lay.N.length) s.touched = new Uint8Array(lay.N.length);
       s.key = key;
+      s.traceKey = "";
     }
     const { N, L } = s;
 
-    // Which links are traced: hover beats the pinned node.
+    // Which links are traced: hover beats the pinned node. Recomputed only when the focus changes.
     const hlNode = c.highlightId ? N.findIndex((n) => n.id === c.highlightId) : -1;
     const focus = s.hover ?? (hlNode >= 0 ? { node: hlNode } : null);
-    const traced = focus ? tracePath(N, L, focus) : null;
+    const traceKey = focus ? `${focus.node ?? ""}/${focus.link ?? ""}` : "-";
+    if (traceKey !== s.traceKey) {
+      s.traceKey = traceKey;
+      s.traced = focus ? tracePath(N, L, focus) : null;
+      s.touched.fill(0);
+      if (s.traced) for (const li of s.traced) s.touched[L[li].source] = s.touched[L[li].target] = 1;
+    }
+    const traced = s.traced;
     let moving = false;
     for (let i = 0; i < L.length; i++) {
       const target = traced ? (traced.has(i) ? 1 : -1) : 0;
@@ -314,7 +357,8 @@ export function SankeyFlow({
 
     s.enter = c.reduce ? 1 : Math.min(1, s.enter + (dt * 1000) / ENTER_MS);
     const reveal = easeOut(s.enter);
-    const maxX = Math.max(1, ...N.map((n) => n.x1));
+    const maxX = s.maxX;
+    const traceFill = TRACE_FILL[c.tone];
 
     // Links, revealed left to right.
     ctx.save();
@@ -327,9 +371,15 @@ export function SankeyFlow({
       if (wgt > 0) {
         ctx.fillStyle = withAlpha(p.text, 0.09 * (1 - wgt));
         ctx.fill(s.paths[i]);
-        ctx.fillStyle = withAlpha(p.accent, 0.5 * wgt);
-      } else ctx.fillStyle = withAlpha(p.text, 0.09 + 0.055 * wgt);
-      ctx.fill(s.paths[i]);
+        ctx.fillStyle = withAlpha(p.accent, traceFill * wgt);
+        ctx.fill(s.paths[i]);
+        ctx.strokeStyle = withAlpha(p.accent, TRACE_EDGE * wgt);
+        ctx.lineWidth = 1;
+        ctx.stroke(s.paths[i]);
+      } else {
+        ctx.fillStyle = withAlpha(p.text, 0.09 + 0.055 * wgt);
+        ctx.fill(s.paths[i]);
+      }
     }
     // Marching dashes along each link's centre line.
     if (c.flow && !c.reduce) {
@@ -356,14 +406,14 @@ export function SankeyFlow({
     ctx.restore();
 
     // Nodes grow out of their centre, column by column.
-    const maxCol = Math.max(1, ...N.map((m) => m.col));
+    const maxCol = s.maxCol;
     for (let i = 0; i < N.length; i++) {
       const n = N[i];
       const k = clamp((s.enter - (n.col / maxCol) * 0.5) / 0.5, 0, 1);
       const g = easeOut(k);
       const cy = (n.y0 + n.y1) / 2;
       const hh = (n.y1 - n.y0) * g;
-      const on = focus && (focus.node === i || (traced && [...n.inLinks, ...n.outLinks].some((li) => traced.has(li))));
+      const on = focus && (focus.node === i || (traced !== null && s.touched[i] === 1));
       const pinned = i === hlNode;
       ctx.fillStyle = pinned || focus?.node === i ? p.accent : focus && !on ? withAlpha(p.text, 0.3) : withAlpha(p.text, 0.78);
       ctx.beginPath();
@@ -513,7 +563,12 @@ export function SankeyFlow({
         .filter((x) => x.n.col === col)
         .sort((a, b) => a.n.y0 - b.n.y0)
         .map((x) => x.i);
-    if (e.key.startsWith("Arrow")) {
+    if (e.key === "Home" || e.key === "End") {
+      e.preventDefault();
+      const maxCol = Math.max(...N.map((m) => m.col));
+      const col = byCol(e.key === "Home" ? 0 : maxCol);
+      setHover({ node: e.key === "Home" ? col[0] : col[col.length - 1] }, "keyboard");
+    } else if (e.key.startsWith("Arrow")) {
       e.preventDefault();
       if (cur < 0) {
         setHover({ node: byCol(0)[0] ?? 0 }, "keyboard");
@@ -552,7 +607,7 @@ export function SankeyFlow({
         ref={wrapperRef}
         role="group"
         aria-roledescription="chart"
-        aria-label={`${ariaLabel}. Arrow keys move between nodes, Enter pins a node and traces its path.`}
+        aria-label={`${ariaLabel}. Arrow keys move between nodes, Home and End jump to the first and last stage, Enter pins a node and traces its path, Escape clears.`}
         tabIndex={0}
         onPointerEnter={() => {
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
