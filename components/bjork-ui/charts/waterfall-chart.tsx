@@ -404,6 +404,7 @@ export function WaterfallChart({
     const s = st.current;
     s.lastInput = clock();
     const n = bars.length;
+    if (!n) return;
     if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
       e.preventDefault();
       const cur = s.hover !== null && s.source !== "attract" ? s.hover : e.key === "ArrowRight" ? -1 : n;
@@ -411,7 +412,10 @@ export function WaterfallChart({
     } else if (e.key === "Home" || e.key === "End") {
       e.preventDefault();
       setHover(e.key === "Home" ? 0 : n - 1, "keyboard");
-    } else if (e.key === "Escape") setHover(null, null);
+    } else if (e.key === "Escape" && s.hover !== null) {
+      e.preventDefault();
+      setHover(null, null);
+    }
   };
 
   const tableRows = useMemo(() => bars.map((b) => [b.label, b.kind === "delta" ? formatSigned(b.value, formatValue) : formatValue(b.value), formatValue(b.to)]), [bars, formatValue]);
