@@ -58,99 +58,74 @@ const mono: CSSProperties = {
   color: FAINT,
 };
 
-// The library's canonical surface, as on the accordion and the button group:
-// a shell with a hairline border and a soft inset glow, holding an inner panel
-// with its own quieter border and a top highlight. The inner radius steps in
-// by the shell's padding so the two curves stay concentric.
-const SHELL_BORDER = "#232323"; // --bjork-border
-const SHELL_FILL = "rgba(22, 22, 22, 0.92)"; // --bjork-surface-muted
-const SHELL_SHADOW =
-  "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06), 0 14px 20px -6px rgba(0, 0, 0, 0.45)"; // --bjork-shadow-surface
-const INNER_BORDER = "#1c1c1c"; // --bjork-border-muted
-const INNER_HIGHLIGHT =
-  "inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 10px 18px rgba(255, 255, 255, 0.015)";
+// The library's canonical surface, the same one the button group and the
+// gallery cards use: one #232323 hairline (--bjork-border) lit from inside by
+// --bjork-shadow-surface. Its half-pixel top highlight sitting just inside the
+// border is what reads as the double line. The glow is drawn on an overlay
+// because the preview image would otherwise cover an inset shadow.
+const SURFACE_BORDER = "#232323";
+const SURFACE_INSET = "inset 0 7px 14px rgba(255, 255, 255, 0.03), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06)";
 
-// The frame is the same surface at sheet scale: a low hairline, rounded, lit
-// from the top. Soft arcs at the corners stand in for print registration marks.
-const FRAME_BORDER = "rgba(255, 255, 255, 0.07)";
-const FRAME_RADIUS = 30;
-const FRAME_SHADOW = "inset 0 7px 14px rgba(255, 255, 255, 0.025), inset 0 0.5px 0.5px rgba(255, 255, 255, 0.06)";
-const FRAME_MARK = "rgba(255, 255, 255, 0.2)";
-
-// Content of width x height inside the double border. Returns a box of
-// width + 2 * (pad + 2) on each axis.
+// Content of width x height inside a single bordered surface (box is +2 each axis).
 function Surface({
   width,
   height,
   radius,
-  pad,
   children,
 }: {
   width: number;
   height: number;
   radius: number;
-  pad: number;
   children?: ReactNode;
 }) {
-  const inner = radius - pad;
   return (
     <div
       style={{
+        position: "relative",
         display: "flex",
-        width: width + 2 * (pad + 2),
-        height: height + 2 * (pad + 2),
-        padding: pad,
+        width: width + 2,
+        height: height + 2,
         borderRadius: radius,
-        border: `1px solid ${SHELL_BORDER}`,
-        background: SHELL_FILL,
-        boxShadow: SHELL_SHADOW,
+        border: `1px solid ${SURFACE_BORDER}`,
+        background: PANEL,
+        overflow: "hidden",
       }}
     >
+      {children}
       <div
         style={{
-          position: "relative",
+          position: "absolute",
           display: "flex",
-          width: width + 2,
-          height: height + 2,
-          borderRadius: inner,
-          border: `1px solid ${INNER_BORDER}`,
-          background: PANEL,
-          overflow: "hidden",
+          left: 0,
+          top: 0,
+          width,
+          height,
+          borderRadius: radius - 1,
+          boxShadow: SURFACE_INSET,
         }}
-      >
-        {children}
-        <div
-          style={{
-            position: "absolute",
-            display: "flex",
-            left: 0,
-            top: 0,
-            width,
-            height,
-            borderRadius: inner - 1,
-            boxShadow: INNER_HIGHLIGHT,
-          }}
-        />
-      </div>
+      />
     </div>
   );
 }
 
+// Small registration marks on the frame's corners, like a print sheet.
 function Corner({ x, y }: { x: "left" | "right"; y: "top" | "bottom" }) {
-  const line = `1px solid ${FRAME_MARK}`;
-  const size = FRAME_RADIUS + 6;
-  const style: CSSProperties = { position: "absolute", display: "flex", width: size, height: size };
+  const line = `1px solid ${MUTED}`;
+  const style: CSSProperties = {
+    position: "absolute",
+    display: "flex",
+    width: 14,
+    height: 14,
+  };
   if (x === "left") Object.assign(style, { left: -1, borderLeft: line });
   else Object.assign(style, { right: -1, borderRight: line });
   if (y === "top") Object.assign(style, { top: -1, borderTop: line });
   else Object.assign(style, { bottom: -1, borderBottom: line });
-  const corner = `border${y === "top" ? "Top" : "Bottom"}${x === "left" ? "Left" : "Right"}Radius`;
-  Object.assign(style, { [corner]: FRAME_RADIUS });
   return <div style={style} />;
 }
 
-// The ground and the soft frame every card shares. A backdrop, when given,
-// runs full bleed under the frame.
+// The ground and the hairline frame every card shares. A backdrop, when
+// given, runs full bleed under the frame.
 function Sheet({ children, backdrop }: { children: ReactNode; backdrop?: ReactNode }) {
   return (
     <div
@@ -171,9 +146,7 @@ function Sheet({ children, backdrop }: { children: ReactNode; backdrop?: ReactNo
           display: "flex",
           width: "100%",
           height: "100%",
-          borderRadius: FRAME_RADIUS,
-          border: `1px solid ${FRAME_BORDER}`,
-          boxShadow: FRAME_SHADOW,
+          border: `1px solid ${HAIRLINE}`,
         }}
       >
         {children}
@@ -238,10 +211,10 @@ function PreviewPanel({
 }) {
   const height = Math.round(width * PREVIEW_RATIO);
   return (
-    <Surface width={width} height={height} radius={22} pad={6}>
+    <Surface width={width} height={height} radius={20}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} width={width} height={height} alt="" style={{ display: "flex" }} />
+        <img src={src} width={width} height={height} alt="" style={{ display: "flex", borderRadius: 19 }} />
       ) : (
         <div style={{ display: "flex", width, height, alignItems: "center", justifyContent: "center" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -339,7 +312,7 @@ export async function renderComponentCard(card: ShareCard) {
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center" }}>
-            <PreviewPanel src={preview} width={676} label={card.route} />
+            <PreviewPanel src={preview} width={690} label={card.route} />
           </div>
         </div>
       </Sheet>
@@ -378,10 +351,10 @@ async function Mosaic({ slugs, columns }: { slugs: string[]; columns: number }) 
         >
           {row.map((src, c) => (
             <div key={c} style={{ display: "flex", marginRight: 20 }}>
-              <Surface width={tileW} height={tileH} radius={18} pad={5}>
+              <Surface width={tileW} height={tileH} radius={14}>
               {src ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={src} width={tileW} height={tileH} alt="" style={{ display: "flex" }} />
+                <img src={src} width={tileW} height={tileH} alt="" style={{ display: "flex", borderRadius: 13 }} />
               ) : null}
               </Surface>
             </div>
