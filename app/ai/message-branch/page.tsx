@@ -8,8 +8,6 @@ import {
   type MessageVersion,
 } from "@/components/bjork-ui/ai/message-branch";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("message-branch");
@@ -21,7 +19,6 @@ const REWRITES = [
 ];
 
 function Demo() {
-  const isPreview = usePreviewMode();
   const [user, setUser] = useState<MessageVersion[]>(SAMPLE_USER_VERSIONS);
   const [assistant, setAssistant] = useState<MessageVersion[]>(SAMPLE_ASSISTANT_VERSIONS);
   const [writing, setWriting] = useState<{ id: string; text: string; shown: number } | null>(null);
@@ -60,13 +57,6 @@ function Demo() {
     timers.current.push(t);
   };
 
-  const reset = () => {
-    timers.current.forEach((t) => window.clearTimeout(t));
-    setWriting(null);
-    setUser(SAMPLE_USER_VERSIONS);
-    setAssistant(SAMPLE_ASSISTANT_VERSIONS);
-  };
-
   return (
     <div className="flex w-[min(560px,calc(100vw-56px))] flex-col gap-5">
       <MessageBranch
@@ -83,18 +73,14 @@ function Demo() {
         defaultIndex={1}
         onRegenerate={startRewrite}
       />
-      {!isPreview && (
-        <div className="flex justify-center pt-2">
-          <BjorkButton variant="secondary" size="sm" onClick={reset}>
-            Reset
-          </BjorkButton>
-        </div>
-      )}
     </div>
   );
 }
 
 export default function Page() {
+  // Resetting remounts the thread with its sample versions, and the unmount clears any pending rewrite.
+  const [session, setSession] = useState(0);
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -107,8 +93,10 @@ export function Turn({ versions, regenerate }: { versions: MessageVersion[]; reg
 }`}
       previewScaleClassName="w-[340px]"
       previewCaptureScaleClassName="w-[560px] scale-[1.2]"
+      optionsDefaultOpen={false}
+      onReset={() => setSession((n) => n + 1)}
     >
-      <Demo />
+      <Demo key={session} />
     </SimpleComponentDemoPage>
   );
 }

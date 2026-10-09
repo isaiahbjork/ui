@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUp, Mic } from "lucide-react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { ShellSegmented, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import {
   HandoffBeam,
   createSimulatedVoice,
@@ -21,7 +21,11 @@ const PHASES: Array<{ value: BeamPhase; label: string }> = [
   { value: "speaking", label: "Speaking" },
 ];
 
-const PALETTES: Array<{ value: "ember" | "mono"; label: string }> = [
+type Palette = "ember" | "mono";
+const DEFAULT_PHASE: BeamPhase = "listening";
+const DEFAULT_PALETTE: Palette = "ember";
+
+const PALETTES: Array<{ value: Palette; label: string }> = [
   { value: "ember", label: "Ember" },
   { value: "mono", label: "Mono" },
 ];
@@ -29,42 +33,6 @@ const PALETTES: Array<{ value: "ember" | "mono"; label: string }> = [
 // Preview pose: a fixed level tuple, so the 2.6s capture is deterministic.
 const POSE_LEVEL: [number, number, number] = [0.6, 0.45, 0.3];
 const POSE_LEVEL_FN = () => POSE_LEVEL;
-
-function Segmented<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: Array<{ value: T; label: string }>;
-  onChange: (value: T) => void;
-}) {
-  return (
-    <div role="group" aria-label={label} className="flex flex-wrap items-center justify-center gap-1">
-      {options.map((option) => {
-        const active = option.value === value;
-        return (
-          <button
-            key={option.value}
-            type="button"
-            aria-pressed={active}
-            onClick={() => onChange(option.value)}
-            className={cn(
-              "rounded-[10px] border px-2.5 py-1 font-mono text-[12px] transition active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)] focus-visible:outline-none",
-              active
-                ? "border-[color:var(--bjork-border-strong)] bg-[color:var(--bjork-surface-active)] text-[color:var(--bjork-text)]"
-                : "border-transparent text-[color:var(--bjork-text-muted)] hover:text-[color:var(--bjork-text)]"
-            )}
-          >
-            {option.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 function Composer({
   micOn,
@@ -108,8 +76,8 @@ function Composer({
 export default function Page() {
   const isPreview = usePreviewMode();
   const attract = usePreviewSearchParam("attract") === "1";
-  const [phase, setPhase] = useState<BeamPhase>("listening");
-  const [palette, setPalette] = useState<"ember" | "mono">("ember");
+  const [phase, setPhase] = useState<BeamPhase>(DEFAULT_PHASE);
+  const [palette, setPalette] = useState<Palette>(DEFAULT_PALETTE);
   const [mic, setMic] = useState<AnalyserNode | null>(null);
   const micRef = useRef<{ stream: MediaStream; context: AudioContext } | null>(null);
 
@@ -187,9 +155,29 @@ export default function Page() {
 <HandoffBeam phase={phase} analyser={analyser} palette="ember" />`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[560px] scale-[1.2]"
+      optionsDefaultOpen={false}
+      onReset={() => {
+        setPhase(DEFAULT_PHASE);
+        setPalette(DEFAULT_PALETTE);
+      }}
+      controls={
+        <>
+          <ShellSegmented
+            label="Phase"
+            value={phase}
+            options={PHASES}
+            onChange={(value) => setPhase(value as BeamPhase)}
+          />
+          <ShellSegmented
+            label="Palette"
+            value={palette}
+            options={PALETTES}
+            onChange={(value) => setPalette(value as Palette)}
+          />
+        </>
+      }
     >
       <div className="flex w-[min(560px,calc(100vw-56px))] flex-col items-center gap-6">
-        <Segmented<BeamPhase> label="Phase" value={phase} options={PHASES} onChange={setPhase} />
         <HandoffBeam
           phase={phase}
           level={level}
@@ -201,12 +189,6 @@ export default function Page() {
         >
           <Composer micOn={mic !== null} onMic={useMicrophone} />
         </HandoffBeam>
-        <Segmented<"ember" | "mono">
-          label="Palette"
-          value={palette}
-          options={PALETTES}
-          onChange={setPalette}
-        />
         <p className="text-center font-mono text-[12px] text-[color:var(--bjork-text-muted)]">
           {mic ? "Microphone live" : "Simulated voice. Use the mic button to listen to your own."}
         </p>

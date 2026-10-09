@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { useState } from "react";
+import { ShellActions, ShellSegmented, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { LatticeOrb, type LatticeOrbHit, type OrbState } from "@/components/bjork-ui/ai/lattice-orb";
+import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { cn } from "@/lib/utils";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("lattice-orb");
@@ -36,38 +36,6 @@ const SMALL_ORBS: { value: OrbState; label: string }[] = [
   { value: "error", label: "Error" },
 ];
 
-// Compact pressed-state buttons for the demo.
-function OrbButton({
-  pressed,
-  primary = false,
-  muted = false,
-  onClick,
-  children,
-}: {
-  pressed?: boolean;
-  primary?: boolean;
-  muted?: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={pressed}
-      aria-disabled={muted || undefined}
-      onClick={onClick}
-      className={cn(
-        "inline-flex h-8 items-center justify-center rounded-[10px] border px-3 font-mono text-[12px] tracking-[-0.01em] outline-none transition-[background-color,border-color,color] duration-150 ease-out focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bjork-ring-offset)] active:scale-[0.97] disabled:pointer-events-none disabled:opacity-35 aria-disabled:opacity-35",
-        pressed || primary
-          ? "border-[color:var(--bjork-border-strong,#343434)] bg-[color:var(--bjork-surface-active,#202020)] text-[color:var(--bjork-text,#ededed)]"
-          : "border-transparent bg-transparent text-[color:var(--bjork-text-medium,rgba(237,237,237,0.72))] hover:text-[color:var(--bjork-text,#ededed)]",
-      )}
-    >
-      {children}
-    </button>
-  );
-}
-
 export default function Page() {
   const isPreview = usePreviewMode();
   const [state, setState] = useState<OrbState>("searching");
@@ -78,23 +46,6 @@ export default function Page() {
   ) : (
     <div className="flex w-[min(420px,calc(100vw-56px))] flex-col items-center gap-7">
       <LatticeOrb state={state} hits={hits} size={320} />
-
-      <div role="group" aria-label="Agent state" className="flex flex-wrap justify-center gap-1">
-        {STATES.map((option) => (
-          <OrbButton key={option.value} pressed={state === option.value} onClick={() => setState(option.value)}>
-            {option.label}
-          </OrbButton>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-2">
-        <OrbButton primary onClick={() => setHits((prev) => [...prev, hitForIndex(prev.length)])}>
-          Add hit
-        </OrbButton>
-        <OrbButton muted={hits.length === 0} onClick={() => setHits([])}>
-          Clear hits
-        </OrbButton>
-      </div>
 
       <div className="flex items-start justify-center gap-6">
         {SMALL_ORBS.map((option) => (
@@ -118,6 +69,28 @@ export default function Page() {
 <LatticeOrb state="connecting" time={1.4} />`}
       previewScaleClassName="w-[340px]"
       previewCaptureScaleClassName="w-[760px] scale-[1.2]"
+      onReset={() => {
+        setState("searching");
+        setHits([]);
+      }}
+      controls={
+        <>
+          <ShellSegmented
+            label="State"
+            value={state}
+            options={STATES}
+            onChange={(value) => setState(value as OrbState)}
+          />
+          <ShellActions>
+            <BjorkButton variant="secondary" size="sm" onClick={() => setHits((prev) => [...prev, hitForIndex(prev.length)])}>
+              Add hit
+            </BjorkButton>
+            <BjorkButton variant="ghost" size="sm" disabled={hits.length === 0} onClick={() => setHits([])}>
+              Clear hits
+            </BjorkButton>
+          </ShellActions>
+        </>
+      }
     >
       {demo}
     </SimpleComponentDemoPage>

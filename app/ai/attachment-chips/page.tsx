@@ -7,9 +7,12 @@ import {
   SAMPLE_THUMBNAILS,
   type AttachmentItem,
 } from "@/components/bjork-ui/ai/attachment-chips";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import {
+  ShellActions,
+  ShellSegmented,
+  SimpleComponentDemoPage,
+} from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { BjorkButtonGroup } from "@/components/bjork-ui/primitives/button-group";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -54,11 +57,12 @@ function step(items: SimItem[]): SimItem[] {
   });
 }
 
-function Demo() {
+type Layout = "row" | "grid";
+
+// A new run value remounts the demo with a fresh batch.
+function Demo({ run, layout }: { run: number; layout: Layout }) {
   const isPreview = usePreviewMode();
-  const [run, setRun] = useState(0);
-  const [items, setItems] = useState<SimItem[]>(() => freshBatch(0));
-  const [layout, setLayout] = useState<"row" | "grid">("row");
+  const [items, setItems] = useState<SimItem[]>(() => freshBatch(run));
   const [opened, setOpened] = useState<string | null>(null);
 
   const busy = items.some((i) => i.status === "queued" || i.status === "uploading" || i.status === "processing");
@@ -67,12 +71,6 @@ function Demo() {
     const id = window.setInterval(() => setItems((list) => step(list)), TICK);
     return () => window.clearInterval(id);
   }, [isPreview, busy]);
-
-  const restart = () => {
-    setRun((r) => r + 1);
-    setItems(freshBatch(run + 1));
-    setOpened(null);
-  };
 
   return (
     <div className="flex w-[min(500px,calc(100vw-56px))] flex-col items-stretch gap-6">
@@ -90,24 +88,6 @@ function Demo() {
           <p className="min-h-4 text-center font-mono text-[11px] text-[color:var(--bjork-text-faint)]">
             {opened ? `Opened ${opened}` : "Click a ready file to open it"}
           </p>
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <BjorkButton variant="secondary" size="sm" onClick={restart}>
-              Upload again
-            </BjorkButton>
-            <BjorkButtonGroup role="group" aria-label="Layout">
-              {(["row", "grid"] as const).map((value) => (
-                <BjorkButton
-                  key={value}
-                  aria-pressed={layout === value}
-                  variant={layout === value ? "default" : "ghost"}
-                  size="sm"
-                  onClick={() => setLayout(value)}
-                >
-                  {value}
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-          </div>
         </>
       )}
     </div>
@@ -115,6 +95,9 @@ function Demo() {
 }
 
 export default function Page() {
+  const [run, setRun] = useState(0);
+  const [layout, setLayout] = useState<Layout>("row");
+
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -127,8 +110,28 @@ export function Tray({ files, remove, retry }: { files: AttachmentItem[]; remove
 }`}
       previewScaleClassName="w-[340px]"
       previewCaptureScaleClassName="w-[500px] scale-[1.2]"
+      optionsDefaultOpen={false}
+      onReset={() => setLayout("row")}
+      controls={
+        <>
+          <ShellActions>
+            <BjorkButton variant="secondary" size="sm" onClick={() => setRun((r) => r + 1)}>
+              Upload again
+            </BjorkButton>
+          </ShellActions>
+          <ShellSegmented
+            label="Layout"
+            value={layout}
+            onChange={(value) => setLayout(value as Layout)}
+            options={[
+              { value: "row", label: "row" },
+              { value: "grid", label: "grid" },
+            ]}
+          />
+        </>
+      }
     >
-      <Demo />
+      <Demo key={run} run={run} layout={layout} />
     </SimpleComponentDemoPage>
   );
 }
