@@ -64,7 +64,7 @@ export default function StrokeDrawTypeDemo() {
             trigger={trigger}
             tone={tone}
             fontSize={isPreview ? 176 : 150}
-            freezeAt={isPreview ? 0.55 : undefined}
+            freezeAt={isPreview ? 1 : undefined}
           />
         </div>
         {!isPreview ? (

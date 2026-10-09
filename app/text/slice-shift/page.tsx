@@ -68,7 +68,7 @@ export default function SliceShiftDemo() {
             slices={isPreview ? 6 : slices}
             tone={tone}
             fontSize={isPreview ? 168 : 136}
-            freezeAt={isPreview ? 0.42 : undefined}
+            freezeAt={isPreview ? 0 : undefined}
           />
         </div>
         {!isPreview ? (

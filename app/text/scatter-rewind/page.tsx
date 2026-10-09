@@ -44,11 +44,11 @@ export default function ScatterRewindPage() {
       <div
         className={`flex min-h-screen items-center justify-center overflow-hidden ${light ? "light bg-[#f7f5ef]" : "dark bg-[#111]"}`}
       >
-        <div className="w-[920px] scale-[1]">
+        <div className="w-[920px] scale-[0.86]">
           <ScatterRewind
             text="Built to be undone"
             trigger="manual"
-            progress={0.42}
+            progress={0}
             windAngle={-15}
             className={HEADLINE}
           />

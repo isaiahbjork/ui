@@ -33,7 +33,7 @@ export default function GlyphMorphDemo() {
   const tone = previewTheme === "light" || previewTheme === "dark" ? previewTheme : undefined;
   // ?progress=0.3 freezes the morph on one frame, handy for inspecting in-betweens.
   const progressParam = usePreviewSearchParam("progress");
-  const frozen = progressParam !== null && progressParam !== "" ? Number(progressParam) : isPreview ? 0.45 : undefined;
+  const frozen = progressParam !== null && progressParam !== "" ? Number(progressParam) : isPreview ? 0 : undefined;
   const setRaw = usePreviewSearchParam("set");
   const setParam = setRaw ? Number(setRaw) : -1;
 
