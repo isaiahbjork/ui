@@ -34,7 +34,7 @@ export default function MarketingCtaFooterDemo() {
   }}
 />`}
       note="The newsletter form validates before calling `onSubscribe`; throw an Error from it to show your own message. Errors and the success state are announced to screen readers, and the copy button confirms through a live region. Set `wordmark` to false to drop the oversized brand name."
-      previewOffset={30}
+      previewOffset={650}
       render={({ isPreview }) => (
         <MarketingCtaFooter
           {...MARKETING_CTA_FOOTER_SAMPLE}

@@ -205,7 +205,8 @@ export function MarketingCtaFooter({
           </nav>
         </div>
 
-        <div className={cn(blockFrame, "flex flex-col gap-4 border-t border-[color:var(--bjork-border-muted)] py-6 @2xl:flex-row @2xl:items-center @2xl:justify-between")}>
+        <div className={blockFrame}>
+        <div className="flex flex-col gap-4 border-t border-[color:var(--bjork-border-muted)] py-6 @2xl:flex-row @2xl:items-center @2xl:justify-between">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px] text-[color:var(--bjork-text-muted)]">
             <p>{legal}</p>
             {legalLinks && legalLinks.length > 0 ? (
@@ -236,6 +237,7 @@ export function MarketingCtaFooter({
               {status.label}
             </a>
           ) : null}
+        </div>
         </div>
 
         {wordmark ? (

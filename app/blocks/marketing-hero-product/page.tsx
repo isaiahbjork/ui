@@ -40,6 +40,7 @@ export default function Home() {
   );
 }`}
       note="Copy is all props. Leave out `nav` (or pass an empty array) to drop the header when your site already has one, and set `headingLevel` to h2 when the hero is not the first heading on the page. Under reduced motion the window and text fade in without moving."
+      previewOffset={170}
       render={({ isPreview }) => (
         <MarketingHeroProduct
           {...MARKETING_HERO_SAMPLE}

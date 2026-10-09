@@ -429,7 +429,13 @@ function Alerts({ alerts }: { alerts: { title: string; meta: string }[] }) {
               ["--depth" as string]: depth,
             }}
           >
-            <div className="flex items-start gap-2.5">
+            <div
+              className={cn(
+                "flex items-start gap-2.5",
+                depth > 0 &&
+                  "opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 motion-reduce:transition-none",
+              )}
+            >
               <span
                 className={cn(
                   "mt-1 size-2 shrink-0 rounded-full",
@@ -519,7 +525,7 @@ function Code({ filename, lines }: { filename: string; lines: string[] }) {
 
 function Keys({ shortcuts }: { shortcuts: { keys: string[]; label: string }[] }) {
   return (
-    <div className="grid w-full max-w-[420px] grid-cols-1 gap-2 @xs:grid-cols-2">
+    <div className="grid w-full max-w-[420px] grid-cols-1 gap-2 @5xl:grid-cols-2">
       {shortcuts.map((shortcut, index) => (
         <div
           key={shortcut.label}

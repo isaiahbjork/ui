@@ -183,7 +183,11 @@ export function MarketingPricing({
   const savings = savingsLabel ?? (bestSaving > 0 ? `Save ${bestSaving}%` : undefined);
 
   const columns =
-    plans.length >= 4 ? "@4xl:grid-cols-4" : plans.length === 3 ? "@4xl:grid-cols-3" : "@3xl:grid-cols-2";
+    plans.length >= 4
+      ? "@4xl:max-w-[1120px] @4xl:grid-cols-4"
+      : plans.length === 3
+        ? "@4xl:max-w-[1120px] @4xl:grid-cols-3"
+        : "@3xl:max-w-[760px] @3xl:grid-cols-2";
 
   return (
     <section
@@ -213,7 +217,7 @@ export function MarketingPricing({
           </div>
         </SectionHeader>
 
-        <ul className={cn("mx-auto mt-12 grid max-w-[1120px] grid-cols-1 gap-3 @3xl:mt-16", columns)}>
+        <ul className={cn("mx-auto mt-12 grid max-w-[480px] grid-cols-1 gap-3 @3xl:mt-16", columns)}>
           {plans.map((plan, index) => {
             const card = (
               <PlanCard plan={plan} billing={billing} currency={currency} animate={animate} onPlanSelect={onPlanSelect} />
@@ -520,9 +524,10 @@ function Comparison({
                         <th
                           scope="colgroup"
                           colSpan={plans.length + 1}
-                          className="sticky left-0 px-5 py-2.5 font-mono text-[10.5px] font-normal uppercase tracking-[0.12em] text-[color:var(--bjork-text-muted)]"
+                          className="px-0 py-2.5 font-mono text-[10.5px] font-normal uppercase tracking-[0.12em] text-[color:var(--bjork-text-muted)]"
                         >
-                          {group.title}
+                          {/* A full-width cell cannot pin, so the label inside it does. */}
+                          <span className="sticky left-0 inline-block px-5">{group.title}</span>
                         </th>
                       </tr>
                       {group.rows.map((row) => (
