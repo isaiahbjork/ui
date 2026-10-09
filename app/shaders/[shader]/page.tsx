@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { WebsiteShaderDemo } from "@/components/bjork-ui/shaders/website-shader";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { componentMetadata } from "@/lib/component-metadata";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const shaderIds = [
@@ -12,6 +13,17 @@ export function generateStaticParams() {
   return shaderIds.map((shader) => ({
     shader,
   }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ shader: string }>;
+}) {
+  const { shader } = await params;
+  const item = getGalleryItem(`shader-${shader}`);
+
+  return item ? componentMetadata(item.title) : {};
 }
 
 export default async function Page({
