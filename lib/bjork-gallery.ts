@@ -1491,6 +1491,30 @@ export const galleryItems: GalleryItem[] = [
     accent: "#ec5c13",
     isNew: true,
   },
+  {
+    id: "bjork188",
+    slug: "deployment-card",
+    title: "Deployment card",
+    route: "/cards/deployment-card",
+    sourcePath: "components/bjork-ui/cards/deployment-card.tsx",
+    tier: "copy",
+    collection: "Cards",
+    preview: "hud",
+    accent: "#ec5c13",
+    isNew: true,
+  },
+  {
+    id: "bjork189",
+    slug: "team-invite-card",
+    title: "Team invite card",
+    route: "/cards/team-invite-card",
+    sourcePath: "components/bjork-ui/cards/team-invite-card.tsx",
+    tier: "copy",
+    collection: "Cards",
+    preview: "input",
+    accent: "#ec5c13",
+    isNew: true,
+  },
 ];
 
 export function getGalleryItem(slug: string) {
