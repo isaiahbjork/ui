@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { componentMetadata } from "@/lib/component-metadata";
+import { slugMetadata } from "@/lib/component-metadata";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 import { getPrimitiveMeta } from "../_components/primitive-meta";
 import { PrimitivePageClient } from "../_components/primitive-page-client";
@@ -12,7 +12,7 @@ export async function generateMetadata({
   const { primitive } = await params;
   const item = getGalleryItem(`primitive-${primitive}`);
 
-  return item ? componentMetadata(item.title) : {};
+  return item ? slugMetadata(item.slug) : {};
 }
 
 export default async function Page({

@@ -3,6 +3,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { GlobalCommandPalette } from "@/components/global-command-palette";
+import { shareMetadata } from "@/lib/component-metadata";
+import { homeCard, siteName, siteUrl } from "@/lib/og-cards";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,8 +17,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Björk UI",
-  description: "Interface components, motion studies, and visual systems.",
+  metadataBase: new URL(siteUrl),
+  ...shareMetadata(homeCard, siteName),
+  // Each page names its own canonical; the root should not hand "/" down.
+  alternates: undefined,
+  applicationName: siteName,
 };
 
 export default function RootLayout({

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { WebsiteShaderDemo } from "@/components/bjork-ui/shaders/website-shader";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
-import { componentMetadata } from "@/lib/component-metadata";
+import { slugMetadata } from "@/lib/component-metadata";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const shaderIds = [
@@ -23,7 +23,7 @@ export async function generateMetadata({
   const { shader } = await params;
   const item = getGalleryItem(`shader-${shader}`);
 
-  return item ? componentMetadata(item.title) : {};
+  return item ? slugMetadata(item.slug) : {};
 }
 
 export default async function Page({

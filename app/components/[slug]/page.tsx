@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { componentMetadata } from "@/lib/component-metadata";
+import { slugMetadata } from "@/lib/component-metadata";
 import { galleryItems, getGalleryItem } from "@/lib/bjork-gallery";
 import { ComponentDetailClient } from "./component-detail-client";
 
@@ -17,7 +17,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const item = getGalleryItem(slug);
 
-  return item ? componentMetadata(item.title) : {};
+  return item ? slugMetadata(item.slug) : {};
 }
 
 export default async function ComponentDetailPage({

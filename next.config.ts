@@ -11,6 +11,11 @@ const withMDX = createMDX({
 
 const nextConfig: NextConfig = {
   pageExtensions: ["js", "jsx", "ts", "tsx", "md", "mdx"],
+  // The share cards are prerendered, but keep their fonts and previews with
+  // the route in case one is ever drawn on demand.
+  outputFileTracingIncludes: {
+    "/og/[card]": ["./lib/og-fonts/*.ttf", "./public/component-previews/*.png"],
+  },
   turbopack: {
     root: process.cwd(),
   },
