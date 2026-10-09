@@ -96,7 +96,7 @@ ref.current?.replay();`}
           words={cycle ? WORDS : undefined}
           charset={charset}
           order={order}
-          frozenProgress={isPreview ? 0.5 : undefined}
+          frozenProgress={isPreview ? 1 : undefined}
         />
       </div>
     </SimpleComponentDemoPage>

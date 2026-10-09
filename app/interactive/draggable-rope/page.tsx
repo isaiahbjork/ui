@@ -19,7 +19,7 @@ export default function DraggableRopePage() {
   if (isPreview) {
     return (
       <div className="flex min-h-screen items-start justify-center overflow-hidden bg-[var(--bjork-bg)] pt-4">
-        <div className="scale-[0.68]">{demo}</div>
+        <div className="w-[720px] scale-[0.68]">{demo}</div>
       </div>
     );
   }
