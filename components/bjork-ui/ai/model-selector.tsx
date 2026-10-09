@@ -143,7 +143,8 @@ const CAPABILITY_LABEL: Record<ModelCapability, string> = {
 const SPEED_LEVEL: Record<ModelSpeed, number> = { fast: 3, balanced: 2, deliberate: 1 };
 // Room kept between the menu and the viewport edge.
 const EDGE = 12;
-const GAP = 6;
+// Room between the trigger and the menu. Matches the house popover spacing (8px).
+const GAP = 8;
 
 function monogram(provider: string): string {
   const words = provider.split(/\s+/).filter(Boolean);
@@ -409,13 +410,13 @@ export function ModelSelector({
           ref={panelRef}
           data-side={side}
           className={cn(
-            "absolute left-0 top-[calc(100%+6px)] z-40 flex w-[min(380px,calc(100vw-24px))] flex-col overflow-hidden rounded-[14px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-menu)] shadow-[var(--bjork-shadow-menu)] backdrop-blur-md",
+            "absolute left-0 top-[calc(100%+8px)] z-40 flex w-[min(380px,calc(100vw-24px))] flex-col overflow-hidden rounded-[14px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-menu)] shadow-[var(--bjork-shadow-menu)] backdrop-blur-md",
             "data-[side=bottom]:origin-top data-[side=top]:origin-bottom",
             !reduce && "motion-safe:animate-[bjork-model-pop_180ms_cubic-bezier(0.23,1,0.32,1)]",
           )}
         >
           <style href="bjork-model-selector-pop" precedence="default">
-            {"@keyframes bjork-model-pop{from{opacity:0;transform:scale(0.97) translateY(-2px)}to{opacity:1;transform:none}}"}
+            {"@keyframes bjork-model-pop{from{opacity:0;transform:scale(0.97)}to{opacity:1;transform:none}}"}
           </style>
           <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[color:var(--bjork-border)] px-3">
             <Search aria-hidden="true" size={14} strokeWidth={1.75} className="shrink-0 text-[color:var(--bjork-text-faint)]" />
