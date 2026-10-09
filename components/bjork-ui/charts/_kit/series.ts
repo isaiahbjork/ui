@@ -53,9 +53,24 @@ export function rampColor(tone: BjorkTone, t: number): string {
   return `rgb(${Math.round(lerp(a[0], b[0], f))},${Math.round(lerp(a[1], b[1], f))},${Math.round(lerp(a[2], b[2], f))})`;
 }
 
+// WCAG relative luminance of an sRGB colour.
+function relLum(color: string): number {
+  const [r, g, b] = parseColor(color).map((c) => {
+    const v = c / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  });
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+// Light or dark ink for text on a filled mark, whichever has more WCAG contrast. The inks are
+// near-white (L ≈ 0.94) and near-black (L ≈ 0.009). Saturated orange gets dark ink; white text
+// only lands on the deeper rust steps, the same rule as --bjork-accent-fill.
+export function inkOn(color: string): "light" | "dark" {
+  const L = relLum(color);
+  return (0.94 + 0.05) / (L + 0.05) >= (L + 0.05) / (0.009 + 0.05) ? "light" : "dark";
+}
+
 // Whether text on a ramp cell at `t` should use the light or dark ink.
 export function rampInk(tone: BjorkTone, t: number): "light" | "dark" {
-  const [r, g, b] = parseColor(rampColor(tone, t));
-  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  return lum > 0.55 ? "dark" : "light";
+  return inkOn(rampColor(tone, t));
 }

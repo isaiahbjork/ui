@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import { cn } from "@/lib/utils";
 import type { BjorkTone } from "@/components/bjork-ui/_core/palette";
 import { useChartCanvas, easeOut, hatchPattern } from "@/components/bjork-ui/charts/_kit/canvas";
@@ -222,7 +222,7 @@ export function FunnelChart({
     lay: { narrow: false, plotL: 0, plotR: 0, labelW: 0, labelH: 0, barH: W_BAR, gutH: W_GUT, countR: 0, n: 0 },
   });
 
-  const { rootRef, hostRef, canvasRef, size, wake } = useChartCanvas(({ ctx, w, h, dt }) => {
+  const { rootRef, hostRef, canvasRef, wake } = useChartCanvas(({ ctx, w, h, dt }) => {
     const s = st.current;
     const c = cfg.current;
     const p = c.pal;
@@ -563,15 +563,19 @@ export function FunnelChart({
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     if (!n) return;
     const s = st.current;
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+    if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "ArrowRight" || e.key === "ArrowLeft") {
       e.preventDefault();
-      const down = e.key === "ArrowDown";
+      // Right walks down the funnel like Down, so either axis steps the flow.
+      const down = e.key === "ArrowDown" || e.key === "ArrowRight";
       const next = s.hover === null ? (down ? 0 : n - 1) : clamp(s.hover + (down ? 1 : -1), 0, n - 1);
       setHover(next, "keyboard");
     } else if (e.key === "Home" || e.key === "End") {
       e.preventDefault();
       setHover(e.key === "Home" ? 0 : n - 1, "keyboard");
-    } else if (e.key === "Escape") setHover(null, null);
+    } else if (e.key === "Escape" && s.hover !== null) {
+      e.preventDefault();
+      setHover(null, null);
+    }
   };
 
   const tableCols = useMemo(
@@ -597,12 +601,10 @@ export function FunnelChart({
     [rows, worst, worstLabel, formatValue, formatRate, hasPrev],
   );
 
-  // Natural height from the row count; the narrow layout adds a label line per step.
-  const narrowNow = size.width > 0 && size.width < NARROW;
-  const natural = n
-    ? HEADER_H + n * (narrowNow ? N_LABEL + N_BAR : W_BAR) + (n - 1) * (narrowNow ? N_GUT : W_GUT) + PAD_B
-    : HEADER_H + 64;
-  const height = heightProp ?? natural;
+  // Natural height from the row count; the narrow layout adds a label line per step. Both are
+  // emitted and a container query picks one, so the server paint is already the right height.
+  const naturalWide = n ? HEADER_H + n * W_BAR + (n - 1) * W_GUT + PAD_B : HEADER_H + 64;
+  const naturalNarrow = n ? HEADER_H + n * (N_LABEL + N_BAR) + (n - 1) * N_GUT + PAD_B : HEADER_H + 64;
 
   const last = rows[n - 1];
   const summary = n
@@ -612,130 +614,138 @@ export function FunnelChart({
   const hatchKey = `repeating-linear-gradient(-45deg, var(--bjork-text-muted) 0 1px, transparent 1px 3.5px)`;
 
   return (
-    <div ref={rootRef} data-loop="idle" className={cn("relative w-full select-none text-[color:var(--bjork-text)]", className)} style={{ ...vars, height }}>
+    <div className={cn("@container w-full", className)}>
       <div
-        ref={wrapperRef}
-        role="group"
-        aria-roledescription="chart"
-        aria-label={`${ariaLabel}. Up and down move between steps.`}
-        tabIndex={0}
-        onPointerEnter={() => {
-          if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
-        }}
-        onPointerMove={onPointerMove}
-        onPointerDown={(e) => {
-          if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
-          if (e.pointerType === "touch") onPointerMove(e);
-        }}
-        onPointerLeave={(e) => {
-          // A touch tap fires leave right after up; keep the tapped mark until the next tap.
-          if (e.pointerType !== "touch") setHover(null, null);
-        }}
-        onKeyDown={onKeyDown}
-        className={cn("absolute inset-0 touch-pan-y rounded-[10px]", chartFocusRing)}
+        ref={rootRef}
+        data-loop="idle"
+        className={cn("relative w-full select-none text-[color:var(--bjork-text)]", heightProp === undefined && "h-[var(--funnel-h)] @max-[480px]:h-[var(--funnel-hn)]")}
+        style={{ ...vars, ...(heightProp !== undefined ? { height: heightProp } : { "--funnel-h": `${naturalWide}px`, "--funnel-hn": `${naturalNarrow}px` }) } as CSSProperties}
       >
-        <div ref={hostRef} className="absolute inset-0">
-          <canvas ref={canvasRef} role="img" aria-label={summary} className="pointer-events-none absolute left-0 top-0" />
-        </div>
-
-        {/* Legend: keys mirror the marks. */}
         <div
-          aria-hidden="true"
-          className="pointer-events-none absolute left-2 top-[4px] flex items-center gap-x-4 font-bjork-alpha text-[11px] font-medium leading-3 text-[color:var(--bjork-text-medium)]"
+          ref={wrapperRef}
+          role="group"
+          aria-roledescription="chart"
+          aria-label={`${ariaLabel}. Arrow keys move between steps, Home and End jump to the first and last, Escape clears.`}
+          tabIndex={0}
+          onPointerEnter={() => {
+            if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
+          }}
+          onPointerMove={onPointerMove}
+          onPointerDown={(e) => {
+            if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
+            if (e.pointerType === "touch") onPointerMove(e);
+          }}
+          onPointerLeave={(e) => {
+            // A touch tap fires leave right after up; keep the tapped mark until the next tap.
+            if (e.pointerType !== "touch") setHover(null, null);
+          }}
+          onBlur={() => setHover(null, null)}
+          onKeyDown={onKeyDown}
+          className={cn("absolute inset-0 touch-pan-y rounded-[10px]", chartFocusRing)}
         >
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-2 w-3 rounded-r-[2px] bg-[color:var(--bjork-text-muted)]" />
-            Reached
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span className="inline-block h-2 w-3 rounded-r-[2px] border border-[color:var(--bjork-text-faint)]" style={{ backgroundImage: hatchKey }} />
-            Lost
-          </span>
-          {hasPrev && (
-            <span className="inline-flex min-w-0 items-center gap-1.5">
-              <span className="inline-block h-2.5 w-[1.5px] shrink-0 rounded-full bg-[color:var(--bjork-text)]" />
-              <span className="truncate">{previousLabel}</span>
-            </span>
-          )}
-        </div>
-        <span
-          ref={hCountRef}
-          aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-[6px] whitespace-nowrap font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]"
-        >
-          {valueLabel}
-        </span>
-        <span
-          ref={hPctRef}
-          aria-hidden="true"
-          className="pointer-events-none absolute right-2 top-[6px] whitespace-nowrap font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]"
-        >
-          Overall
-        </span>
+          <div ref={hostRef} className="absolute inset-0">
+            <canvas ref={canvasRef} role="img" aria-label={summary} className="pointer-events-none absolute left-0 top-0" />
+          </div>
 
-        {rows.map((r, i) => (
-          <span
-            key={`n-${r.id}`}
-            ref={(el) => {
-              nameRefs.current[i] = el;
-            }}
+          {/* Legend: keys mirror the marks. */}
+          <div
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 truncate font-bjork-alpha text-[12px] font-medium leading-[14px] text-[color:var(--bjork-text-medium)] opacity-0"
+            className="pointer-events-none absolute left-2 top-[4px] flex items-center gap-x-4 font-bjork-alpha text-[11px] font-medium leading-3 text-[color:var(--bjork-text-medium)]"
           >
-            {r.label}
-          </span>
-        ))}
-        {rows.map((r, i) => (
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-block h-2 w-3 rounded-r-[2px] bg-[color:var(--bjork-text-muted)]" />
+              Reached
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-block h-2 w-3 rounded-r-[2px] border border-[color:var(--bjork-text-faint)]" style={{ backgroundImage: hatchKey }} />
+              Lost
+            </span>
+            {hasPrev && (
+              <span className="inline-flex min-w-0 items-center gap-1.5">
+                <span className="inline-block h-2.5 w-[1.5px] shrink-0 rounded-full bg-[color:var(--bjork-text)]" />
+                <span className="truncate">{previousLabel}</span>
+              </span>
+            )}
+          </div>
           <span
-            key={`c-${r.id}`}
-            ref={(el) => {
-              countRefs.current[i] = el;
-            }}
+            ref={hCountRef}
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 whitespace-nowrap text-right font-mono text-[12px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+            className="pointer-events-none absolute left-0 top-[6px] whitespace-nowrap font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]"
           >
-            {formatValue(r.value)}
+            {valueLabel}
           </span>
-        ))}
-        {rows.map((r, i) => (
           <span
-            key={`p-${r.id}`}
-            ref={(el) => {
-              pctRefs.current[i] = el;
-            }}
+            ref={hPctRef}
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 whitespace-nowrap text-right font-mono text-[11px] leading-none tabular-nums text-[color:var(--bjork-text-muted)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+            className="pointer-events-none absolute right-2 top-[6px] whitespace-nowrap font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]"
           >
-            {r.overall !== null ? formatRate(r.overall) : "–"}
+            Overall
           </span>
-        ))}
-        {rows.map((r, i) =>
-          i === 0 ? null : (
+
+          {rows.map((r, i) => (
             <span
-              key={`g-${r.id}`}
+              key={`n-${r.id}`}
               ref={(el) => {
-                gutRefs.current[i] = el;
+                nameRefs.current[i] = el;
               }}
               aria-hidden="true"
-              className="pointer-events-none absolute left-0 top-0 flex items-center gap-2 overflow-hidden whitespace-nowrap font-mono text-[10px] leading-none tabular-nums opacity-0 [text-box:trim-both_cap_alphabetic]"
+              className="pointer-events-none absolute left-0 top-0 truncate font-bjork-alpha text-[12px] font-medium leading-[14px] text-[color:var(--bjork-text-medium)] opacity-0"
             >
-              <span className={i === worst ? "text-[color:var(--bjork-accent-ink)]" : "text-[color:var(--bjork-text-medium)]"}>
-                ↓ {r.conv !== null ? formatRate(r.conv) : "–"}
-              </span>
-              {r.conv !== null && r.prevConv !== null && <span className="text-[color:var(--bjork-text-muted)]">{formatPP(r.conv - r.prevConv)}</span>}
-              {i === worst && (
-                <span className="font-bjork-alpha text-[11px] font-medium text-[color:var(--bjork-accent-ink)] [text-box:trim-both_cap_alphabetic]">{worstLabel}</span>
-              )}
+              {r.label}
             </span>
-          ),
-        )}
-        {!n && (
-          <span className="pointer-events-none absolute inset-x-0 top-[46px] text-center font-bjork-alpha text-[12px] text-[color:var(--bjork-text-muted)]">No steps</span>
-        )}
-        <HoverTooltip ref={tipRef} onMeasure={wake} />
+          ))}
+          {rows.map((r, i) => (
+            <span
+              key={`c-${r.id}`}
+              ref={(el) => {
+                countRefs.current[i] = el;
+              }}
+              aria-hidden="true"
+              className="pointer-events-none absolute left-0 top-0 whitespace-nowrap text-right font-mono text-[12px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+            >
+              {formatValue(r.value)}
+            </span>
+          ))}
+          {rows.map((r, i) => (
+            <span
+              key={`p-${r.id}`}
+              ref={(el) => {
+                pctRefs.current[i] = el;
+              }}
+              aria-hidden="true"
+              className="pointer-events-none absolute left-0 top-0 whitespace-nowrap text-right font-mono text-[11px] leading-none tabular-nums text-[color:var(--bjork-text-muted)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+            >
+              {r.overall !== null ? formatRate(r.overall) : "–"}
+            </span>
+          ))}
+          {rows.map((r, i) =>
+            i === 0 ? null : (
+              <span
+                key={`g-${r.id}`}
+                ref={(el) => {
+                  gutRefs.current[i] = el;
+                }}
+                aria-hidden="true"
+                className="pointer-events-none absolute left-0 top-0 flex items-center gap-2 overflow-hidden whitespace-nowrap font-mono text-[10px] leading-none tabular-nums opacity-0 [text-box:trim-both_cap_alphabetic]"
+              >
+                <span className={i === worst ? "text-[color:var(--bjork-accent-ink)]" : "text-[color:var(--bjork-text-medium)]"}>
+                  ↓ {r.conv !== null ? formatRate(r.conv) : "–"}
+                </span>
+                {r.conv !== null && r.prevConv !== null && <span className="text-[color:var(--bjork-text-muted)]">{formatPP(r.conv - r.prevConv)}</span>}
+                {i === worst && (
+                  <span className="font-bjork-alpha text-[11px] font-medium text-[color:var(--bjork-accent-ink)] [text-box:trim-both_cap_alphabetic]">{worstLabel}</span>
+                )}
+              </span>
+            ),
+          )}
+          {!n && (
+            <span className="pointer-events-none absolute inset-x-0 top-[46px] text-center font-bjork-alpha text-[12px] text-[color:var(--bjork-text-muted)]">No steps</span>
+          )}
+          <HoverTooltip ref={tipRef} onMeasure={wake} />
+        </div>
+        <ChartTable caption={ariaLabel} columns={tableCols} rows={tableRows} />
+        <ChartAnnouncer ref={announcer} />
       </div>
-      <ChartTable caption={ariaLabel} columns={tableCols} rows={tableRows} />
-      <ChartAnnouncer ref={announcer} />
     </div>
   );
 }

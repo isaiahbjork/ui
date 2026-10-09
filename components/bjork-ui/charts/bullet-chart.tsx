@@ -86,6 +86,8 @@ export interface BulletChartProps {
 const NARROW = 480;
 const TOP_PAD = 4;
 const HEAD_H = 18;
+// Inset for the label and value columns, so text never sits flush against the focus ring.
+const PAD_X = 8;
 const BAND_H = 16;
 const BAR_H = 6;
 const TARGET_H = 12;
@@ -410,8 +412,8 @@ export function BulletChart({
     const rh = c.rowH + head;
     const labelW = narrow ? 0 : clamp(Math.ceil(s.labelW) + 16, 64, Math.max(64, Math.min(200, Math.round(w * 0.32))));
     const rightW = (narrow ? c.widths.short : c.widths.right) + 14;
-    const l = labelW;
-    const r = Math.max(l + 40, w - rightW);
+    const l = PAD_X + labelW;
+    const r = Math.max(l + 40, w - PAD_X - rightW);
     const pw = r - l;
     s.layout = { l, r, rowH: rh, head, bandOff: c.bandOff };
 
@@ -545,7 +547,8 @@ export function BulletChart({
           const text = m.tickFmt(t);
           const half = (text.length * 10 * MONO) / 2;
           tickMarks.push(crisp(x), bandTop + BAND_H + 1);
-          ticks.push({ text, x: x - half < 0 ? 0 : x, y: bandTop + BAND_H + 10, ax: x - half < 0 ? 0 : x + half > w ? -100 : -50, opacity: dim ? 0.45 : 1 });
+          // End labels hang inside the track so they line up with the band's ends.
+          ticks.push({ text, x, y: bandTop + BAND_H + 10, ax: x - half < l ? 0 : x + half > r ? -100 : -50, opacity: dim ? 0.45 : 1 });
         }
       }
 
@@ -584,7 +587,7 @@ export function BulletChart({
         const text = m.tickFmt(t);
         const half = (text.length * 10 * MONO) / 2;
         tickMarks.push(crisp(x), Math.round(ay) + 1);
-        ticks.push({ text, x, y: ay + 14, ax: x - half < 0 ? 0 : x + half > w ? -100 : -50 });
+        ticks.push({ text, x, y: ay + 14, ax: x - half < PAD_X ? 0 : x + half > w - PAD_X ? -100 : -50 });
       }
     }
     if (tickMarks.length) {
@@ -612,18 +615,18 @@ export function BulletChart({
         if (narrow) {
           const lineY = top + HEAD_H / 2;
           if (N) {
-            N.style.width = `${Math.max(40, w - c.widths.value - 12)}px`;
-            N.style.transform = `translate3d(0, ${lineY.toFixed(1)}px, 0) translateY(-50%)`;
+            N.style.width = `${Math.max(40, w - 2 * PAD_X - c.widths.value - 12)}px`;
+            N.style.transform = `translate3d(${PAD_X}px, ${lineY.toFixed(1)}px, 0) translateY(-50%)`;
           }
-          if (V) V.style.transform = `translate3d(${w}px, ${lineY.toFixed(1)}px, 0) translate(-100%, -50%)`;
-          if (A) A.style.transform = `translate3d(${w}px, ${mid.toFixed(1)}px, 0) translate(-100%, -50%)`;
+          if (V) V.style.transform = `translate3d(${w - PAD_X}px, ${lineY.toFixed(1)}px, 0) translate(-100%, -50%)`;
+          if (A) A.style.transform = `translate3d(${w - PAD_X}px, ${mid.toFixed(1)}px, 0) translate(-100%, -50%)`;
         } else {
           if (N) {
-            N.style.width = `${Math.max(40, l - 14)}px`;
-            N.style.transform = `translate3d(0, ${mid.toFixed(1)}px, 0) translateY(-50%)`;
+            N.style.width = `${Math.max(40, l - PAD_X - 14)}px`;
+            N.style.transform = `translate3d(${PAD_X}px, ${mid.toFixed(1)}px, 0) translateY(-50%)`;
           }
-          if (V) V.style.transform = `translate3d(${w}px, ${(mid - 2).toFixed(1)}px, 0) translate(-100%, -100%)`;
-          if (A) A.style.transform = `translate3d(${w}px, ${(mid + 3).toFixed(1)}px, 0) translate(-100%, 0)`;
+          if (V) V.style.transform = `translate3d(${w - PAD_X}px, ${(mid - 2).toFixed(1)}px, 0) translate(-100%, -100%)`;
+          if (A) A.style.transform = `translate3d(${w - PAD_X}px, ${(mid + 3).toFixed(1)}px, 0) translate(-100%, 0)`;
         }
       }
     }
@@ -693,7 +696,8 @@ export function BulletChart({
     if (!m.missing && Number.isFinite(m.target)) {
       const gap = m.value - m.target;
       const word = Math.abs(gap) < 1e-12 ? "On target" : (m.better === "higher") === gap < 0 ? (m.better === "higher" ? "To go" : "Over target") : m.better === "higher" ? "Over target" : "Under target";
-      rowsOut.push({ key: "g", label: word, value: formatSigned(gap, m.fmt), strong: false });
+      // The word carries the direction, so the amount reads unsigned ("To go $2.49M", not "−$2.49M").
+      rowsOut.push({ key: "g", label: word, value: m.fmt(Math.abs(gap)), strong: false });
     }
     if (m.projected !== null) {
       rowsOut.push({
@@ -796,7 +800,7 @@ export function BulletChart({
     return `${model.length} metric${model.length === 1 ? "" : "s"}: ${parts.join(", ")}`;
   }, [model]);
 
-  const tickCount = common ? 10 : n * 6;
+  const tickCount = common ? 10 : n * 7;
 
   return (
     <div className={cn("@container w-full", className)}>
@@ -820,10 +824,12 @@ export function BulletChart({
             if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
             if (e.pointerType === "touch") onPointerMove(e);
           }}
-          onPointerLeave={() => {
+          onPointerLeave={(e) => {
             rectRef.current = null;
-            if (st.current.source === "pointer") setHover(null, null);
+            // A touch tap fires leave right after up; keep the tapped row until the next tap.
+            if (e.pointerType !== "touch" && st.current.source === "pointer") setHover(null, null);
           }}
+          onBlur={() => setHover(null, null)}
           onKeyDown={onKeyDown}
           className={cn("absolute inset-0 touch-pan-y rounded-[10px]", chartFocusRing)}
         >

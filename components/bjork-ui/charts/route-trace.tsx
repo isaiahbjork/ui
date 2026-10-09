@@ -141,8 +141,8 @@ const TRACE_COLOUR: Record<BjorkTone, { trace: string; glow: string }> = {
 
 const ROUTE_CSS = `
 @keyframes bjork-route-packet {
-  from { stroke-dashoffset: 0; }
-  to { stroke-dashoffset: calc(-1 * var(--rt-len, 0)); }
+  from { stroke-dashoffset: 0px; }
+  to { stroke-dashoffset: calc(-1 * var(--rt-len, 0px)); }
 }
 [data-route-trace][data-loop="paused"] .bjork-route-packet { animation-play-state: paused !important; }
 `;
@@ -542,10 +542,16 @@ export function RouteTrace({
     return targets[slot % targets.length]?.id ?? null;
   }, [attractOn, clock, resolved]);
 
-  // Pauses the packet animation offscreen and in background tabs.
+  // Pauses the packet animation offscreen and in background tabs. With nothing to animate
+  // (reduced motion, frozen, or no speed) the loop reads idle, like the other charts.
+  const still = reduced || frozen || !(speed > 0);
   useEffect(() => {
     const el = rootRef.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
+    if (!el) return;
+    if (still || typeof IntersectionObserver === "undefined") {
+      el.dataset.loop = "idle";
+      return;
+    }
     let inView = true;
     const sync = () => {
       el.dataset.loop = inView && document.visibilityState === "visible" ? "running" : "paused";
@@ -564,7 +570,7 @@ export function RouteTrace({
       observer.disconnect();
       document.removeEventListener("visibilitychange", sync);
     };
-  }, []);
+  }, [still]);
 
   const nodeStatus = new Map<string, RouteStatus>();
   for (const n of resolved.nodes) {
@@ -655,6 +661,7 @@ export function RouteTrace({
     <div
       ref={rootRef}
       data-route-trace=""
+      data-loop="idle"
       data-tone={resolvedTone}
       data-orientation={useVertical ? "vertical" : "horizontal"}
       role="group"
@@ -745,7 +752,8 @@ export function RouteTrace({
                           animationIterationCount: animate ? "infinite" : undefined,
                           animationDelay: animate ? `-${fmt(delay)}s` : undefined,
                           animationPlayState: frozen || st === "down" ? "paused" : "running",
-                          "--rt-len": fmt(r.length),
+                          // A length, not a bare number: Chrome steps a unitless calc() offset instead of tweening it.
+                          "--rt-len": `${fmt(r.length)}px`,
                         } as CSSProperties
                       }
                     />
@@ -859,7 +867,7 @@ export function RouteTrace({
                 {st !== "ok" && (
                   <span
                     aria-hidden="true"
-                    className="pointer-events-none absolute right-0 -top-[13px] font-mono text-[9px] leading-[10px]"
+                    className="pointer-events-none absolute right-0 -top-[14px] font-mono text-[10px] leading-[10px] [text-box:trim-both_cap_alphabetic]"
                     style={{ color: st === "down" ? palette.error : palette.warning }}
                   >
                     {st === "down" ? "DOWN" : "DEGRADED"}
