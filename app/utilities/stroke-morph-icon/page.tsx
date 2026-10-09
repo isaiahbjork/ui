@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import {
+  ShellActions,
+  ShellSegmented,
+  SimpleComponentDemoPage,
+} from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { BjorkButtonGroup } from "@/components/bjork-ui/primitives/button-group";
 import { BjorkSelect } from "@/components/bjork-ui/primitives/select";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import {
@@ -37,6 +40,11 @@ const SPRINGS = {
 } as const;
 type SpringPreset = keyof typeof SPRINGS;
 
+const DEFAULT_HERO: StrokeIconName = "close";
+const DEFAULT_CELL_STEPS: number[] = CELLS.map(() => 0);
+const DEFAULT_STROKE = 2;
+const DEFAULT_SPRING: SpringPreset = "standard";
+
 // Preview-only attract loop. The hero holds `close` for the first 3s so the 2.6s capture is posed.
 const ATTRACT: StrokeIconName[] = [
   "menu",
@@ -56,12 +64,12 @@ function randomNameOtherThan(current: StrokeIconName): StrokeIconName {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
-function Demo() {
+export default function Page() {
   const isPreview = usePreviewMode();
-  const [heroName, setHeroName] = useState<StrokeIconName>("close");
-  const [cellStep, setCellStep] = useState<number[]>(() => CELLS.map(() => 0));
-  const [strokeWidth, setStrokeWidth] = useState(2);
-  const [springPreset, setSpringPreset] = useState<SpringPreset>("standard");
+  const [heroName, setHeroName] = useState<StrokeIconName>(DEFAULT_HERO);
+  const [cellStep, setCellStep] = useState<number[]>(DEFAULT_CELL_STEPS);
+  const [strokeWidth, setStrokeWidth] = useState(DEFAULT_STROKE);
+  const [springPreset, setSpringPreset] = useState<SpringPreset>(DEFAULT_SPRING);
 
   useEffect(() => {
     if (!isPreview) return;
@@ -84,86 +92,13 @@ function Demo() {
     );
   };
 
-  return (
-    <div className="flex w-full flex-col items-center gap-7">
-      <div className="flex flex-col items-center gap-5">
-        <StrokeMorphIcon
-          name={heroName}
-          size={96}
-          strokeWidth={strokeWidth}
-          spring={spring}
-          label={heroName}
-        />
-        {!isPreview && (
-          <div className="flex items-center gap-2">
-            <label className="inline-flex items-center">
-              <span className="sr-only">Morph the hero icon to</span>
-              <BjorkSelect
-                options={ALL_NAMES.map((name) => ({ value: name, label: name }))}
-                value={heroName}
-                onValueChange={(value) => setHeroName(value as StrokeIconName)}
-              />
-            </label>
-            <BjorkButton variant="secondary" size="sm" onClick={() => setHeroName((n) => randomNameOtherThan(n))}>
-              Random
-            </BjorkButton>
-          </div>
-        )}
-      </div>
+  const reset = () => {
+    setHeroName(DEFAULT_HERO);
+    setCellStep(DEFAULT_CELL_STEPS);
+    setStrokeWidth(DEFAULT_STROKE);
+    setSpringPreset(DEFAULT_SPRING);
+  };
 
-      <div className="grid grid-cols-4 gap-3">
-        {CELLS.map((names, cell) => {
-          const current = names[cellStep[cell]];
-          const next = names[(cellStep[cell] + 1) % names.length];
-          return (
-            <button
-              key={cell}
-              type="button"
-              aria-label={`Morph ${current} to ${next}`}
-              onClick={() => stepCell(cell)}
-              className="flex size-[72px] cursor-pointer items-center justify-center rounded-[14px] border border-[var(--bjork-border,#232323)] bg-[var(--bjork-surface,#121212)] outline-none transition-[border-color] duration-150 ease-out hover:border-[var(--bjork-border-strong,#343434)] focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bjork-ring-offset,#050505)] active:scale-[0.97]"
-            >
-              <StrokeMorphIcon name={current} size={28} strokeWidth={strokeWidth} spring={spring} />
-            </button>
-          );
-        })}
-      </div>
-
-      {!isPreview && (
-        <div className="flex flex-wrap items-center justify-center gap-3">
-          <BjorkButtonGroup role="group" aria-label="Stroke width">
-            {STROKE_WIDTHS.map((width) => (
-              <BjorkButton
-                key={width}
-                aria-pressed={strokeWidth === width}
-                variant={strokeWidth === width ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setStrokeWidth(width)}
-              >
-                {width}
-              </BjorkButton>
-            ))}
-          </BjorkButtonGroup>
-          <BjorkButtonGroup role="group" aria-label="Spring preset">
-            {(Object.keys(SPRINGS) as SpringPreset[]).map((preset) => (
-              <BjorkButton
-                key={preset}
-                aria-pressed={springPreset === preset}
-                variant={springPreset === preset ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setSpringPreset(preset)}
-              >
-                {preset}
-              </BjorkButton>
-            ))}
-          </BjorkButtonGroup>
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function Page() {
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -182,8 +117,64 @@ export function Demo() {
 }`}
       previewScaleClassName="w-[420px]"
       previewCaptureScaleClassName="w-[420px] scale-[1.7]"
+      onReset={reset}
+      controls={
+        <>
+          <ShellActions label="Morph">
+            <label className="inline-flex items-center">
+              <span className="sr-only">Morph the hero icon to</span>
+              <BjorkSelect
+                options={ALL_NAMES.map((name) => ({ value: name, label: name }))}
+                value={heroName}
+                onValueChange={(value) => setHeroName(value as StrokeIconName)}
+              />
+            </label>
+            <BjorkButton variant="secondary" size="sm" onClick={() => setHeroName((n) => randomNameOtherThan(n))}>
+              Random
+            </BjorkButton>
+          </ShellActions>
+          <ShellSegmented
+            label="Stroke"
+            value={strokeWidth}
+            options={STROKE_WIDTHS.map((width) => ({ value: width, label: String(width) }))}
+            onChange={setStrokeWidth}
+          />
+          <ShellSegmented
+            label="Spring"
+            value={springPreset}
+            options={(Object.keys(SPRINGS) as SpringPreset[]).map((preset) => ({ value: preset, label: preset }))}
+            onChange={setSpringPreset}
+          />
+        </>
+      }
     >
-      <Demo />
+      <div className="flex w-full flex-col items-center gap-7">
+        <StrokeMorphIcon
+          name={heroName}
+          size={96}
+          strokeWidth={strokeWidth}
+          spring={spring}
+          label={heroName}
+        />
+
+        <div className="grid grid-cols-4 gap-3">
+          {CELLS.map((names, cell) => {
+            const current = names[cellStep[cell]];
+            const next = names[(cellStep[cell] + 1) % names.length];
+            return (
+              <button
+                key={cell}
+                type="button"
+                aria-label={`Morph ${current} to ${next}`}
+                onClick={() => stepCell(cell)}
+                className="flex size-[72px] cursor-pointer items-center justify-center rounded-[14px] border border-[var(--bjork-border,#232323)] bg-[var(--bjork-surface,#121212)] outline-none transition-[border-color] duration-150 ease-out hover:border-[var(--bjork-border-strong,#343434)] focus-visible:ring-2 focus-visible:ring-[color:var(--bjork-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bjork-ring-offset,#050505)] active:scale-[0.97]"
+              >
+                <StrokeMorphIcon name={current} size={28} strokeWidth={strokeWidth} spring={spring} />
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </SimpleComponentDemoPage>
   );
 }

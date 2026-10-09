@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { ShellActions, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import { LINK_PREVIEW_SAMPLE, LinkPreviewCard, type LinkMeta } from "@/components/bjork-ui/cards/link-preview-card";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -23,6 +24,7 @@ const resolveSample = (url: string) =>
 export default function Page() {
   const isPreview = usePreviewMode();
   const [shown, setShown] = useState(true);
+  const reset = () => setShown(true);
   return (
     <SimpleComponentDemoPage
       item={item}
@@ -45,18 +47,20 @@ export default function Page() {
 // Already have the metadata:
 <LinkPreviewCard url={url} meta={{ title, description, siteName, image }} layout="compact" />`}
       previewScaleClassName="w-[420px] scale-[0.9]"
+      onReset={reset}
+      controls={
+        <ShellActions>
+          <BjorkButton size="sm" variant="secondary" disabled={shown} onClick={() => setShown(true)}>
+            Show card
+          </BjorkButton>
+        </ShellActions>
+      }
     >
       {isPreview ? (
         <LinkPreviewCard meta={LINK_PREVIEW_SAMPLE.meta} />
       ) : (
         <div className="flex w-full max-w-[420px] flex-col gap-4">
-          {shown ? (
-            <LinkPreviewCard resolve={resolveSample} onDismiss={() => setShown(false)} />
-          ) : (
-            <button type="button" className="text-[13px] underline" onClick={() => setShown(true)}>
-              Restore preview
-            </button>
-          )}
+          {shown ? <LinkPreviewCard resolve={resolveSample} onDismiss={() => setShown(false)} /> : null}
           <LinkPreviewCard url="https://tidewater.app/changelog/2-4" meta={COMPACT} layout="compact" />
           <LinkPreviewCard url="https://broken.example.org/post/481" resolve={resolveSample} layout="compact" />
         </div>

@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import { BJORK_PALETTE, type BjorkTone } from "@/components/bjork-ui/_core/palette";
 import { cubicBezier, easeCss, springs } from "@/components/bjork-ui/_core/motion";
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
+import { BJORK_SURFACE } from "@/components/bjork-ui/_core/surface";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
 import { sizeCanvas, useElementSize } from "@/components/bjork-ui/_core/canvas";
 import { useVisibleLoop } from "@/components/bjork-ui/_core/loop";
@@ -974,6 +975,7 @@ export function VelocityInk({
         height,
         background: tokens.surface,
         borderColor: tokens.border,
+        boxShadow: BJORK_SURFACE[resolvedTone].shadowSurface,
         color: tokens.text,
       } as CSSProperties}
     >

@@ -1,15 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import {
+  ShellSegmented,
+  ShellSwitch,
+  SimpleComponentDemoPage,
+} from "@/components/bjork-ui/component-demo-shell";
 import { AdaptivePrecisionSlider } from "@/components/bjork-ui/controls/adaptive-precision-slider";
-import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { BjorkButtonGroup } from "@/components/bjork-ui/primitives/button-group";
-import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 const item = getGalleryItem("adaptive-precision-slider");
+
+const DEFAULT_FALLOFF = 48;
+const DEFAULT_SHOW_GAIN = true;
 
 function pad(n: number) {
   return String(n).padStart(2, "0");
@@ -38,8 +42,13 @@ function formatTimecode(v: number) {
 export default function Page() {
   const isPreview = usePreviewMode();
   const attractParam = usePreviewSearchParam("attract") === "1";
-  const [falloff, setFalloff] = useState(48);
-  const [showGain, setShowGain] = useState(true);
+  const [falloff, setFalloff] = useState(DEFAULT_FALLOFF);
+  const [showGain, setShowGain] = useState(DEFAULT_SHOW_GAIN);
+
+  const reset = () => {
+    setFalloff(DEFAULT_FALLOFF);
+    setShowGain(DEFAULT_SHOW_GAIN);
+  };
 
   return (
     <SimpleComponentDemoPage
@@ -57,6 +66,19 @@ export default function Page() {
 />`}
       previewScaleClassName="w-[340px]"
       previewCaptureScaleClassName="w-[640px] scale-[1.2]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Falloff"
+            value={falloff}
+            options={[24, 48, 96].map((px) => ({ value: px, label: `${px}px` }))}
+            onChange={setFalloff}
+          />
+          <ShellSwitch label="Gain chip" checked={showGain} onCheckedChange={setShowGain} />
+        </>
+      }
     >
       <div className="flex w-[min(520px,calc(100vw-56px))] min-w-0 flex-col gap-[28px]">
         <AdaptivePrecisionSlider
@@ -95,28 +117,6 @@ export default function Page() {
         <p className="px-[12px] text-[12px] text-[color:var(--bjork-text-soft,rgba(237,237,237,0.36))]">
           Drag, then drift away from the track to fine-tune.
         </p>
-        {!isPreview && (
-          <div className="flex flex-wrap items-center gap-3 px-[12px]">
-            <BjorkButtonGroup aria-label="Precision falloff">
-              {[24, 48, 96].map((px) => (
-                <BjorkButton
-                  key={px}
-                  size="sm"
-                  variant={falloff === px ? "secondary" : "ghost"}
-                  aria-pressed={falloff === px}
-                  onClick={() => setFalloff(px)}
-                  className="tabular-nums"
-                >
-                  {px}px
-                </BjorkButton>
-              ))}
-            </BjorkButtonGroup>
-            <label className="flex items-center gap-2 font-mono text-[12px] text-[color:var(--bjork-text-medium,rgba(237,237,237,0.72))]">
-              <BjorkSwitch checked={showGain} onCheckedChange={setShowGain} />
-              Gain chip
-            </label>
-          </div>
-        )}
       </div>
     </SimpleComponentDemoPage>
   );

@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ShellSegmented, SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import {
+  ShellActions,
+  ShellSegmented,
+  SimpleComponentDemoPage,
+} from "@/components/bjork-ui/component-demo-shell";
 import { MosaicSettle } from "@/components/bjork-ui/galleries/mosaic-settle";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
@@ -24,14 +28,19 @@ const STAGGER_MS = 150;
 
 type PaletteName = "ember" | "ocean" | "mono";
 type MechanicName = "organic" | "sweep";
+type CellSize = "8" | "14" | "24";
+
+const DEFAULT_PALETTE: PaletteName = "ember";
+const DEFAULT_MECHANIC: MechanicName = "organic";
+const DEFAULT_CELL_SIZE: CellSize = "14";
 
 export default function Page() {
   const isPreview = usePreviewMode();
   const attract = usePreviewSearchParam("attract") === "1";
   const [pending, setPending] = useState([false, false, false, false]);
-  const [palette, setPalette] = useState<PaletteName>("ember");
-  const [mechanic, setMechanic] = useState<MechanicName>("organic");
-  const [cellSize, setCellSize] = useState("14");
+  const [palette, setPalette] = useState<PaletteName>(DEFAULT_PALETTE);
+  const [mechanic, setMechanic] = useState<MechanicName>(DEFAULT_MECHANIC);
+  const [cellSize, setCellSize] = useState<CellSize>(DEFAULT_CELL_SIZE);
   const timers = useRef<number[]>([]);
 
   useEffect(() => () => timers.current.forEach((id) => window.clearTimeout(id)), []);
@@ -47,39 +56,11 @@ export default function Page() {
     );
   };
 
-  const details = (
-    <div className="flex flex-col gap-3">
-      <ShellSegmented
-        label="Palette"
-        value={palette}
-        options={[
-          { value: "ember", label: "Ember" },
-          { value: "ocean", label: "Ocean" },
-          { value: "mono", label: "Mono" },
-        ]}
-        onChange={(v) => setPalette(v as PaletteName)}
-      />
-      <ShellSegmented
-        label="Mechanic"
-        value={mechanic}
-        options={[
-          { value: "organic", label: "Organic" },
-          { value: "sweep", label: "Sweep" },
-        ]}
-        onChange={(v) => setMechanic(v as MechanicName)}
-      />
-      <ShellSegmented
-        label="Cell size"
-        value={cellSize}
-        options={[
-          { value: "8", label: "8" },
-          { value: "14", label: "14" },
-          { value: "24", label: "24" },
-        ]}
-        onChange={setCellSize}
-      />
-    </div>
-  );
+  const reset = () => {
+    setPalette(DEFAULT_PALETTE);
+    setMechanic(DEFAULT_MECHANIC);
+    setCellSize(DEFAULT_CELL_SIZE);
+  };
 
   return (
     <SimpleComponentDemoPage
@@ -94,10 +75,49 @@ export default function Page() {
   mechanic="sweep"
   onSettled={() => console.log("settled")}
 />`}
-      details={details}
       // The grid already sizes itself to the viewport, so the phone fit must not shrink it again.
       previewScaleClassName="w-[320px]"
       previewCaptureScaleClassName="w-[920px] scale-[0.8]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented
+            label="Palette"
+            value={palette}
+            options={[
+              { value: "ember", label: "Ember" },
+              { value: "ocean", label: "Ocean" },
+              { value: "mono", label: "Mono" },
+            ]}
+            onChange={setPalette}
+          />
+          <ShellSegmented
+            label="Mechanic"
+            value={mechanic}
+            options={[
+              { value: "organic", label: "Organic" },
+              { value: "sweep", label: "Sweep" },
+            ]}
+            onChange={setMechanic}
+          />
+          <ShellSegmented
+            label="Cell"
+            value={cellSize}
+            options={[
+              { value: "8", label: "8" },
+              { value: "14", label: "14" },
+              { value: "24", label: "24" },
+            ]}
+            onChange={setCellSize}
+          />
+          <ShellActions>
+            <BjorkButton variant="secondary" size="sm" onClick={regenerate}>
+              Regenerate
+            </BjorkButton>
+          </ShellActions>
+        </>
+      }
     >
       <div className="flex w-[min(640px,calc(100vw-56px))] min-w-0 flex-col items-center gap-5">
         <div className="grid w-full grid-cols-2 gap-3">
@@ -117,11 +137,6 @@ export default function Page() {
             />
           ))}
         </div>
-        {!isPreview ? (
-          <BjorkButton variant="outline" size="sm" onClick={regenerate}>
-            Regenerate
-          </BjorkButton>
-        ) : null}
       </div>
     </SimpleComponentDemoPage>
   );

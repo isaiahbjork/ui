@@ -65,6 +65,7 @@ export default function Page() {
       details={<FlipDemo />}
       previewScaleClassName="w-[340px]"
       previewCaptureScaleClassName="w-[760px] scale-[1.3]"
+      optionsDefaultOpen={false}
     >
       {isPreview ? (
         <SpringTuner value={springs.snappy} defaultGhosts={[springs.standard, springs.press, springs.soft]} />

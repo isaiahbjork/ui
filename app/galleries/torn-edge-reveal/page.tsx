@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import {
+  ShellActions,
+  ShellRange,
+  ShellSwitch,
+  SimpleComponentDemoPage,
+} from "@/components/bjork-ui/component-demo-shell";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { BjorkButton } from "@/components/bjork-ui/primitives/button";
-import { BjorkSlider } from "@/components/bjork-ui/primitives/slider";
-import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
 import { TornEdgeReveal, type TornEdge } from "@/components/bjork-ui/galleries/torn-edge-reveal";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -18,6 +21,10 @@ const EDGE_TOGGLES: { edge: TornEdge; label: string }[] = [
   { edge: "bottom", label: "Bottom" },
   { edge: "left", label: "Left" },
 ];
+
+const DEFAULT_SEED = "bjork";
+const DEFAULT_DEPTH = 0.6;
+const DEFAULT_HERO_EDGES: TornEdge[] = ["bottom"];
 
 function newSeedKey() {
   return Math.random().toString(36).slice(2, 8);
@@ -86,14 +93,20 @@ function Pieces({
 
 export default function Page() {
   const isPreview = usePreviewMode();
-  const [seedKey, setSeedKey] = useState("bjork");
-  const [depth, setDepth] = useState(0.6);
-  const [heroEdges, setHeroEdges] = useState<TornEdge[]>(["bottom"]);
+  const [seedKey, setSeedKey] = useState(DEFAULT_SEED);
+  const [depth, setDepth] = useState(DEFAULT_DEPTH);
+  const [heroEdges, setHeroEdges] = useState<TornEdge[]>(DEFAULT_HERO_EDGES);
 
   const toggleHeroEdge = (edge: TornEdge, on: boolean) =>
     setHeroEdges((current) =>
       on ? [...current.filter((e) => e !== edge), edge] : current.filter((e) => e !== edge),
     );
+
+  const reset = () => {
+    setSeedKey(DEFAULT_SEED);
+    setDepth(DEFAULT_DEPTH);
+    setHeroEdges(DEFAULT_HERO_EDGES);
+  };
 
   return (
     <SimpleComponentDemoPage
@@ -108,43 +121,37 @@ export default function Page() {
 </TornEdgeReveal>`}
       previewScaleClassName="w-[360px]"
       previewCaptureScaleClassName="w-[860px]"
+      optionsDefaultOpen={false}
+      onReset={reset}
+      controls={
+        <>
+          <ShellActions>
+            <BjorkButton variant="secondary" size="sm" onClick={() => setSeedKey(newSeedKey())}>
+              Re-roll seed
+            </BjorkButton>
+          </ShellActions>
+          <ShellRange
+            label="Depth"
+            value={depth}
+            min={0.2}
+            max={1}
+            step={0.05}
+            displayValue={depth.toFixed(2)}
+            onChange={setDepth}
+          />
+          {EDGE_TOGGLES.map(({ edge, label }) => (
+            <ShellSwitch
+              key={edge}
+              label={`${label} edge`}
+              checked={heroEdges.includes(edge)}
+              onCheckedChange={(on) => toggleHeroEdge(edge, on)}
+            />
+          ))}
+        </>
+      }
     >
       <div className="flex w-[min(860px,calc(100vw-56px))] max-w-full flex-col items-center gap-8">
         <Pieces preview={isPreview} seedKey={seedKey} depth={depth} heroEdges={heroEdges} />
-
-        {!isPreview ? (
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <BjorkButton variant="ghost" size="sm" onClick={() => setSeedKey(newSeedKey())}>
-              Re-roll seed
-            </BjorkButton>
-            <div className="flex w-[240px] items-center gap-3">
-              <span className="font-mono text-[12px] text-[color:var(--bjork-text-medium,rgba(237,237,237,0.72))]">Depth</span>
-              <BjorkSlider
-                aria-label="Tear depth"
-                min={0.2}
-                max={1}
-                step={0.05}
-                value={depth}
-                displayValue={depth.toFixed(2)}
-                onValueChange={setDepth}
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-3 font-mono text-[12px] text-[color:var(--bjork-text-medium,rgba(237,237,237,0.72))]">
-              <span>Hero edges</span>
-              {EDGE_TOGGLES.map(({ edge, label }) => (
-                <label key={edge} className="flex items-center gap-1.5">
-                  <BjorkSwitch
-                    size="sm"
-                    aria-label={`${label} edge`}
-                    checked={heroEdges.includes(edge)}
-                    onCheckedChange={(on) => toggleHeroEdge(edge, on)}
-                  />
-                  {label}
-                </label>
-              ))}
-            </div>
-          </div>
-        ) : null}
       </div>
     </SimpleComponentDemoPage>
   );

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import {
+  ShellSegmented,
+  ShellSwitch,
+  SimpleComponentDemoPage,
+} from "@/components/bjork-ui/component-demo-shell";
 import { ClickWheel, type ClickWheelItem } from "@/components/bjork-ui/controls/click-wheel";
-import { BjorkSelect } from "@/components/bjork-ui/primitives/select";
-import { BjorkSwitch } from "@/components/bjork-ui/primitives/switch";
 import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
@@ -31,40 +33,31 @@ const TRACKS: ClickWheelItem[] = [
   { id: "t18", label: "18 Last Freight", meta: "4:26" },
 ];
 
-const INERTIA_OPTIONS = [
-  { value: "0.90", label: "0.90" },
-  { value: "0.94", label: "0.94" },
-  { value: "0.97", label: "0.97" },
-];
+const INERTIA_OPTIONS = ["0.90", "0.94", "0.97"].map((value) => ({ value, label: value }));
+const DETENT_OPTIONS = ["8", "12", "24"].map((value) => ({ value, label: value }));
 
-const DETENT_OPTIONS = [
-  { value: "8", label: "8 detents" },
-  { value: "12", label: "12 detents" },
-  { value: "24", label: "24 detents" },
-];
+const DEFAULT_INERTIA = "0.94";
+const DEFAULT_DETENTS = "12";
+const DEFAULT_LOOP = false;
 
 export default function Page() {
   const isPreview = usePreviewMode();
   const attractParam = usePreviewSearchParam("attract") === "1";
-  const [inertia, setInertia] = useState("0.94");
-  const [detents, setDetents] = useState("12");
-  const [loop, setLoop] = useState(false);
+  const [inertia, setInertia] = useState(DEFAULT_INERTIA);
+  const [detents, setDetents] = useState(DEFAULT_DETENTS);
+  const [loop, setLoop] = useState(DEFAULT_LOOP);
   const [selected, setSelected] = useState("—");
 
+  const reset = () => {
+    setInertia(DEFAULT_INERTIA);
+    setDetents(DEFAULT_DETENTS);
+    setLoop(DEFAULT_LOOP);
+  };
+
   const details = (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <BjorkSelect options={INERTIA_OPTIONS} value={inertia} onValueChange={setInertia} placeholder="Inertia" />
-        <BjorkSelect options={DETENT_OPTIONS} value={detents} onValueChange={setDetents} placeholder="Detents" />
-        <label className="flex items-center gap-2 font-mono text-[12px] text-[color:var(--bjork-text-medium)]">
-          <BjorkSwitch checked={loop} onCheckedChange={setLoop} aria-label="Loop the list" />
-          Loop
-        </label>
-      </div>
-      <p className="font-mono text-[12px] text-[color:var(--bjork-text-muted)]" aria-live="polite">
-        Selected: {selected}
-      </p>
-    </div>
+    <p className="font-mono text-[12px] text-[color:var(--bjork-text-muted)]" aria-live="polite">
+      Selected: {selected}
+    </p>
   );
 
   return (
@@ -79,6 +72,14 @@ export default function Page() {
   onSelect={(item, index) => console.log(item.label, index)}
 />`}
       details={details}
+      onReset={reset}
+      controls={
+        <>
+          <ShellSegmented label="Inertia" value={inertia} options={INERTIA_OPTIONS} onChange={setInertia} />
+          <ShellSegmented label="Detents" value={detents} options={DETENT_OPTIONS} onChange={setDetents} />
+          <ShellSwitch label="Loop" checked={loop} onCheckedChange={setLoop} />
+        </>
+      }
       previewScaleClassName="w-[360px] scale-[0.9]"
       previewCaptureScaleClassName="w-[360px] scale-[1.08]"
       previewLayout={isPreview ? "list" : "single"}
