@@ -146,7 +146,7 @@ export function ResponseFeedback({
       className={cn("@container w-full max-w-[460px] font-bjork-alpha text-[color:var(--bjork-text)]", className)}
       style={style}
     >
-      <div className="flex min-h-8 items-center gap-0.5">
+      <div className="-ml-2 flex min-h-8 items-center gap-0.5">
         {(["up", "down"] as const).map((kind) => {
           const selected = rating === kind;
           const Icon = kind === "up" ? ThumbsUp : ThumbsDown;

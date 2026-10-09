@@ -90,7 +90,7 @@ export function Reply({ text, done }: { text: string; done: boolean }) {
   return <StreamingMessage content={text} streaming={!done} />;
 }`}
       previewScaleClassName="w-[360px]"
-      previewCaptureScaleClassName="w-[600px] scale-[0.98]"
+      previewCaptureScaleClassName="w-[600px] scale-[1.1]"
     >
       <Demo />
     </SimpleComponentDemoPage>
