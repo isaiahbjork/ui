@@ -500,7 +500,10 @@ export function DepthChart({
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
           if (e.pointerType === "touch") onPointerMove(e);
         }}
-        onPointerLeave={() => setProbe(null, null)}
+        onPointerLeave={(e) => {
+          // A touch tap fires leave right after up; keep the probe until the next tap.
+          if (e.pointerType !== "touch") setProbe(null, null);
+        }}
         onKeyDown={onKeyDown}
         className={cn("absolute inset-0 cursor-crosshair touch-pan-y rounded-[10px]", chartFocusRing)}
       >

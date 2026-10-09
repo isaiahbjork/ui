@@ -438,7 +438,10 @@ export function WaterfallChart({
           if (wrapperRef.current) rectRef.current = wrapperRef.current.getBoundingClientRect();
           if (e.pointerType === "touch") onPointerMove(e);
         }}
-        onPointerLeave={() => setHover(null, null)}
+        onPointerLeave={(e) => {
+          // A touch tap fires leave right after up; keep the tapped mark until the next tap.
+          if (e.pointerType !== "touch") setHover(null, null);
+        }}
         onKeyDown={onKeyDown}
         className={cn("absolute inset-0 touch-pan-y rounded-[10px]", chartFocusRing)}
       >

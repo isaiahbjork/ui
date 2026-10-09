@@ -525,7 +525,10 @@ export function Beeswarm({
           const s = st.current;
           if (s.hover !== null) onSelect?.(items[s.hover]);
         }}
-        onPointerLeave={() => setHover(null, null)}
+        onPointerLeave={(e) => {
+          // A touch tap fires leave right after up; keep the tapped mark until the next tap.
+          if (e.pointerType !== "touch") setHover(null, null);
+        }}
         onKeyDown={onKeyDown}
         className={cn("absolute inset-0 cursor-crosshair touch-pan-y rounded-[10px]", chartFocusRing)}
       >

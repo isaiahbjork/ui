@@ -437,7 +437,10 @@ export function SlopeChart({
           const id = items[s.hover].id;
           pin(highlightId === id ? null : id);
         }}
-        onPointerLeave={() => setHover(null, null)}
+        onPointerLeave={(e) => {
+          // A touch tap fires leave right after up; keep the tapped mark until the next tap.
+          if (e.pointerType !== "touch") setHover(null, null);
+        }}
         onKeyDown={onKeyDown}
         className={cn("absolute inset-0 cursor-pointer touch-pan-y rounded-[10px]", chartFocusRing)}
       >
