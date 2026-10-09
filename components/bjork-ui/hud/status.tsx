@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { HyperText } from "@/components/ui/hyper-text";
+import { BJORK_PALETTE } from "@/components/bjork-ui/_core/palette";
 
 interface StatusProps {
   className?: string;
@@ -35,57 +36,62 @@ export function Status({
 
   const isDark = mounted ? resolvedTheme !== "light" : true; // Default to dark mode during SSR
 
-  // Theme-aware color system matching HudButton
+  // Theme-aware color system matching HudButton.
+  // Light mode: strokes use the _core palette tones (>= 3:1 on white), labels use
+  // deep shades (>= 4.5:1 over the light fill), and the fill is a light tint so
+  // the label is not sitting on a solid colour that washes it out.
   const getColors = () => {
     if (customColors) {
       return {
-        gradientStart: customColors.gradientStart || (isDark ? "#4ade80" : "#16a34a"),
+        gradientStart: customColors.gradientStart || (isDark ? "#4ade80" : BJORK_PALETTE.light.success),
         gradientEnd: customColors.gradientEnd || (isDark ? "#15803d" : "#166534"),
-        stroke: customColors.stroke || (isDark ? "#4ade80" : "#16a34a"),
-        text: customColors.text || (isDark ? "text-green-300" : "text-white/80")
+        stroke: customColors.stroke || (isDark ? "#4ade80" : BJORK_PALETTE.light.success),
+        text: customColors.text || (isDark ? "text-green-300" : "text-green-900")
       };
     }
 
     switch (variant) {
       case "primary":
         return {
-          gradientStart: isDark ? "#4ade80" : "#16a34a", // green-400 for dark, green-600 for light
-          gradientEnd: isDark ? "#15803d" : "#166534",   // green-700 for dark, green-800 for light
-          stroke: isDark ? "#4ade80" : "#16a34a",        // green-400 for dark, green-600 for light
-          text: isDark ? "text-green-300" : "text-white/80"
+          gradientStart: isDark ? "#4ade80" : BJORK_PALETTE.light.success,
+          gradientEnd: isDark ? "#15803d" : "#166534",
+          stroke: isDark ? "#4ade80" : BJORK_PALETTE.light.success,
+          text: isDark ? "text-green-300" : "text-green-900"
         };
       case "secondary":
         return {
           gradientStart: isDark ? "#64748b" : "#374151", // slate-500 for dark, gray-700 for light
           gradientEnd: isDark ? "#334155" : "#1f2937",   // slate-700 for dark, gray-800 for light
           stroke: isDark ? "#64748b" : "#374151",        // slate-500 for dark, gray-700 for light
-          text: isDark ? "text-slate-300" : "text-white/80"
+          text: isDark ? "text-slate-300" : "text-gray-800"
         };
       case "danger":
         return {
-          gradientStart: isDark ? "#f87171" : "#dc2626", // red-400 for dark, red-600 for light
-          gradientEnd: isDark ? "#b91c1c" : "#991b1b",   // red-700 for dark, red-800 for light
-          stroke: isDark ? "#f87171" : "#dc2626",        // red-400 for dark, red-600 for light
-          text: isDark ? "text-red-300" : "text-white/80"
+          gradientStart: isDark ? "#f87171" : BJORK_PALETTE.light.error,
+          gradientEnd: isDark ? "#b91c1c" : "#991b1b",
+          stroke: isDark ? "#f87171" : BJORK_PALETTE.light.error,
+          text: isDark ? "text-red-300" : "text-red-900"
         };
       case "warning":
         return {
-          gradientStart: isDark ? "#fbbf24" : "#d97706", // amber-400 for dark, amber-600 for light
-          gradientEnd: isDark ? "#b45309" : "#92400e",   // amber-700 for dark, amber-800 for light
-          stroke: isDark ? "#fbbf24" : "#d97706",        // amber-400 for dark, amber-600 for light
-          text: isDark ? "text-amber-300" : "text-white/80"
+          gradientStart: isDark ? "#fbbf24" : BJORK_PALETTE.light.warning,
+          gradientEnd: isDark ? "#b45309" : "#92400e",
+          stroke: isDark ? "#fbbf24" : BJORK_PALETTE.light.warning,
+          text: isDark ? "text-amber-300" : "text-amber-900"
         };
       default:
         return {
-          gradientStart: isDark ? "#4ade80" : "#16a34a",
+          gradientStart: isDark ? "#4ade80" : BJORK_PALETTE.light.success,
           gradientEnd: isDark ? "#15803d" : "#166534",
-          stroke: isDark ? "#4ade80" : "#16a34a",
-          text: isDark ? "text-green-300" : "text-white/80"
+          stroke: isDark ? "#4ade80" : BJORK_PALETTE.light.success,
+          text: isDark ? "text-green-300" : "text-green-900"
         };
     }
   };
 
   const colors = getColors();
+  // Dark keeps the original 0.9 -> 0.1 fill; light uses a tint so dark labels read.
+  const fillOpacity = isDark ? { start: "0.9", end: "0.1" } : { start: "0.22", end: "0.03" };
 
   const containerVariants = {
     hidden: {
@@ -122,8 +128,8 @@ export function Status({
         >
           <defs>
             <linearGradient id="activeSystemsGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor={colors.gradientStart} stopOpacity="0.9" />
-              <stop offset="100%" stopColor={colors.gradientEnd} stopOpacity="0.1" />
+              <stop offset="0%" stopColor={colors.gradientStart} stopOpacity={fillOpacity.start} />
+              <stop offset="100%" stopColor={colors.gradientEnd} stopOpacity={fillOpacity.end} />
             </linearGradient>
           </defs>
           <path

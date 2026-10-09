@@ -5,6 +5,7 @@ import type React from "react"
 import { useId, useState } from "react"
 import { useIsDarkTheme } from "@/hooks/use-is-dark-theme"
 import { HyperText } from "@/components/ui/hyper-text"
+import { BJORK_PALETTE } from "@/components/bjork-ui/_core/palette"
 
 interface HudButtonProps {
   children: React.ReactNode
@@ -33,12 +34,15 @@ export function HudButton({
   // Theme-aware color system
   const getColors = () => {
     if (variant === "primary") {
+      // Light mode: the palette's deep success green for strokes, dots and fill
+      // (4.35:1 on white), and green-900 for the label so it stays at 4.5:1+
+      // over the faded fill. Dark values are unchanged.
       return {
-        main: isDark ? "#4ade80" : "#16a34a", // Keep dark green, slightly darker for light
-        gradient: isDark ? "#4ade80" : "#16a34a",
-        text: isDark ? "text-green-300" : "text-green-700",
-        glow: isDark ? "rgba(74, 222, 128, 0.3)" : "rgba(22, 163, 74, 0.2)",
-        border: isDark ? "#4ade80" : "#16a34a"
+        main: isDark ? "#4ade80" : BJORK_PALETTE.light.success,
+        gradient: isDark ? "#4ade80" : BJORK_PALETTE.light.success,
+        text: isDark ? "text-green-300" : "text-green-900",
+        glow: isDark ? "rgba(74, 222, 128, 0.3)" : "rgba(31, 138, 85, 0.2)",
+        border: isDark ? "#4ade80" : BJORK_PALETTE.light.success
       }
     } else {
       return {
@@ -397,7 +401,7 @@ export function HudButton({
       {/* Border outline */}
       <motion.path 
         d="M181.07 52H9.9311L4 46.1001V5.8994L9.9311 0H181.07L187 5.8994V46.1001L181.07 52ZM10.1235 51.5332H180.876L186.531 45.9069V6.09266L180.876 0.466799L10 0.5L4.5 6L4.46916 45.9069L10.1235 51.5332Z" 
-        fill={variant === "primary" && isDark ? "white" : "#374151"}
+        fill={variant === "primary" ? (isDark ? "white" : colors.border) : "#374151"}
         initial={{ pathLength: 0, opacity: 0 }}
         animate={{ pathLength: 1, opacity: 1 }}
         transition={{ 
