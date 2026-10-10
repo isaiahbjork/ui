@@ -192,7 +192,6 @@ useEffect(() => {
             priceLabel="Price (USD)"
             sizeLabel="Size (KSTL)"
             myOrders={myOrdersAround(PREVIEW)}
-            activeLevel={{ side: "ask", depth: 6 }}
             showImbalance
             ariaLabel="KSTL-USD order book"
           />
