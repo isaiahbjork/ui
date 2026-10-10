@@ -2,81 +2,38 @@
 
 import { useState } from "react"
 import { AnimatedDownload } from "@/components/bjork-ui/hud/animated-download";
-import { ComponentDemoShell } from "@/components/bjork-ui/component-demo-shell";
+import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { Download, MousePointer2, RotateCcw } from "lucide-react";
-import { motion, useReducedMotion } from "framer-motion";
 
 export default function Home() {
-  const isPreview = usePreviewMode()
   const item = getGalleryItem("animated-download")
   const [isDownloading, setIsDownloading] = useState(false)
-  const shouldReduceMotion = useReducedMotion()
+  // Bumping the key remounts the card, which returns it to the ready state.
+  const [runKey, setRunKey] = useState(0)
 
   const startDownload = () => {
     setIsDownloading(true)
   }
 
-  const handleAnimationComplete = () => {
-    setIsDownloading(false)
-  }
-
   const resetDownload = () => {
     setIsDownloading(false)
-  }
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: shouldReduceMotion ? 0 : 10 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.3, ease: "easeOut" }
-    }
-  }
-
-  const demo = (
-    <motion.div
-      className="flex w-full max-w-4xl flex-col items-center justify-center"
-      variants={itemVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      <motion.div variants={itemVariants}>
-        <AnimatedDownload
-          className="max-w-full h-auto"
-          isAnimating={isDownloading}
-          onAnimationComplete={handleAnimationComplete}
-        />
-      </motion.div>
-    </motion.div>
-  )
-
-  if (!item) return null
-
-  if (isPreview) {
-    return (
-      <div
-        data-preview-mode="true"
-        style={{ colorScheme: "dark" }}
-        className="flex min-h-screen items-center justify-center overflow-hidden bg-[#111] text-[#ededed]"
-      >
-        <div className="w-[920px] scale-[0.78]">{demo}</div>
-      </div>
-    )
+    setRunKey((value) => value + 1)
   }
 
   return (
-    <ComponentDemoShell
+    <SimpleComponentDemoPage
       item={item}
-      description="A download progress component with scrambled status text, file counts, remaining time, and an interruptible trigger. The demo keeps the animation state outside the visual component so it can be wired to real transfer events."
+      description="A download card with a file name, size, speed and time left in mono, an ember progress line with a percentage, and a check once the transfer is saved. The page owns the run state, so the card can be wired to real transfer events."
       dependencies={["framer-motion", "lucide-react", "clsx"]}
       usageCode={`import { AnimatedDownload } from "@/components/bjork-ui/hud/animated-download";
 
 export function Demo() {
   return (
     <AnimatedDownload
+      fileName="bjork-ui-registry.zip"
+      fileSizeMb={48.6}
       isAnimating={isDownloading}
       onAnimationComplete={() => setIsDownloading(false)}
     />
@@ -86,12 +43,12 @@ export function Demo() {
         {
           icon: <MousePointer2 className="size-5" />,
           label: "Controls driven",
-          value: "The download is started from the shell controls, keeping the preview focused on the component state.",
+          value: "The download is started from the options panel, keeping the preview focused on the component state.",
         },
         {
           icon: <Download className="size-5" />,
           label: "External state",
-          value: "The visual component receives isAnimating and reports completion back to the route.",
+          value: "The card receives isAnimating and reports completion back to the route, then holds its saved state.",
         },
       ]}
       onReset={resetDownload}
@@ -106,20 +63,12 @@ export function Demo() {
             className="w-full"
           >
             <Download className="size-4" />
-            <motion.span
-              key={isDownloading ? "downloading" : "idle"}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2 }}
-            >
-              {isDownloading ? "Downloading..." : "Start download"}
-            </motion.span>
+            {isDownloading ? "Downloading..." : "Start download"}
           </BjorkButton>
 
           <BjorkButton
             type="button"
             onClick={resetDownload}
-            disabled={!isDownloading}
             variant="outline"
             size="sm"
             className="w-full"
@@ -129,11 +78,19 @@ export function Demo() {
           </BjorkButton>
         </div>
       }
-      previewInnerClassName="p-6"
+      previewScaleClassName="w-[760px] scale-[0.84]"
+      previewCaptureScaleClassName="w-[900px] scale-100"
     >
-      <div className="flex h-full w-full items-center justify-center p-6">
-        <div className="w-[920px] scale-[0.78]">{demo}</div>
+      {/* The card is 360px wide; scale it up so it fills the stage like the other HUD thumbnails. */}
+      <div className="flex w-full items-center justify-center">
+        <div className="origin-center scale-[1.5]">
+          <AnimatedDownload
+            key={runKey}
+            isAnimating={isDownloading}
+            onAnimationComplete={() => setIsDownloading(false)}
+          />
+        </div>
       </div>
-    </ComponentDemoShell>
+    </SimpleComponentDemoPage>
   );
 }
