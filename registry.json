@@ -29323,6 +29323,11 @@
           "target": "@components/bjork-ui/_core/palette.ts"
         },
         {
+          "path": "components/bjork-ui/_core/surface.ts",
+          "type": "registry:component",
+          "target": "@components/bjork-ui/_core/surface.ts"
+        },
+        {
           "path": "components/bjork-ui/_core/random.ts",
           "type": "registry:component",
           "target": "@components/bjork-ui/_core/random.ts"
@@ -29356,11 +29361,6 @@
           "path": "components/bjork-ui/_core/a11y.tsx",
           "type": "registry:component",
           "target": "@components/bjork-ui/_core/a11y.tsx"
-        },
-        {
-          "path": "components/bjork-ui/_core/surface.ts",
-          "type": "registry:component",
-          "target": "@components/bjork-ui/_core/surface.ts"
         },
         {
           "path": "components/bjork-ui/charts/_kit/scale.ts",

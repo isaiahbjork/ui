@@ -5,6 +5,7 @@ import {
   memo,
   useCallback,
   useEffect,
+  useId,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -17,8 +18,10 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
+import { LayoutGroup, motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import type { BjorkTone } from "@/components/bjork-ui/_core/palette";
+import { BJORK_SURFACE } from "@/components/bjork-ui/_core/surface";
 import { mulberry32 } from "@/components/bjork-ui/_core/random";
 import { useElementSize } from "@/components/bjork-ui/_core/canvas";
 import { easeCss } from "@/components/bjork-ui/_core/motion";
@@ -191,6 +194,8 @@ const SPLIT_TOTAL_MIN_W = 520;
 const FLASH_MS = 450;
 const FLASH_GAP_MS = 90;
 const BAR_MS = 160;
+// Layout changes glide on a soft spring: no bounce, about 0.45 s.
+const GLIDE = { type: "spring", duration: 0.45, bounce: 0 } as const;
 
 const SIDES: readonly BookSide[] = ["ask", "bid"];
 const EMPTY_LEVELS: Level[] = [];
@@ -449,7 +454,11 @@ export const OrderBook = forwardRef<OrderBookHandle, OrderBookProps>(function Or
   },
   ref,
 ) {
-  const { pal, reduce, vars } = useChartTheme(toneProp);
+  const { tone, pal, reduce, vars } = useChartTheme(toneProp);
+  const gid = useId();
+  const surface = BJORK_SURFACE[tone];
+  // Shared-id glide for the sides, headers and spread. Reduced motion drops the id, so the move snaps.
+  const glide = (id: string) => (reduce ? {} : { layoutId: id, layout: "position" as const, transition: GLIDE });
   const rootRef = useRef<HTMLDivElement>(null);
   const tipRef = useRef<TooltipHandle>(null);
   const announcer = useRef<AnnouncerHandle>(null);
@@ -1146,36 +1155,42 @@ export const OrderBook = forwardRef<OrderBookHandle, OrderBookProps>(function Or
         {tickSizes && tickSizes.length > 1 && <GroupingControl ticks={tickSizes} value={tick} onChange={setTick} />}
       </div>
 
-      {split ? (
-        <>
-          <div className="border-y border-[color:var(--bjork-hair)]">{centre}</div>
-          <div className="grid grid-cols-2 gap-2">
-            <div role="grid" aria-label={`${ariaLabel}, bids. ${keyHelp}`}>
-              {header(PRICE_LAST, true)}
-              <div role="rowgroup">{renderSide("bid", PRICE_LAST, "right", false)}</div>
-            </div>
-            <div role="grid" aria-label={`${ariaLabel}, asks. ${keyHelp}`}>
-              {header(PRICE_FIRST, false)}
-              <div role="rowgroup">{renderSide("ask", PRICE_FIRST, "left", false)}</div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <div role="grid" aria-label={`${ariaLabel}. ${keyHelp}`}>
-          {header(PRICE_FIRST, false)}
-          <div role="rowgroup" aria-label="Asks">
-            {renderSide("ask", PRICE_FIRST, "right", true)}
-          </div>
-          <div role="row" className="border-y border-[color:var(--bjork-hair)]">
-            <div role="gridcell" aria-colspan={showTotal ? 3 : 2}>
+      <LayoutGroup id={gid}>
+        {split ? (
+          <>
+            <motion.div {...glide("spread")} role="presentation" className="my-1 overflow-hidden rounded-[12px] border" style={{ borderColor: surface.border, boxShadow: surface.shadowSurface }}>
               {centre}
+            </motion.div>
+            <div className="grid grid-cols-2 gap-2">
+              <motion.div {...glide("bid-side")} role="grid" aria-label={`${ariaLabel}, bids. ${keyHelp}`}>
+                <motion.div {...glide("bid-head")}>{header(PRICE_LAST, true)}</motion.div>
+                <div role="rowgroup">{renderSide("bid", PRICE_LAST, "right", false)}</div>
+              </motion.div>
+              <motion.div {...glide("ask-side")} role="grid" aria-label={`${ariaLabel}, asks. ${keyHelp}`}>
+                <motion.div {...glide("ask-head")}>{header(PRICE_FIRST, false)}</motion.div>
+                <div role="rowgroup">{renderSide("ask", PRICE_FIRST, "left", false)}</div>
+              </motion.div>
             </div>
-          </div>
-          <div role="rowgroup" aria-label="Bids">
-            {renderSide("bid", PRICE_FIRST, "right", false)}
-          </div>
-        </div>
-      )}
+          </>
+        ) : (
+          <>
+            <motion.div {...glide("ask-side")} role="grid" aria-label={`${ariaLabel}, asks. ${keyHelp}`}>
+              <motion.div {...glide("ask-head")}>{header(PRICE_FIRST, false)}</motion.div>
+              <div role="rowgroup" aria-label="Asks">
+                {renderSide("ask", PRICE_FIRST, "right", true)}
+              </div>
+            </motion.div>
+            <motion.div {...glide("spread")} role="presentation" className="my-1 overflow-hidden rounded-[12px] border" style={{ borderColor: surface.border, boxShadow: surface.shadowSurface }}>
+              {centre}
+            </motion.div>
+            <motion.div {...glide("bid-side")} role="grid" aria-label={`${ariaLabel}, bids. ${keyHelp}`}>
+              <div role="rowgroup" aria-label="Bids">
+                {renderSide("bid", PRICE_FIRST, "right", false)}
+              </div>
+            </motion.div>
+          </>
+        )}
+      </LayoutGroup>
 
       {showImbalance && (
         <div className="mt-2 flex items-center gap-2 px-2 font-mono text-[10px] leading-none tabular-nums">

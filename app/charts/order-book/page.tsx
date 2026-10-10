@@ -2,20 +2,27 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
-import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
+import {
+  ShellActions,
+  ShellSegmented,
+  ShellSwitch,
+  SimpleComponentDemoPage,
+} from "@/components/bjork-ui/component-demo-shell";
+import { BjorkButton } from "@/components/bjork-ui/primitives/button";
 import {
   OrderBook,
   createOrderBookFeed,
   type MyOrder,
   type OrderBookHandle,
   type OrderBookLayout,
+  type OrderBookFeed,
   type OrderBookLevelInfo,
   type OrderBookSnapshot,
 } from "@/components/bjork-ui/charts/order-book";
 import { DepthChart } from "@/components/bjork-ui/charts/depth-chart";
 import { formatFixed } from "@/components/bjork-ui/charts/_kit/scale";
 import { getGalleryItem } from "@/lib/bjork-gallery";
-import { ControlRow, DemoColumn, OptionGroup, ToggleButton } from "../_demo/controls";
+import { DemoColumn } from "../_demo/controls";
 
 const item = getGalleryItem("order-book");
 const TICKS = [0.05, 0.1, 0.25, 0.5, 1];
@@ -37,13 +44,21 @@ function myOrdersAround(book: OrderBookSnapshot): MyOrder[] {
   ];
 }
 
-function LiveBook() {
-  const feed = useMemo(() => createOrderBookFeed({ seed: 7 }), []);
+// The stage only shows the book, its status line and the depth chart. Options live in the shell controls.
+function LiveBook({
+  feed,
+  layout,
+  rows,
+  live,
+  mine,
+}: {
+  feed: OrderBookFeed;
+  layout: OrderBookLayout;
+  rows: number;
+  live: boolean;
+  mine: boolean;
+}) {
   const bookRef = useRef<OrderBookHandle>(null);
-  const [layout, setLayout] = useState<OrderBookLayout>("auto");
-  const [rows, setRows] = useState(12);
-  const [live, setLive] = useState(true);
-  const [mine, setMine] = useState(true);
   const [picked, setPicked] = useState<OrderBookLevelInfo | null>(null);
   const [depth, setDepth] = useState<OrderBookSnapshot>(() => feed.snapshot());
   const myOrders = useMemo(() => (mine ? myOrdersAround(feed.snapshot()) : undefined), [mine, feed]);
@@ -89,47 +104,60 @@ function LiveBook() {
           ? `Limit ${picked.side === "ask" ? "buy" : "sell"} ${formatFixed(picked.price, 2)} · ${picked.size.toLocaleString("en-US")} on the level`
           : "Click a level to fill the order ticket"}
       </p>
-      <ControlRow>
-        <OptionGroup
-          label="Layout"
-          value={layout}
-          options={[
-            { label: "Auto", value: "auto" },
-            { label: "Stacked", value: "stacked" },
-            { label: "Side by side", value: "side-by-side" },
-          ]}
-          onChange={setLayout}
-        />
-        <OptionGroup
-          label="Rows per side"
-          value={rows}
-          options={[
-            { label: "8", value: 8 },
-            { label: "12", value: 12 },
-            { label: "16", value: 16 },
-          ]}
-          onChange={setRows}
-        />
-      </ControlRow>
-      <ControlRow>
-        <ToggleButton pressed={live} onClick={() => setLive((v) => !v)}>
-          {live ? "Pause feed" : "Resume feed"}
-        </ToggleButton>
-        <ToggleButton onClick={() => feed.burst(2600)}>Burst</ToggleButton>
-        <ToggleButton pressed={mine} onClick={() => setMine((v) => !v)}>
-          My orders
-        </ToggleButton>
-      </ControlRow>
     </>
   );
 }
 
 export default function Page() {
   const isPreview = usePreviewMode();
+  const feed = useMemo(() => createOrderBookFeed({ seed: 7 }), []);
+  const [layout, setLayout] = useState<OrderBookLayout>("auto");
+  const [rows, setRows] = useState(12);
+  const [live, setLive] = useState(true);
+  const [mine, setMine] = useState(true);
+
+  function resetControls() {
+    setLayout("auto");
+    setRows(12);
+    setLive(true);
+    setMine(true);
+  }
 
   return (
     <SimpleComponentDemoPage
       item={item}
+      onReset={resetControls}
+      controls={
+        <>
+          <ShellSegmented
+            label="Layout"
+            value={layout}
+            options={[
+              { value: "auto", label: "Auto" },
+              { value: "stacked", label: "Stacked" },
+              { value: "side-by-side", label: "Side by side" },
+            ]}
+            onChange={setLayout}
+          />
+          <ShellSegmented
+            label="Rows"
+            value={rows}
+            options={[
+              { value: 8, label: "8" },
+              { value: 12, label: "12" },
+              { value: 16, label: "16" },
+            ]}
+            onChange={setRows}
+          />
+          <ShellSwitch label="Live feed" checked={live} onCheckedChange={setLive} />
+          <ShellSwitch label="My orders" checked={mine} onCheckedChange={setMine} />
+          <ShellActions>
+            <BjorkButton size="sm" variant="outline" onClick={() => feed.burst(2600)}>
+              Burst
+            </BjorkButton>
+          </ShellActions>
+        </>
+      }
       description="A live order book: asks above the spread and bids below, or side by side, with cumulative depth bars behind every level. Snapshots and deltas are batched to one paint a frame, changed levels flash, and the spread row reads last price with its direction. Hover or arrow through the levels for size, notional and distance from mid; click one to send its price to your order form."
       dependencies={["framer-motion"]}
       usageCode={`import { useEffect, useRef } from "react";
@@ -170,7 +198,7 @@ useEffect(() => {
         </div>
       ) : (
         <DemoColumn width={960}>
-          <LiveBook />
+          <LiveBook feed={feed} layout={layout} rows={rows} live={live} mine={mine} />
         </DemoColumn>
       )}
     </SimpleComponentDemoPage>
