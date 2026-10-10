@@ -10,7 +10,7 @@ export default function Page() {
   return (
     <SimpleComponentDemoPage
       item={item}
-      description="A second HUD overlay flow with the animated interface background, staggered system text, menu readout, status lockup, and no outer frame chrome."
+      description="A telemetry overlay for a live line: throughput with a drawn sparkline, four readouts in mono, and a sample and update footer. It sits on the library surface with ember as the only accent."
       dependencies={["framer-motion", "clsx"]}
       usageCode={`import { Overlay2 } from "@/components/bjork-ui/hud/overlay-2";
 
