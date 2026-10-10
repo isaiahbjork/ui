@@ -25,7 +25,7 @@ export function Demo() {
     />
   );
 }`}
-      previewScaleClassName="w-[620px] scale-[0.88]"
+      previewScaleClassName="w-[620px] scale-[0.66]"
     >
       <div className="flex w-full max-w-xl flex-col items-center">
         <OnboardingStages
