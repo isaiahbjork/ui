@@ -1785,7 +1785,7 @@ export function ShellSegmented<T extends string | number>({
             aria-pressed={option.value === value}
             onClick={() => onChange(option.value)}
             className={cn(
-              "rounded-[10px] border px-2.5 py-1 text-sm transition active:scale-95",
+              "whitespace-nowrap rounded-[10px] border px-2.5 py-1 text-sm transition active:scale-95",
               option.value === value
                 ? (isLight
                   ? "border-[#eee6db] bg-[#f4f1e9] text-[#111111] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),inset_0_8px_16px_rgba(88,72,49,0.035),0_8px_14px_-10px_rgba(66,52,33,0.16)]"

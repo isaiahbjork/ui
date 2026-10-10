@@ -112,13 +112,13 @@ export default function Page() {
   const isPreview = usePreviewMode();
   const feed = useMemo(() => createOrderBookFeed({ seed: 7 }), []);
   const [layout, setLayout] = useState<OrderBookLayout>("auto");
-  const [rows, setRows] = useState(12);
+  const [rows, setRows] = useState(8);
   const [live, setLive] = useState(true);
   const [mine, setMine] = useState(true);
 
   function resetControls() {
     setLayout("auto");
-    setRows(12);
+    setRows(8);
     setLive(true);
     setMine(true);
   }
@@ -127,6 +127,7 @@ export default function Page() {
     <SimpleComponentDemoPage
       item={item}
       onReset={resetControls}
+      optionsDefaultOpen={false}
       controls={
         <>
           <ShellSegmented
@@ -134,8 +135,8 @@ export default function Page() {
             value={layout}
             options={[
               { value: "auto", label: "Auto" },
-              { value: "stacked", label: "Stacked" },
-              { value: "side-by-side", label: "Side by side" },
+              { value: "stacked", label: "Stack" },
+              { value: "side-by-side", label: "Split" },
             ]}
             onChange={setLayout}
           />
