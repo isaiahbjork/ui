@@ -5,6 +5,9 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { HyperText } from "@/components/ui/hyper-text";
 import { BJORK_PALETTE } from "@/components/bjork-ui/_core/palette";
+import { BJORK_SURFACE } from "@/components/bjork-ui/_core/surface";
+import { useIsDarkTheme } from "@/hooks/use-is-dark-theme";
+import type { CSSProperties } from "react";
 
 interface StatusProps {
   className?: string;
@@ -151,6 +154,129 @@ export function Status({
           />
         </div>
       </div>
+    </motion.div>
+  );
+}
+
+export type StatusState = "ok" | "waiting" | "fault";
+
+export interface StatusRow {
+  label: string;
+  value: string;
+  state: StatusState;
+}
+
+export const DEFAULT_STATUS_ROWS: StatusRow[] = [
+  { label: "System", value: "NOMINAL", state: "ok" },
+  { label: "Link", value: "14 MS", state: "ok" },
+  { label: "Power", value: "82%", state: "ok" },
+  { label: "Sync", value: "PENDING", state: "waiting" },
+];
+
+interface StatusPanelProps {
+  className?: string;
+  title?: string;
+  rows?: StatusRow[];
+  /** Soft halo on each state dot. Ignored under reduced motion. */
+  pulse?: boolean;
+  enableAnimations?: boolean;
+}
+
+// Status colours mirror the palette tones: ok, waiting and fault only.
+const STATE_COLOR = {
+  dark: { ok: "#4cc38a", waiting: "#f2b544", fault: "#ff5c4d" },
+  light: { ok: "#1f8a55", waiting: "#a86b00", fault: "#c8361f" },
+} as const;
+
+const STATE_WORD: Record<StatusState, string> = { ok: "Nominal", waiting: "Waiting", fault: "Fault" };
+
+const PULSE_PERIOD = 2.4;
+
+export function StatusPanel({
+  className,
+  title = "System status",
+  rows = DEFAULT_STATUS_ROWS,
+  pulse = true,
+  enableAnimations = true,
+}: StatusPanelProps) {
+  const reduce = useReducedMotion();
+  const animate = enableAnimations && !reduce;
+  const showPulse = pulse && animate;
+  const isDark = useIsDarkTheme();
+  const surface = isDark ? BJORK_SURFACE.dark : BJORK_SURFACE.light;
+  const colors = isDark ? STATE_COLOR.dark : STATE_COLOR.light;
+  const ink = isDark ? "#ededed" : "#171717";
+  const muted = isDark ? "rgba(237, 237, 237, 0.5)" : "rgba(23, 23, 23, 0.56)";
+  const hair = isDark ? "#1c1c1c" : "#f0e8dc";
+
+  const overall: StatusState = rows.some((r) => r.state === "fault")
+    ? "fault"
+    : rows.some((r) => r.state === "waiting")
+      ? "waiting"
+      : "ok";
+  const overallLabel = overall === "ok" ? "All systems" : STATE_WORD[overall];
+
+  const panelStyle: CSSProperties = {
+    background: surface.surface,
+    border: `1px solid ${surface.border}`,
+    boxShadow: surface.shadowSurface,
+    borderRadius: 16,
+    color: ink,
+  };
+
+  return (
+    <motion.div
+      role="status"
+      aria-label={`${title}: ${overallLabel}`}
+      className={`w-[300px] p-4 font-mono ${className ?? ""}`}
+      style={panelStyle}
+      initial={animate ? { opacity: 0, y: 8 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: "spring", stiffness: 320, damping: 30 }}
+    >
+      <div className="flex items-center justify-between pb-3">
+        <span className="text-[11px] uppercase tracking-[0.14em]" style={{ color: muted }}>
+          {title}
+        </span>
+        <span className="flex items-center gap-2 text-[11px] uppercase tracking-[0.12em]" style={{ color: colors[overall] }}>
+          <span className="inline-block h-1.5 w-1.5 rounded-full" style={{ background: colors[overall] }} />
+          {overallLabel}
+        </span>
+      </div>
+
+      <ul className="flex flex-col">
+        {rows.map((row, index) => {
+          const color = colors[row.state];
+          return (
+            <motion.li
+              key={row.label}
+              className="flex items-center gap-3 py-2.5"
+              style={{ borderTop: `1px solid ${hair}` }}
+              initial={animate ? { opacity: 0, x: -6 } : false}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring", stiffness: 380, damping: 30, delay: animate ? 0.12 + index * 0.06 : 0 }}
+            >
+              <span className="relative flex h-2 w-2 shrink-0 items-center justify-center" aria-hidden>
+                {showPulse && (
+                  <motion.span
+                    className="absolute inset-0 rounded-full"
+                    style={{ background: color }}
+                    animate={{ scale: [1, 2.6], opacity: [0.45, 0] }}
+                    transition={{ duration: PULSE_PERIOD, repeat: Infinity, ease: "easeOut", delay: index * 0.3 }}
+                  />
+                )}
+                <span className="relative h-2 w-2 rounded-full" style={{ background: color }} />
+              </span>
+              <span className="flex-1 text-[11px] uppercase tracking-[0.12em]" style={{ color: muted }}>
+                {row.label}
+              </span>
+              <span className="text-[13px] tabular-nums tracking-[0.02em]" style={{ color: ink }}>
+                {row.value}
+              </span>
+            </motion.li>
+          );
+        })}
+      </ul>
     </motion.div>
   );
 }
