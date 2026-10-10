@@ -56,6 +56,12 @@ export const chartFocusRing =
 // Mono label style: 10px Geist Mono, tabular, cap-trimmed.
 export const chartMono = "font-mono text-[10px] leading-none tabular-nums [text-box:trim-both_cap_alphabetic]";
 
+// Floating chart surfaces follow the library canon (_core/surface.ts): a 1px border plus the inset light
+// shadow. Hover cards take the full surface shadow; small readout tags take the soft one. Colours come
+// from chartVars, so light and dark both follow the tone.
+export const chartCardEdge = "border border-[color:var(--bjork-border)] shadow-[var(--bjork-shadow-surface)]";
+export const chartTagEdge = "border border-[color:var(--bjork-border)] shadow-[var(--bjork-shadow-soft)]";
+
 export interface TooltipRow {
   key?: string;
   label: ReactNode;
@@ -78,7 +84,7 @@ export const ChartTooltip = forwardRef<
       role="presentation"
       aria-hidden="true"
       className={cn(
-        "pointer-events-none absolute left-0 top-0 z-10 min-w-[120px] rounded-[10px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-menu)] px-2.5 py-2 shadow-[var(--bjork-shadow-menu)] transition-opacity duration-150 ease-out",
+        `pointer-events-none absolute left-0 top-0 z-10 min-w-[120px] rounded-[10px] ${chartCardEdge} bg-[color:var(--bjork-surface)] px-2.5 py-2 transition-opacity duration-150 ease-out`,
         visible ? "opacity-100" : "opacity-0",
         className,
       )}

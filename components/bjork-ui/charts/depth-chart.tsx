@@ -11,6 +11,7 @@ import {
   ChartTable,
   LabelPool,
   HoverTooltip,
+  chartTagEdge,
   ChartAnnouncer,
   type TooltipHandle,
   type AnnouncerHandle,
@@ -532,7 +533,7 @@ export function DepthChart({
         <div
           ref={midRef}
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 flex h-[22px] items-center gap-2 whitespace-nowrap rounded-[11px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-surface-hover)] px-2.5 font-mono text-[11px] leading-none tabular-nums"
+          className={`pointer-events-none absolute left-0 top-0 flex h-[22px] items-center gap-2 whitespace-nowrap rounded-[11px] ${chartTagEdge} bg-[color:var(--bjork-surface-hover)] px-2.5 font-mono text-[11px] leading-none tabular-nums`}
         >
           <span className="text-[color:var(--bjork-text)] [text-box:trim-both_cap_alphabetic]">{formatPrice(book.mid)}</span>
           <span className="text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]">
