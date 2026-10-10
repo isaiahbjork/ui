@@ -16219,6 +16219,16 @@
           "path": "components/bjork-ui/_core/a11y.tsx",
           "type": "registry:component",
           "target": "@components/bjork-ui/_core/a11y.tsx"
+        },
+        {
+          "path": "components/bjork-ui/charts/_kit/chrome.tsx",
+          "type": "registry:component",
+          "target": "@components/bjork-ui/charts/_kit/chrome.tsx"
+        },
+        {
+          "path": "components/bjork-ui/_core/surface.ts",
+          "type": "registry:component",
+          "target": "@components/bjork-ui/_core/surface.ts"
         }
       ],
       "meta": {
