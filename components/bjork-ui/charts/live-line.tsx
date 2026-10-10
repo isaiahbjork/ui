@@ -17,6 +17,7 @@ import { useVisibleLoop } from "@/components/bjork-ui/_core/loop";
 import { sizeCanvas, useElementSize } from "@/components/bjork-ui/_core/canvas";
 import { mulberry32 } from "@/components/bjork-ui/_core/random";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
+import { chartCardEdge } from "@/components/bjork-ui/charts/_kit/chrome";
 
 export interface LivePoint {
   t: number;
@@ -1003,7 +1004,7 @@ export function LiveLine({
         <div
           ref={tipRef}
           role="presentation"
-          className="pointer-events-none absolute left-0 top-0 flex h-6 items-center whitespace-nowrap rounded-[8px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-surface-hover)] px-2 font-mono text-[11px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 shadow-[0_14px_28px_-12px_rgba(0,0,0,0.6)]"
+          className={`pointer-events-none absolute left-0 top-0 flex h-6 items-center whitespace-nowrap rounded-[8px] ${chartCardEdge} bg-[color:var(--bjork-surface-hover)] px-2 font-mono text-[11px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0`}
         />
 
         {showPauseButton ? (

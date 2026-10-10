@@ -13,6 +13,7 @@ import {
   LabelPool,
   placeTooltip,
   HoverTooltip,
+  chartTagEdge,
   ChartAnnouncer,
   type ChartPalette,
   type TooltipHandle,
@@ -839,7 +840,7 @@ export function StateTimeline({
         <span
           ref={timeTagRef}
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 inline-flex h-[18px] items-center whitespace-nowrap rounded-[6px] border border-[color:var(--bjork-border-strong)] bg-[color:var(--bjork-surface-hover)] px-1.5 font-mono text-[10px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+          className={`pointer-events-none absolute left-0 top-0 inline-flex h-[18px] items-center whitespace-nowrap rounded-[6px] ${chartTagEdge} bg-[color:var(--bjork-surface-hover)] px-1.5 font-mono text-[10px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 [text-box:trim-both_cap_alphabetic]`}
         />
         <HoverTooltip ref={tipRef} onMeasure={wake} />
       </div>

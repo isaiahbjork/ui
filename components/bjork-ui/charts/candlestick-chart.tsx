@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { BjorkTone } from "@/components/bjork-ui/_core/palette";
 import { useChartCanvas, easeOut } from "@/components/bjork-ui/charts/_kit/canvas";
-import { useChartTheme, chartFocusRing, ChartTable, ChartAnnouncer, type AnnouncerHandle } from "@/components/bjork-ui/charts/_kit/chrome";
+import { useChartTheme, chartFocusRing, ChartTable, ChartAnnouncer, chartTagEdge, type AnnouncerHandle } from "@/components/bjork-ui/charts/_kit/chrome";
 import { clamp, crisp, damp, niceTicks, withAlpha, formatPercent, formatCompact, formatFixed, formatSigned } from "@/components/bjork-ui/charts/_kit/scale";
 
 export interface Candle {
@@ -894,12 +894,12 @@ export function CandlestickChart({
         <span
           ref={priceTagRef}
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 inline-flex h-[22px] items-center rounded-[6px] border border-[color:var(--bjork-border-strong)] bg-[color:var(--bjork-surface-hover)] px-1.5 font-mono text-[11px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+          className={`pointer-events-none absolute left-0 top-0 inline-flex h-[22px] items-center rounded-[6px] ${chartTagEdge} bg-[color:var(--bjork-surface-hover)] px-1.5 font-mono text-[11px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 [text-box:trim-both_cap_alphabetic]`}
         />
         <span
           ref={timeTagRef}
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 inline-flex h-5 items-center rounded-[6px] border border-[color:var(--bjork-border-strong)] bg-[color:var(--bjork-surface-hover)] px-1.5 font-mono text-[10px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+          className={`pointer-events-none absolute left-0 top-0 inline-flex h-5 items-center rounded-[6px] ${chartTagEdge} bg-[color:var(--bjork-surface-hover)] px-1.5 font-mono text-[10px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 [text-box:trim-both_cap_alphabetic]`}
         />
       </div>
 

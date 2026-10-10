@@ -12,6 +12,7 @@ import {
   LabelPool,
   placeTooltip,
   HoverTooltip,
+  chartTagEdge,
   ChartAnnouncer,
   type TooltipHandle,
   type AnnouncerHandle,
@@ -573,7 +574,7 @@ export function ViolinPlot({
         <span
           ref={probeRef}
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 inline-flex h-[18px] items-center rounded-[5px] border border-[color:var(--bjork-border-strong)] bg-[color:var(--bjork-surface-hover)] px-1 font-mono text-[10px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+          className={`pointer-events-none absolute left-0 top-0 inline-flex h-[18px] items-center rounded-[5px] ${chartTagEdge} bg-[color:var(--bjork-surface-hover)] px-1 font-mono text-[10px] leading-none tabular-nums text-[color:var(--bjork-text)] opacity-0 [text-box:trim-both_cap_alphabetic]`}
         />
         <div aria-hidden="true" className="pointer-events-none absolute flex" style={{ left: PAD_LEFT, right: PAD_RIGHT, bottom: 0, height: PAD_BOTTOM }}>
           {stats.groups.map((g) => (
