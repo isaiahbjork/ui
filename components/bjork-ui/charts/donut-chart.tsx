@@ -29,9 +29,9 @@ export interface DonutChartProps {
    * Most slices drawn, 2 to 6 (default 6). Past that the smallest parts fold into one neutral
    * "Other" slice; the table twin still lists each folded part.
    *
-   * Colour: kept slices take the categorical series order by their position in `data` among the
-   * kept slices, never by size, so a slice keeps its colour when values change or `sort` flips.
-   * "Other" always takes the neutral `CHART_OTHER`.
+   * Colour: when sorted by value, the largest kept slice takes the first series colour (the ember
+   * accent) and the rest follow by size. When sorted by data, kept slices take the series order by
+   * their position in `data`. "Other" always takes the neutral `CHART_OTHER`.
    */
   maxSlices?: number;
   otherLabel?: string;
@@ -98,8 +98,10 @@ function buildSlices(data: DonutSlice[], sort: "value" | "data", max: number, ot
     p: rest.every((r) => r.p !== null) ? rest.reduce((a, r) => a + (r.p ?? 0), 0) : null,
     folded: rest,
   }));
-  // Colour by position in the caller's data among the kept slices.
-  const colourOrder = kept.filter((r) => !r.folded).sort((a, b) => a.i - b.i);
+  // Colour follows the sort: by size when sorted by value (kept is already ranked, so the largest
+  // takes the accent), otherwise by position in the caller's data among the kept slices.
+  const namedKept = kept.filter((r) => !r.folded);
+  const colourOrder = sort === "value" ? namedKept : [...namedKept].sort((a, b) => a.i - b.i);
   const colourOf = new Map(colourOrder.map((r, k) => [r.d.id, seriesColor(tone, k)]));
   const ordered = sort === "value" ? kept : [...kept].sort((a, b) => a.i - b.i);
   const slices = ordered.map<Slice>((r) => ({

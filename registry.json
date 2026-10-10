@@ -27691,11 +27691,6 @@
           "path": "components/bjork-ui/charts/_kit/scale.ts",
           "type": "registry:component",
           "target": "@components/bjork-ui/charts/_kit/scale.ts"
-        },
-        {
-          "path": "components/bjork-ui/charts/_kit/series.ts",
-          "type": "registry:component",
-          "target": "@components/bjork-ui/charts/_kit/series.ts"
         }
       ],
       "meta": {

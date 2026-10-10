@@ -1,20 +1,18 @@
 // Series colour for the Charts collection: a fixed categorical order for identity and a one-hue
 // ramp for magnitude. Pure data and functions; every chart imports what it needs by path.
 //
-// The categorical order leads with the house accent and is validated (OKLab, CVD-simulated) per
-// tone against the chart stage: every adjacent pair clears ΔE 13 under deutan/protan and ΔE 19
-// unsimulated, and the first three slots clear the all-pairs gate for scatter-like marks. Light
-// slots 1, 3, 5 and 6 sit under 3:1 on the light stage, so charts using them ship direct labels
-// and the table twin. Hues are assigned in this order and never cycled: past six series, fold the
-// rest into "Other" (see `foldSeries`).
+// The categorical order is warm-anchored: the ember accent first, then warm ink-neutral steps,
+// then one cool counterpoint (steel), then deeper or lighter steps of the accent family. Every
+// light slot clears 3:1 on the paper stage. Hues are assigned in this order and never cycled:
+// past six series, fold the rest into "Other" (see `foldSeries`).
 
 import type { BjorkTone } from "@/components/bjork-ui/_core/palette";
 import { clamp, lerp, parseColor } from "@/components/bjork-ui/charts/_kit/scale";
 
 export const CHART_SERIES: Record<BjorkTone, readonly string[]> = {
-  //       accent     blue       aqua       violet     magenta    amber
-  dark: ["#ec5c13", "#3987e5", "#199e70", "#9085e9", "#d55181", "#c98500"],
-  light: ["#ec7d43", "#2a78d6", "#1baf7a", "#4a3aa7", "#e87ba4", "#eda100"],
+  //       ember      warm ink   warm grey  steel      deep rust  light ember
+  dark: ["#ec5c13", "#d9d3c7", "#8f877a", "#5b8fb9", "#b84a12", "#f0a272"],
+  light: ["#c94f10", "#3a352d", "#8a8174", "#3f6f96", "#8f3a0e", "#d67a45"],
 };
 
 // The neutral an "Other" bucket takes, so it never impersonates a series.

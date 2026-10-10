@@ -17,7 +17,6 @@ import {
   type TooltipContent,
 } from "@/components/bjork-ui/charts/_kit/chrome";
 import { clamp, damp, withAlpha, mixColor, formatCompact, formatPercent, formatSigned } from "@/components/bjork-ui/charts/_kit/scale";
-import { seriesColor } from "@/components/bjork-ui/charts/_kit/series";
 
 export interface TreeNode {
   id: string;
@@ -179,8 +178,10 @@ function mapRect(t: Rect, from: Rect, to: Rect): Rect {
   return { x: to.x + (t.x - from.x) * sx, y: to.y + (t.y - from.y) * sy, w: t.w * sx, h: t.h * sy };
 }
 
-// Negative pole of the diverging change scale: the series blue, a CVD-safe partner for the accent.
-const downColor = (tone: BjorkTone) => seriesColor(tone, 1);
+// Negative pole of the diverging change scale: a CVD-safe partner for the accent. It carries
+// meaning (loss), so it is pinned here and not read from the categorical series order.
+const DOWN_COLOR: Record<BjorkTone, string> = { dark: "#3987e5", light: "#2a78d6" };
+const downColor = (tone: BjorkTone) => DOWN_COLOR[tone];
 
 function changeFill(pal: ChartPalette, tone: BjorkTone, change: number, scale: number): string {
   const k = clamp(Math.abs(change) / scale, 0, 1);
