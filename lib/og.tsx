@@ -49,26 +49,10 @@ async function loadPreview(slug: string) {
 
 const PREVIEW_RATIO = 520 / 900;
 
-// The preview PNGs use a #111111 stage (sampled from their corner pixel). The
-// card ground is #070707. Bare previews fade their edges into the ground so the
-// component floats on the card with no box around it.
-const FADE = 64;
-
-function PreviewFade({ width, height }: { width: number; height: number }) {
-  const solid = "rgba(7, 7, 7, 1)";
-  const clear = "rgba(7, 7, 7, 0)";
-  const edge = (style: CSSProperties) => (
-    <div style={{ position: "absolute", display: "flex", ...style }} />
-  );
-  return (
-    <>
-      {edge({ left: 0, top: 0, width, height: FADE, backgroundImage: `linear-gradient(180deg, ${solid}, ${clear})` })}
-      {edge({ left: 0, bottom: 0, width, height: FADE, backgroundImage: `linear-gradient(0deg, ${solid}, ${clear})` })}
-      {edge({ left: 0, top: 0, width: FADE, height, backgroundImage: `linear-gradient(90deg, ${solid}, ${clear})` })}
-      {edge({ right: 0, top: 0, width: FADE, height, backgroundImage: `linear-gradient(270deg, ${solid}, ${clear})` })}
-    </>
-  );
-}
+// The preview PNGs use a #111111 stage (sampled from their corner pixel).
+// Component cards take that same ground, so the bare preview has no edge at
+// all and the component floats on the card with no box around it.
+const PREVIEW_GROUND = "#111111";
 
 const mono: CSSProperties = {
   display: "flex",
@@ -147,7 +131,7 @@ function Corner({ x, y }: { x: "left" | "right"; y: "top" | "bottom" }) {
 
 // The ground and the hairline frame every card shares. A backdrop, when
 // given, runs full bleed under the frame.
-function Sheet({ children, backdrop }: { children: ReactNode; backdrop?: ReactNode }) {
+function Sheet({ children, backdrop, ground = GROUND }: { children: ReactNode; backdrop?: ReactNode; ground?: string }) {
   return (
     <div
       style={{
@@ -155,7 +139,7 @@ function Sheet({ children, backdrop }: { children: ReactNode; backdrop?: ReactNo
         display: "flex",
         width: "100%",
         height: "100%",
-        background: GROUND,
+        background: ground,
         padding: 28,
         overflow: "hidden",
       }}
@@ -265,7 +249,6 @@ function PreviewPanel({
           </div>
         </div>
       )}
-      <PreviewFade width={width} height={height} />
     </div>
   );
 }
@@ -279,7 +262,7 @@ export async function renderComponentCard(card: ShareCard) {
 
   return new ImageResponse(
     (
-      <Sheet>
+      <Sheet ground={PREVIEW_GROUND}>
         <div
           style={{
             display: "flex",
