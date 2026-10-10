@@ -1,146 +1,136 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { useState } from "react";
-import { AreaChart, Area, YAxis, ResponsiveContainer } from "recharts";
+import { useId, useState, type CSSProperties } from "react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 import { useReducedMotion } from "framer-motion";
+import { BJORK_PALETTE, type BjorkTone } from "@/components/bjork-ui/_core/palette";
+import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
+import { surfaceVars } from "@/components/bjork-ui/_core/surface";
+
+interface HudAreaChartPoint {
+  time: string;
+  value: number;
+}
 
 interface HudAreaChartProps {
   showYAxis: boolean;
-  data: { time: string; value: number }[];
+  data: HudAreaChartPoint[];
+  /** Fill under the line. Defaults to the ember accent. */
   gradientColor?: string;
+  /** Line colour. Defaults to the ember accent. */
   borderColor?: string;
+  /** Gridline colour. Defaults to the surface border token. */
   dotColor?: string;
+  /** @deprecated The plot uses hairline gridlines now. Accepted so existing call sites still compile. */
   dotSize?: number;
+  /** Gridline opacity. */
   dotOpacity?: number;
   scale?: number;
+  /** Follows the theme when omitted. */
+  tone?: BjorkTone;
 }
+
+const formatValue = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
 export function HudAreaChart({
   showYAxis = false,
   data = [],
-  gradientColor = "#ffffff",
-  borderColor = "#ffffff",
-  dotColor = "#ffffff",
-  dotSize = 0.8,
-  dotOpacity = 0.1,
+  gradientColor,
+  borderColor,
+  dotColor,
+  dotOpacity,
   scale = 1,
+  tone: toneProp,
 }: HudAreaChartProps) {
-  const reduce = useReducedMotion();
-  const [hoveredData, setHoveredData] = useState<{
-    time: string;
-    value: number;
-  } | null>(null);
+  const tone = useBjorkTone(toneProp);
+  const pal = BJORK_PALETTE[tone];
+  const reduce = !!useReducedMotion();
+  const gradientId = `hud-graph-fill-${useId().replace(/:/g, "")}`;
 
-  const handleMouseMove = (state: { activePayload?: Array<{ payload: { time: string; value: number } }> }) => {
-    if (state && state.activePayload && state.activePayload.length > 0) {
-      setHoveredData({
-        time: state.activePayload[0].payload.time,
-        value: state.activePayload[0].payload.value,
-      });
-    }
+  const line = borderColor ?? pal.accent;
+  const fill = gradientColor ?? pal.accent;
+  const grid = dotColor ?? pal.border;
+
+  const [hovered, setHovered] = useState<HudAreaChartPoint | null>(null);
+  const latest = data.length > 0 ? data[data.length - 1] : null;
+  const shown = hovered ?? latest;
+
+  const handleMouseMove = (state: { activePayload?: Array<{ payload: HudAreaChartPoint }> }) => {
+    const payload = state?.activePayload?.[0]?.payload;
+    if (payload) setHovered({ time: payload.time, value: payload.value });
   };
 
-  const handleMouseLeave = () => {
-    setHoveredData(null);
-  };
+  const axisTick = { fill: pal.textMuted, fontSize: 11, className: "font-mono tabular-nums" };
+
+  const cardVars = surfaceVars(tone) as CSSProperties;
 
   return (
-    <div 
-      className="relative w-96 h-80"
-      style={{
-        transform: `scale(${scale})`,
-        transformOrigin: "center center",
-      }}
+    <div
+      className="relative h-80 w-96"
+      style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}
     >
-      {/* SVG Frame Overlay */}
-      <div className="absolute inset-0 z-10 pointer-events-none">
-        <svg 
-          width="100%" 
-          height="100%" 
-          viewBox="0 0 152 149" 
-          fill="none" 
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <defs>
-            {/* Dotted grid pattern */}
-            <pattern id="dotGrid" x="0" y="0" width="16.89" height="14.8" patternUnits="userSpaceOnUse">
-              <circle cx="8.445" cy="7.45" r={dotSize} fill={dotColor} opacity={dotOpacity} />
-            </pattern>
-            
-            {/* Clipping path for the chart area */}
-            <clipPath id="chartClip">
-              <path d="M1 1h149.894v131.772L135.145 147.521H1V1z" />
-            </clipPath>
-          </defs>
-          
-          {/* Grid background */}
-          <rect x="1" y="1" width="150.894" height="146.521" fill="url(#dotGrid)" />
-          
-          {/* Frame border */}
-          <path 
-            d="M136.145 148.521H0V0H151.894V132.772L136.145 148.521ZM1 147.521H135.73L150.894 132.358V1H1V147.521Z" 
-            fill={borderColor}
-          />
-        </svg>
-      </div>
-
-      {/* Graph Container with clipping */}
-      <div 
-        className="absolute inset-y-4 -left-3 right-7 bottom-0 z-0"
-        style={{
-          clipPath: "polygon(0.6% 0.7%, 99.3% 0.7%, 99.3% 89.2%, 89.5% 99%, 0.6% 99%)"
-        }}
+      <div
+        className="flex h-full w-full flex-col rounded-[16px] border border-[color:var(--bjork-border)] bg-[color:var(--bjork-surface)] p-4 shadow-[var(--bjork-shadow-surface)]"
+        style={cardVars}
       >
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
-            data={data}
-            margin={{ top: 10, right: 1, left: -18, bottom: 0 }}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
+        <div className="flex items-baseline justify-between gap-3">
+          <span
+            className="font-mono text-[11px] uppercase tracking-[0.08em] tabular-nums"
+            style={{ color: pal.textMuted }}
           >
-            <defs>
-              {/* Radial gradient to eliminate baseline visibility */}
-              <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={gradientColor} stopOpacity={0.4} />
-                <stop offset="20%" stopColor={gradientColor} stopOpacity={0.25} />
-                <stop offset="40%" stopColor={gradientColor} stopOpacity={0.15} />
-                <stop offset="70%" stopColor={gradientColor} stopOpacity={0.05} />
-                <stop offset="90%" stopColor={gradientColor} stopOpacity={0.01} />
-                <stop offset="100%" stopColor="transparent" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-
-            {/* Y Axis */}
-            <YAxis
-              axisLine={false}
-              tickLine={false}
-              tick={{ fill: gradientColor, fontSize: 10 }}
-              className={cn(showYAxis ? "opacity-100" : "opacity-0")}
-            />
-
-            {/* Area with baseline-friendly gradient */}
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke={borderColor}
-              strokeWidth={1.5}
-              fill="url(#gradient)"
-              fillOpacity={0.8}
-              isAnimationActive={!reduce}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Bottom Left Data Display */}
-      {hoveredData && (
-        <div className="absolute bottom-4 left-10 text-primary font-mono text-xs z-20">
-          {hoveredData.time} : {hoveredData.value}
+            {hovered ? hovered.time : latest ? `Latest · ${latest.time}` : "Latest"}
+          </span>
+          <span className="font-mono text-[11px] tabular-nums" style={{ color: pal.text }}>
+            {shown ? formatValue.format(shown.value) : "--"}
+          </span>
         </div>
-      )}
+
+        <div className="mt-3 min-h-0 flex-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={data}
+              margin={{ top: 6, right: 6, left: 0, bottom: 0 }}
+              onMouseMove={handleMouseMove}
+              onMouseLeave={() => setHovered(null)}
+            >
+              <defs>
+                <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={fill} stopOpacity={0.26} />
+                  <stop offset="65%" stopColor={fill} stopOpacity={0.06} />
+                  <stop offset="100%" stopColor={fill} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+
+              <CartesianGrid vertical={false} stroke={grid} strokeOpacity={dotOpacity ?? 1} strokeWidth={1} />
+
+              <XAxis
+                dataKey="time"
+                axisLine={false}
+                tickLine={false}
+                tick={axisTick}
+                interval="preserveStartEnd"
+                minTickGap={24}
+                height={22}
+                tickMargin={6}
+              />
+              <YAxis hide={!showYAxis} axisLine={false} tickLine={false} tick={axisTick} width={36} tickMargin={6} />
+
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke={line}
+                strokeWidth={1.5}
+                fill={`url(#${gradientId})`}
+                dot={false}
+                activeDot={{ r: 3, fill: line, stroke: pal.surface, strokeWidth: 1.5 }}
+                isAnimationActive={!reduce}
+                animationDuration={900}
+                animationEasing="ease-out"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 }

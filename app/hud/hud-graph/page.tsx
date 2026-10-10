@@ -1,12 +1,10 @@
 "use client";
-import { useIsDarkTheme } from "@/hooks/use-is-dark-theme";
 import { HudAreaChart } from "@/components/bjork-ui/hud/graph";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { getGalleryItem } from "@/lib/bjork-gallery";
 
 export default function Page() {
   const item = getGalleryItem("hud-graph");
-  const isDark = useIsDarkTheme();
   // Sample data for the graph
   const data = [
     { time: "00:00", value: 10 },
@@ -20,7 +18,7 @@ export default function Page() {
   return (
     <SimpleComponentDemoPage
       item={item}
-      description="A minimal HUD area chart for telemetry, signal, or system-health surfaces. It accepts raw time-series points plus stroke, fill, dot, and scale controls for compact display contexts."
+      description="A compact area chart for telemetry and system-health readouts. An ember line sits on a soft fade, hairline gridlines and mono axis labels, and the newest value stays pinned in the header until you hover a point."
       dependencies={["framer-motion", "next-themes", "clsx"]}
       usageCode={`import { HudAreaChart } from "@/components/bjork-ui/hud/graph";
 
@@ -29,16 +27,7 @@ export function Demo() {
 }`}
       previewScaleClassName="w-[760px] scale-[0.92]"
     >
-      <HudAreaChart
-        showYAxis={false}
-        data={data}
-        gradientColor={isDark ? "#ffffff" : "#000000"}
-        borderColor={isDark ? "#ffffff" : "#000000"}
-        dotColor={isDark ? "#ffffff" : "#000000"}
-        dotSize={0.8}
-        dotOpacity={0.1}
-        scale={1.5}
-      />
+      <HudAreaChart showYAxis data={data} scale={1.5} />
     </SimpleComponentDemoPage>
   );
 }
