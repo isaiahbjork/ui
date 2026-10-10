@@ -435,7 +435,6 @@ export function SpringTuner({
   const borderStrong = tok("border-strong", p.borderStrong);
   const accent = tok("accent", p.accent);
   const surface = tok("surface", p.surface);
-  const panel = tok("panel", p.surface);
 
   const rangeVars = {
     "--sp-accent": accent,
@@ -449,7 +448,7 @@ export function SpringTuner({
       data-spring-tuner=""
       style={{
         ...rangeVars,
-        background: panel,
+        background: surface,
         borderColor: border,
         boxShadow: BJORK_SURFACE[resolvedTone].shadowSurface,
         color: textColor,
