@@ -49,6 +49,27 @@ async function loadPreview(slug: string) {
 
 const PREVIEW_RATIO = 520 / 900;
 
+// The preview PNGs use a #111111 stage (sampled from their corner pixel). The
+// card ground is #070707. Bare previews fade their edges into the ground so the
+// component floats on the card with no box around it.
+const FADE = 64;
+
+function PreviewFade({ width, height }: { width: number; height: number }) {
+  const solid = "rgba(7, 7, 7, 1)";
+  const clear = "rgba(7, 7, 7, 0)";
+  const edge = (style: CSSProperties) => (
+    <div style={{ position: "absolute", display: "flex", ...style }} />
+  );
+  return (
+    <>
+      {edge({ left: 0, top: 0, width, height: FADE, backgroundImage: `linear-gradient(180deg, ${solid}, ${clear})` })}
+      {edge({ left: 0, bottom: 0, width, height: FADE, backgroundImage: `linear-gradient(0deg, ${solid}, ${clear})` })}
+      {edge({ left: 0, top: 0, width: FADE, height, backgroundImage: `linear-gradient(90deg, ${solid}, ${clear})` })}
+      {edge({ right: 0, top: 0, width: FADE, height, backgroundImage: `linear-gradient(270deg, ${solid}, ${clear})` })}
+    </>
+  );
+}
+
 const mono: CSSProperties = {
   display: "flex",
   fontFamily: "Geist Mono",
@@ -211,10 +232,10 @@ function PreviewPanel({
 }) {
   const height = Math.round(width * PREVIEW_RATIO);
   return (
-    <Surface width={width} height={height} radius={20}>
+    <div style={{ position: "relative", display: "flex", width, height, overflow: "hidden" }}>
       {src ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} width={width} height={height} alt="" style={{ display: "flex", borderRadius: 19 }} />
+        <img src={src} width={width} height={height} alt="" style={{ display: "flex" }} />
       ) : (
         <div style={{ display: "flex", width, height, alignItems: "center", justifyContent: "center" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -244,7 +265,8 @@ function PreviewPanel({
           </div>
         </div>
       )}
-    </Surface>
+      <PreviewFade width={width} height={height} />
+    </div>
   );
 }
 
