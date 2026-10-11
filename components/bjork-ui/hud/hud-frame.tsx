@@ -1,15 +1,73 @@
+"use client"
+
 import { cn } from "@/lib/utils"
+import { useEffect, useRef, useSyncExternalStore } from "react"
 import type React from "react"
+import { inlineVideoBlocked, makeInlineVideo, playInline } from "../_core/inline-video"
+
+const noSubscribe = () => () => {}
+
+// Muted, inline, never the native player. In an iOS in-app browser (X,
+// Instagram...) play() would open the fullscreen player, so there it holds
+// its poster and the clip isn't loaded.
+function HudBackgroundVideo({ src, poster }: { src: string; poster?: string }) {
+  const ref = useRef<HTMLVideoElement>(null)
+  const still = useSyncExternalStore(noSubscribe, inlineVideoBlocked, () => false)
+
+  useEffect(() => {
+    const video = ref.current
+    if (!video) return
+    const unguard = makeInlineVideo(video)
+    if (inlineVideoBlocked()) return unguard
+    video.src = src
+    playInline(video)
+    return () => {
+      unguard()
+      video.pause()
+      video.removeAttribute("src")
+      video.load()
+    }
+  }, [src])
+
+  if (still) {
+    if (!poster) return null
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={poster} alt="" aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full object-cover" />
+    )
+  }
+  return (
+    <video
+      ref={ref}
+      className="pointer-events-none absolute inset-0 w-full h-full object-cover"
+      poster={poster}
+      loop
+      muted
+      playsInline
+      disablePictureInPicture
+      preload="auto"
+      aria-hidden="true"
+    />
+  )
+}
 
 interface HudFrameProps {
   children?: React.ReactNode
   backgroundImage?: string
   backgroundColor?: string
   backgroundVideo?: string
+  backgroundVideoPoster?: string
   fixedFrame?: boolean
 }
 
-export function HudFrame({ children, backgroundImage, backgroundColor, backgroundVideo, fixedFrame = true }: HudFrameProps) {
+export function HudFrame({
+  children,
+  backgroundImage,
+  backgroundColor,
+  backgroundVideo,
+  backgroundVideoPoster,
+  fixedFrame = true,
+}: HudFrameProps) {
   const frameSurfaceClass = backgroundColor ?? (backgroundImage || backgroundVideo ? "bg-transparent" : "bg-foreground")
 
   return (
@@ -109,14 +167,7 @@ export function HudFrame({ children, backgroundImage, backgroundColor, backgroun
         >
           {/* Background Video */}
           {backgroundVideo && (
-            <video
-              className="absolute inset-0 w-full h-full object-cover"
-              src={backgroundVideo}
-              autoPlay
-              loop
-              muted
-              playsInline
-            />
+            <HudBackgroundVideo src={backgroundVideo} poster={backgroundVideoPoster} />
           )}
 
           {/* Inner transparent cutout */}

@@ -5,13 +5,15 @@ import { cn } from "@/lib/utils";
 
 export function BjorkButtonGroup({
   className,
+  borderless = false,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & { borderless?: boolean }) {
   return (
     <div
       role="group"
       className={cn(
-        "inline-flex gap-1 rounded-[18px] border border-[color:var(--bjork-border)] bg-[var(--bjork-surface-muted)] p-1.5 shadow-[var(--bjork-shadow-surface)] [&>button]:rounded-[12px]",
+        "inline-flex min-w-0 gap-1.5 rounded-[18px] bg-[var(--bjork-surface-muted)] p-1.5 shadow-[var(--bjork-shadow-surface)] [&>button]:rounded-[12px]",
+        borderless ? "border-0" : "border border-[color:var(--bjork-border)]",
         className,
       )}
       {...props}

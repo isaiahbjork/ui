@@ -1,14 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { useEffect, useRef } from "react";
 
 // Calmer loop: each shake runs about twice as slowly and moves about 40% less.
 const CALM_SPEED = 2.2;
 const CALM_AMPLITUDE = 0.6;
 
-const makeShake = (x: number[], duration: number) => ({
+const makeShake = (x: number[], duration: number): Variants => ({
   shake: {
     x: x.map((n) => n * CALM_AMPLITUDE),
     transition: {

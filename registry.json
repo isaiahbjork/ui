@@ -1482,6 +1482,11 @@
           "path": "lib/utils.ts",
           "type": "registry:lib",
           "target": "@lib/utils.ts"
+        },
+        {
+          "path": "components/bjork-ui/_core/inline-video.ts",
+          "type": "registry:component",
+          "target": "@components/bjork-ui/_core/inline-video.ts"
         }
       ],
       "meta": {

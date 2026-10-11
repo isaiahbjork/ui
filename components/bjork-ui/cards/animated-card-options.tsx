@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion, type Variants } from "framer-motion";
 import { ReactNode, useState } from "react";
 import { BjorkCard } from "@/components/bjork-ui/primitives/card";
 import { cn } from "@/lib/utils";
@@ -26,7 +26,7 @@ export function AnimatedCardOptions({
   const [fadingCards, setFadingCards] = useState<Set<string>>(new Set());
   const reduce = useReducedMotion();
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     initial: {
       opacity: 0,
       scale: reduce ? 1 : 0.8,
@@ -58,7 +58,7 @@ export function AnimatedCardOptions({
     },
   };
 
-  const hoverVariants = {
+  const hoverVariants: Variants = {
     hover: {
       scale: 1.05,
       transition: {

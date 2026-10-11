@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { Flame, Volleyball } from 'lucide-react';
@@ -123,7 +123,7 @@ export function PredictionMarketCard({
   const shouldAnimate = enableAnimations && !shouldReduceMotion;
 
   // Animation variants
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: {
       opacity: 0,
       y: 20,
@@ -146,7 +146,7 @@ export function PredictionMarketCard({
     },
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: {
       opacity: 0,
       x: -15,
@@ -167,7 +167,7 @@ export function PredictionMarketCard({
     },
   };
 
-  const badgeVariants = {
+  const badgeVariants: Variants = {
     hidden: { scale: 0.9, opacity: 0, filter: "blur(2px)" },
     visible: {
       scale: 1,
@@ -182,7 +182,7 @@ export function PredictionMarketCard({
     },
   };
 
-  const progressBarVariants = {
+  const progressBarVariants: Variants = {
     hidden: { scaleX: 0, opacity: 0 },
     visible: {
       scaleX: 1,
@@ -196,7 +196,7 @@ export function PredictionMarketCard({
     },
   };
 
-  const buttonContainerVariants = {
+  const buttonContainerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,

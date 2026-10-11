@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion, type Variants } from "framer-motion";
 import { useState } from "react";
 import { Check, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -179,7 +179,7 @@ export function CoachSchedulingCard({
   };
 
   // Animation variants
-  const containerVariants = {
+  const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
@@ -190,7 +190,7 @@ export function CoachSchedulingCard({
     }
   };
 
-  const itemVariants = {
+  const itemVariants: Variants = {
     hidden: {
       opacity: 0,
       x: -25,
@@ -211,7 +211,7 @@ export function CoachSchedulingCard({
     },
   };
 
-  const timeSlotVariants = {
+  const timeSlotVariants: Variants = {
     hidden: { opacity: 0, scale: 0.8 },
     visible: {
       opacity: 1,

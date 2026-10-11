@@ -10,7 +10,7 @@
   "files": [
     {
       "path": "components/bjork-ui/primitives/button-group.tsx",
-      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { cn } from \"@/lib/utils\";\n\nexport function BjorkButtonGroup({\n  className,\n  ...props\n}: React.ComponentProps<\"div\">) {\n  return (\n    <div\n      role=\"group\"\n      className={cn(\n        \"inline-flex gap-1 rounded-[18px] border border-[color:var(--bjork-border)] bg-[var(--bjork-surface-muted)] p-1.5 shadow-[var(--bjork-shadow-surface)] [&>button]:rounded-[12px]\",\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n",
+      "content": "\"use client\";\n\nimport * as React from \"react\";\nimport { cn } from \"@/lib/utils\";\n\nexport function BjorkButtonGroup({\n  className,\n  borderless = false,\n  ...props\n}: React.ComponentProps<\"div\"> & { borderless?: boolean }) {\n  return (\n    <div\n      role=\"group\"\n      className={cn(\n        \"inline-flex min-w-0 gap-1.5 rounded-[18px] bg-[var(--bjork-surface-muted)] p-1.5 shadow-[var(--bjork-shadow-surface)] [&>button]:rounded-[12px]\",\n        borderless ? \"border-0\" : \"border border-[color:var(--bjork-border)]\",\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n",
       "type": "registry:component",
       "target": "@components/bjork-ui/primitives/button-group.tsx"
     },
