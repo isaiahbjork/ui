@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { motion, useReducedMotion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, useReducedMotion, AnimatePresence, type TargetAndTransition, type Variants } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useState, useRef, useEffect } from "react";
 
@@ -203,7 +203,7 @@ export function MessageDock({
     },
   };
 
-  const hoverAnimation = shouldReduceMotion
+  const hoverAnimation: TargetAndTransition = shouldReduceMotion
     ? { y: -1 }
     : {
         y: -4,
