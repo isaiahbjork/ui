@@ -462,7 +462,7 @@ export function ModelSelector({
               autoComplete="off"
               className="h-full min-w-0 flex-1 bg-transparent text-[13px] leading-5 text-[color:var(--bjork-text)] outline-none placeholder:text-[color:var(--bjork-text-soft)]"
             />
-            <span className="shrink-0 font-mono text-[10px] tabular-nums text-[color:var(--bjork-text-faint)]">
+            <span className="shrink-0 font-mono text-[11px] tabular-nums text-[color:var(--bjork-text-faint)]">
               {filtered.length}/{models.length}
             </span>
           </div>
@@ -507,12 +507,12 @@ export function ModelSelector({
 
           <div
             aria-hidden="true"
-            className="hidden h-8 shrink-0 items-center gap-3 border-t border-[color:var(--bjork-border)] px-3 font-mono text-[10px] text-[color:var(--bjork-text-faint)] min-[420px]:flex"
+            className="hidden h-8 shrink-0 items-center gap-3 border-t border-[color:var(--bjork-border)] whitespace-nowrap px-3 font-mono text-[11px] text-[color:var(--bjork-text-soft)] min-[420px]:flex"
           >
             <span>↑↓ move</span>
             <span>↵ select</span>
             <span>esc close</span>
-            <span className="ml-auto">per 1M tokens · in / out</span>
+            <span className="ml-auto min-w-0 truncate">per 1M · in/out</span>
           </div>
         </div>
       )}
@@ -527,7 +527,7 @@ function Monogram({ provider, accent = false, small = false }: { provider: strin
       aria-hidden="true"
       className={cn(
         "grid shrink-0 place-items-center rounded-[6px] border font-mono font-medium leading-none tracking-[-0.02em]",
-        small ? "size-[18px] text-[8.5px]" : "size-5 text-[9px]",
+        small ? "size-[18px] text-[11px]" : "size-5 text-[11px]",
         accent
           ? "border-[color:var(--bjork-accent-muted)] bg-[color:var(--bjork-accent-soft)] text-[color:var(--bjork-accent-ink)]"
           : "border-[color:var(--bjork-border)] bg-[color:var(--bjork-surface-active)] text-[color:var(--bjork-text-medium)]",
@@ -612,7 +612,7 @@ function ModelOption({ id, model, active, selected, onHover, onChoose }: ModelOp
               <span
                 key={c}
                 aria-hidden="true"
-                className="rounded-[4px] border border-[color:var(--bjork-border)] px-1 font-mono text-[9.5px] uppercase leading-[15px] tracking-[0.06em] text-[color:var(--bjork-text-muted)]"
+                className="rounded-[4px] border border-[color:var(--bjork-border)] px-1 font-mono text-[10px] uppercase leading-[15px] tracking-[0.06em] text-[color:var(--bjork-text-muted)]"
               >
                 {CAPABILITY_LABEL[c]}
               </span>
@@ -623,7 +623,7 @@ function ModelOption({ id, model, active, selected, onHover, onChoose }: ModelOp
 
       <span
         className={cn(
-          "flex flex-col items-end gap-1 pt-0.5 font-mono text-[10.5px] leading-4 tabular-nums",
+          "flex flex-col items-end gap-1 pt-0.5 font-mono text-[11px] leading-4 tabular-nums",
           model.disabled && "opacity-55",
         )}
       >

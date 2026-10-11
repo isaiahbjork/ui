@@ -344,7 +344,7 @@ function Tile({ item, size, fill = false }: { item: AttachmentItem; size?: numbe
 }
 
 function DocGlyph({ ext, big }: { ext: string; big: boolean }) {
-  const w = big ? 34 : 20;
+  const w = big ? 34 : 26;
   const h = big ? 42 : 24;
   const fold = big ? 9 : 6;
   return (
@@ -361,7 +361,7 @@ function DocGlyph({ ext, big }: { ext: string; big: boolean }) {
       <span
         className={cn(
           "relative translate-y-[2px] font-mono font-semibold uppercase tracking-[0.02em] text-[color:var(--bjork-text-medium)]",
-          big ? "text-[9px]" : "text-[6.5px]",
+          "text-[10px]",
         )}
       >
         {(ext || "file").slice(0, 4)}

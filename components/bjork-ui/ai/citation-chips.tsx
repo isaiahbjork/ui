@@ -160,7 +160,7 @@ function FaviconTile({ domain, size = 16 }: { domain: string; size?: number }) {
         "grid shrink-0 place-items-center rounded-[5px] font-mono font-semibold uppercase leading-none",
         TILE_TONES[hash(domain) % TILE_TONES.length],
       )}
-      style={{ width: size, height: size, fontSize: Math.round(size * 0.56) }}
+      style={{ width: size, height: size, fontSize: Math.max(10, Math.round(size * 0.56)) }}
     >
       {domain.replace(/^www\./, "")[0]}
     </span>
@@ -449,7 +449,7 @@ function CitationChip({ source, number, inline = false, hot, setHot, onOpenSourc
           inline
             ? cn(
                 // 16px chip with a 28px hit area from the pseudo-element. ml nudges it off the preceding word.
-                "relative ml-[3px] inline-flex h-4 min-w-4 -translate-y-[1px] items-center justify-center rounded-[5px] px-[3px] align-baseline font-mono text-[10px] font-medium leading-none tabular-nums before:absolute before:-inset-x-1.5 before:-inset-y-1.5 before:content-['']",
+                "relative ml-[3px] inline-flex h-4 min-w-4 -translate-y-[1px] items-center justify-center rounded-[5px] px-[3px] align-baseline font-mono text-[11px] font-medium leading-none tabular-nums before:absolute before:-inset-x-1.5 before:-inset-y-1.5 before:content-['']",
                 hot || open
                   ? "bg-[color:var(--bjork-accent)] text-[color:var(--bjork-accent-foreground)]"
                   : "bg-[color:var(--bjork-surface-active)] text-[color:var(--bjork-text-muted)] hover:text-[color:var(--bjork-text)]",
@@ -467,10 +467,10 @@ function CitationChip({ source, number, inline = false, hot, setHot, onOpenSourc
           number
         ) : (
           <>
-            <span className="w-3 shrink-0 text-center font-mono text-[10px] tabular-nums text-[color:var(--bjork-text-faint)]">{number}</span>
+            <span className="w-3.5 shrink-0 text-center font-mono text-[11px] tabular-nums text-[color:var(--bjork-text-faint)]">{number}</span>
             <FaviconTile domain={source.domain} />
             <span className="max-w-[148px] truncate text-[12.5px] leading-4 text-[color:var(--bjork-text)]">{source.title}</span>
-            <span className="hidden shrink-0 font-mono text-[10.5px] text-[color:var(--bjork-text-faint)] min-[440px]:inline">
+            <span className="hidden shrink-0 font-mono text-[11px] text-[color:var(--bjork-text-faint)] min-[440px]:inline">
               {source.domain}
             </span>
           </>
@@ -537,7 +537,7 @@ function PreviewCard({
             {source.domain}
           </span>
           {source.publishedAt && (
-            <span className="shrink-0 font-mono text-[10.5px] leading-4 tabular-nums text-[color:var(--bjork-text-faint)]">
+            <span className="shrink-0 font-mono text-[11px] leading-4 tabular-nums text-[color:var(--bjork-text-faint)]">
               {formatDate(source.publishedAt)}
             </span>
           )}

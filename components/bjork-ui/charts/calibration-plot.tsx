@@ -481,13 +481,13 @@ export function CalibrationPlot({
             n <span className="text-[color:var(--bjork-text)]">{formatNumber(cal.n, 0)}</span>
           </span>
         </div>
-        <span ref={cornerA} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-faint)] [text-box:trim-both_cap_alphabetic]">
+        <span ref={cornerA} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-faint)] [text-box:trim-both_cap_alphabetic]">
           Under-forecast
         </span>
-        <span ref={cornerB} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-faint)] [text-box:trim-both_cap_alphabetic]">
+        <span ref={cornerB} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-faint)] [text-box:trim-both_cap_alphabetic]">
           Over-forecast
         </span>
-        <span ref={diagRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 origin-top-left font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]">
+        <span ref={diagRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 origin-top-left font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]">
           Perfect
         </span>
         <LabelPool count={TICKS.length} pool={xPool} />

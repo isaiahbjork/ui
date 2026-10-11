@@ -46,7 +46,7 @@ function Composer({
       <input
         aria-label="Message"
         placeholder="Ask anything"
-        className="min-w-0 flex-1 bg-transparent text-[15px] text-[color:var(--bjork-text,#ededed)] outline-none placeholder:text-[color:var(--bjork-text-soft,rgba(237,237,237,0.36))]"
+        className="min-w-0 flex-1 bg-transparent text-[15px] text-[color:var(--bjork-text,#ededed)] outline-none placeholder:text-[color:var(--bjork-text-soft,rgba(237,237,237,0.5))]"
       />
       <button
         type="button"

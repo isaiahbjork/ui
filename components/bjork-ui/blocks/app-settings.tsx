@@ -1298,7 +1298,7 @@ function SecuritySection({
                   <p className="flex items-center gap-2 text-[13.5px] font-medium">
                     <span className="truncate">{s.device}</span>
                     {s.current && (
-                      <span className="shrink-0 rounded-[6px] bg-[var(--blk-success-soft)] px-1.5 py-px text-[10.5px] font-medium text-[color:var(--blk-success)]">
+                      <span className="shrink-0 rounded-[6px] bg-[var(--blk-success-soft)] px-1.5 py-px text-[11px] font-medium text-[color:var(--blk-success)]">
                         This device
                       </span>
                     )}

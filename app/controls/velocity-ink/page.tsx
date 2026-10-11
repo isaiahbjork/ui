@@ -86,7 +86,7 @@ export default function Page() {
                 width={120}
                 className="h-auto rounded-[8px] border border-[color:var(--bjork-border,#232323)] bg-[color:var(--bjork-surface,#121212)]"
               />
-              <span className="font-mono text-[12px] tabular-nums text-[color:var(--bjork-text-muted,rgba(237,237,237,0.52))]">
+              <span className="font-mono text-[12px] tabular-nums text-[color:var(--bjork-text-muted,rgba(237,237,237,0.6))]">
                 {exported.length} characters
               </span>
             </div>

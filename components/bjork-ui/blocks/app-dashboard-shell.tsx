@@ -620,7 +620,7 @@ function SidebarContent({
                           {item.badge && (
                             <span
                               className={cn(
-                                "rounded-[6px] px-1.5 py-px font-mono text-[10.5px] tabular-nums",
+                                "rounded-[6px] px-1.5 py-px font-mono text-[11px] tabular-nums",
                                 item.badge === "New"
                                   ? "bg-[var(--bjork-accent-soft)] text-[color:var(--blk-accent-ink)]"
                                   : "bg-[var(--bjork-surface-active)] text-[color:var(--bjork-text-muted)]",
@@ -1040,7 +1040,7 @@ function RevenueChart({
                     stroke="var(--bjork-border)"
                     strokeDasharray={t === 0 ? undefined : "2 4"}
                   />
-                  <text x={PAD.left - 10} y={y(t)} dy="0.32em" textAnchor="end" className="fill-[color:var(--bjork-text-soft)] font-mono text-[10.5px] tabular-nums">
+                  <text x={PAD.left - 10} y={y(t)} dy="0.32em" textAnchor="end" className="fill-[color:var(--bjork-text-soft)] font-mono text-[11px] tabular-nums">
                     {compact(t)}
                   </text>
                 </g>
@@ -1056,7 +1056,7 @@ function RevenueChart({
                     x={x(i)}
                     y={CHART_H - 8}
                     textAnchor={i === 0 ? "start" : i === last ? "end" : "middle"}
-                    className="fill-[color:var(--bjork-text-soft)] font-mono text-[10.5px]"
+                    className="fill-[color:var(--bjork-text-soft)] font-mono text-[11px]"
                   >
                     {p.tick}
                   </text>
@@ -1307,7 +1307,7 @@ function OrdersTable({
             >
               {s !== "all" && <span aria-hidden="true" className="size-1.5 rounded-full" style={{ background: STATUS[s].ink }} />}
               {s === "all" ? "All" : STATUS[s].label}
-              <span className="font-mono text-[10.5px] tabular-nums text-[color:var(--bjork-text-soft)]">{counts[s] ?? 0}</span>
+              <span className="font-mono text-[11px] tabular-nums text-[color:var(--bjork-text-soft)]">{counts[s] ?? 0}</span>
             </button>
           ))}
         </div>

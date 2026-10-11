@@ -594,7 +594,7 @@ export function Timetable({
                         {item.event.track ? <span>{item.event.track}</span> : null}
                         {live ? (
                           <span
-                            className="ml-auto rounded-full px-1.5 text-[10px] font-semibold uppercase tracking-[0.08em]"
+                            className="ml-auto rounded-full px-1.5 text-[11px] font-semibold uppercase tracking-[0.08em]"
                             style={{ color: accent, background: isDark ? "rgba(236,92,19,0.14)" : "rgba(236,92,19,0.12)" }}
                           >
                             Live
@@ -633,7 +633,7 @@ export function Timetable({
         <div
           aria-hidden
           className={cn(
-            "sticky left-0 top-0 z-30 flex items-end justify-end border-b border-r px-2 pb-2 text-[10px] font-medium uppercase tracking-[0.08em]",
+            "sticky left-0 top-0 z-30 flex items-end justify-end border-b border-r px-2 pb-2 text-[11px] font-medium uppercase tracking-[0.08em]",
             palette.header
           )}
         >
@@ -695,7 +695,7 @@ export function Timetable({
           ))}
           {nowInRange && todayId ? (
             <span
-              className="absolute right-1 z-10 -translate-y-1/2 rounded-full px-1.5 py-px text-[10px] font-semibold tabular-nums text-white"
+              className="absolute right-1 z-10 -translate-y-1/2 rounded-full px-1.5 py-px text-[11px] font-semibold tabular-nums text-white"
               style={{ top: nowTop, background: accent }}
             >
               {formatMinutes(nowMinutes ?? 0)}

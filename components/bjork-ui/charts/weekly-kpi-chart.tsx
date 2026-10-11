@@ -139,9 +139,9 @@ const WeeklyKPIChart: React.FC<WeeklyKPIChartProps> = ({
                 <>
                   {/* Pill background for text */}
                   <motion.rect
-                    x={x - 25}
+                    x={x - 27}
                     y={lineEndY - 29}
-                    width={50}
+                    width={54}
                     height={20}
                     rx={10}
                     ry={10}
@@ -155,7 +155,7 @@ const WeeklyKPIChart: React.FC<WeeklyKPIChartProps> = ({
                     x={x}
                     y={lineEndY - 15}
                     textAnchor="middle"
-                    fontSize="10"
+                    fontSize="11"
                     fontWeight="600"
                     fill="white"
                     initial={{ opacity: 0 }}

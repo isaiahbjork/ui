@@ -729,12 +729,12 @@ export function ScatterBrush({
             </span>
           )}
         </div>
-        <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-11 font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]">
+        <span aria-hidden="true" className="pointer-events-none absolute bottom-0 left-11 font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]">
           {xLabel} {"→"}
         </span>
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 origin-top-left -rotate-90 whitespace-nowrap font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]"
+          className="pointer-events-none absolute left-0 origin-top-left -rotate-90 whitespace-nowrap font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]"
           style={{ top: height - BOTTOM }}
         >
           {yLabel} {"→"}

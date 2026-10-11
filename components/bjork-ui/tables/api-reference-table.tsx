@@ -472,14 +472,14 @@ export function ApiReferenceTable({
   const renderMarkers = (param: ApiParam) => (
     <>
       {param.required ? (
-        <span className={cn("text-[10.5px] font-medium uppercase tracking-[0.08em]", palette.accent)}>
+        <span className={cn("text-[11px] font-medium uppercase tracking-[0.08em]", palette.accent)}>
           Required
         </span>
       ) : null}
       {param.deprecated ? (
         <span
           className={cn(
-            "rounded-full border px-1.5 py-px text-[10.5px] font-medium uppercase tracking-[0.06em]",
+            "rounded-full border px-1.5 py-px text-[11px] font-medium uppercase tracking-[0.06em]",
             getBjorkSignalPalette("red", isDark).borderColor,
             getBjorkSignalPalette("red", isDark).textColor
           )}
@@ -488,7 +488,7 @@ export function ApiReferenceTable({
         </span>
       ) : null}
       {param.since ? (
-        <span className={cn("rounded-full border px-1.5 py-px text-[10.5px] tabular-nums", green.borderColor, green.textColor)}>
+        <span className={cn("rounded-full border px-1.5 py-px text-[11px] tabular-nums", green.borderColor, green.textColor)}>
           since {param.since}
         </span>
       ) : null}
@@ -664,7 +664,7 @@ export function ApiReferenceTable({
               {method ? (
                 <span
                   className={cn(
-                    "shrink-0 rounded-[5px] border px-1.5 py-px font-mono text-[10.5px] font-semibold tracking-[0.04em]",
+                    "shrink-0 rounded-[5px] border px-1.5 py-px font-mono text-[11px] font-semibold tracking-[0.04em]",
                     methodTone.bgColor,
                     methodTone.borderColor,
                     methodTone.textColor
@@ -722,7 +722,7 @@ export function ApiReferenceTable({
                 {section.label}
                 <span
                   className={cn(
-                    "rounded-full px-1.5 text-[10.5px] tabular-nums",
+                    "rounded-full px-1.5 text-[11px] tabular-nums",
                     selected ? cn(palette.accentBg, palette.accent) : palette.mutedSurface
                   )}
                 >

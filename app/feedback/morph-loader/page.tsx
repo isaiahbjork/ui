@@ -45,7 +45,7 @@ function TileSample() {
   return (
     <div className="flex h-[242px] w-[min(300px,calc(100vw-56px))] flex-col items-center justify-center gap-4 rounded-[14px] border border-[color:var(--bjork-border,#232323)] bg-[color:var(--bjork-surface,#121212)]">
       <MorphLoader size={96} state="loading" attract tone="dark" />
-      <span className="font-mono text-[11px] tracking-[0.02em] text-[color:var(--bjork-text-muted,rgba(237,237,237,0.52))]">
+      <span className="font-mono text-[11px] tracking-[0.02em] text-[color:var(--bjork-text-muted,rgba(237,237,237,0.6))]">
         Deploying
       </span>
     </div>

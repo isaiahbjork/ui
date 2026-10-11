@@ -721,11 +721,11 @@ export function ForecastFan({
         <ChartLegend items={legend} className="pointer-events-none absolute left-11 top-0.5" />
         <LabelPool count={Y_LABELS} pool={yPool} />
         <LabelPool count={X_LABELS} pool={xPool} />
-        <LabelPool count={END_LABELS} pool={endPool} className="font-mono text-[9px] uppercase leading-none tracking-[0.08em] tabular-nums text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]" />
+        <LabelPool count={END_LABELS} pool={endPool} className="font-mono text-[10px] uppercase leading-none tracking-[0.08em] tabular-nums text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]" />
         <span
           ref={nowRef}
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]"
+          className="pointer-events-none absolute left-0 top-0 font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]"
         >
           Now
         </span>

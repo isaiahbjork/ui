@@ -855,7 +855,7 @@ export function CandlestickChart({
           </span>
           <span className="inline-flex items-center gap-1">
             {/* The triangles sit low on the cap line; 0.5px up centres them on the digits (blur test). */}
-            <span data-dir className="-translate-y-[0.5px] text-[8px]" />
+            <span data-dir className="-translate-y-[0.5px] text-[10px]" />
             <span data-v className="text-[color:var(--bjork-text)]" />
           </span>
           {showVolume && (

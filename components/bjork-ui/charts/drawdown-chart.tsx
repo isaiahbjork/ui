@@ -513,7 +513,7 @@ export function DrawdownChart({
     <div ref={rootRef} data-loop="idle" className={cn("relative w-full select-none text-[color:var(--bjork-text)]", className)} style={{ ...vars, height }}>
       {/* Episode chips: real buttons. */}
       <div className="absolute left-0 top-0 z-10 flex flex-wrap items-center gap-1.5">
-        <span className="mr-1 font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)]">Worst</span>
+        <span className="mr-1 font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)]">Worst</span>
         {top.map((ep, r) => {
           const on = selected === r;
           return (

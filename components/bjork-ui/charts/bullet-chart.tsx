@@ -850,7 +850,7 @@ export function BulletChart({
             >
               <span className="min-w-0 max-w-full truncate font-bjork-alpha text-[12px] font-medium leading-[14px] text-[color:var(--bjork-text)]">{m.label}</span>
               {m.sublabel && (
-                <span className="min-w-0 max-w-full shrink-[4] truncate font-bjork-alpha text-[10.5px] leading-[12px] text-[color:var(--bjork-text-muted)]">{m.sublabel}</span>
+                <span className="min-w-0 max-w-full shrink-[4] truncate font-bjork-alpha text-[11px] leading-[12px] text-[color:var(--bjork-text-muted)]">{m.sublabel}</span>
               )}
             </div>
           ))}

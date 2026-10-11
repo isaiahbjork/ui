@@ -812,7 +812,7 @@ export function StateTimeline({
         {shareId && (
           <span
             aria-hidden="true"
-            className="pointer-events-none absolute right-0 font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]"
+            className="pointer-events-none absolute right-0 font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]"
             style={{ top: TOP - 14 }}
           >
             {shareLabel}
@@ -833,7 +833,7 @@ export function StateTimeline({
         <span
           ref={nowRef}
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-accent-ink)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+          className="pointer-events-none absolute left-0 top-0 font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-accent-ink)] opacity-0 [text-box:trim-both_cap_alphabetic]"
         >
           Now
         </span>

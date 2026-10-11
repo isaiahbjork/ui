@@ -82,7 +82,7 @@ function Pieces({
           <p className="font-bjork-display text-[28px] leading-[1.1] text-[color:var(--bjork-text,#ededed)]">
             Field notes
           </p>
-          <p className="mt-6 whitespace-nowrap font-mono text-[12px] text-[color:var(--bjork-text-muted,rgba(237,237,237,0.52))]">
+          <p className="mt-6 whitespace-nowrap font-mono text-[12px] text-[color:var(--bjork-text-muted,rgba(237,237,237,0.6))]">
             08.10.26 · plate study
           </p>
         </div>

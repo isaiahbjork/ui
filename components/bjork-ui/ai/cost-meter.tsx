@@ -332,7 +332,7 @@ function Breakdown({ rows, fmt }: { rows: ModelUsage[]; fmt: (n: number) => stri
                 {r.cachedTokens ? formatTokens(r.cachedTokens) : "—"}
               </span>
               {r.cacheSavings ? (
-                <span className="block text-[10.5px] leading-4 text-[color:var(--bjork-success)]">−{fmt(r.cacheSavings)}</span>
+                <span className="block text-[11px] leading-4 text-[color:var(--bjork-success)]">−{fmt(r.cacheSavings)}</span>
               ) : null}
             </td>
             <td className="py-2 text-right align-top font-mono text-[12px] leading-5 tabular-nums text-[color:var(--bjork-text)]">

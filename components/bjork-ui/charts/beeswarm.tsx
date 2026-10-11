@@ -536,7 +536,7 @@ export function Beeswarm({
           <canvas ref={canvasRef} role="img" aria-label={summary} className="pointer-events-none absolute left-0 top-0" />
         </div>
         <LabelPool count={X_LABELS} pool={xPool} />
-        <LabelPool count={BAND_LABELS} pool={bandPool} className="font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]" />
+        <LabelPool count={BAND_LABELS} pool={bandPool} className="font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]" />
         <HoverTooltip ref={tipRef} onMeasure={wake} />
       </div>
       <ChartTable caption={ariaLabel} columns={tableCols} rows={tableRows} />

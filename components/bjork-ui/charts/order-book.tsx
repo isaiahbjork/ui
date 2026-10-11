@@ -1091,7 +1091,7 @@ export const OrderBook = forwardRef<OrderBookHandle, OrderBookProps>(function Or
     return out;
   };
 
-  const headerCell = "font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]";
+  const headerCell = "font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]";
   const header = (order: readonly ("price" | "size" | "total")[], priceRight: boolean) => (
     <div role="row" className="grid h-6 items-center gap-3 px-2" style={{ gridTemplateColumns: colsFor(order) }}>
       {order.map((k) =>

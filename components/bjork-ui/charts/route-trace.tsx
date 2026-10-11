@@ -859,7 +859,7 @@ export function RouteTrace({
                     {n.label}
                   </span>
                   {n.sublabel && (
-                    <span className="block truncate font-mono text-[10px] leading-[12px] tabular-nums" style={{ color: palette.textSoft }}>
+                    <span className="block truncate font-mono text-[11px] leading-[12px] tabular-nums" style={{ color: palette.textSoft }}>
                       {n.sublabel}
                     </span>
                   )}

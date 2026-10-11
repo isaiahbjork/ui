@@ -432,7 +432,7 @@ function EditForm({ initial, onCancel, onSave }: { initial: string; onCancel: ()
         className="block w-full resize-none overflow-hidden rounded-[9px] border border-[color:var(--bjork-accent-muted)] bg-[color:var(--bjork-field)] px-3 py-2 text-[14px] leading-5 text-[color:var(--bjork-text)] shadow-[0_0_0_3px_var(--bjork-accent-soft)] outline-none"
       />
       <div className="flex items-center justify-end gap-1.5">
-        <span className="mr-auto hidden font-mono text-[10.5px] text-[color:var(--bjork-text-faint)] @[400px]:inline">
+        <span className="mr-auto hidden font-mono text-[11px] text-[color:var(--bjork-text-faint)] @[400px]:inline">
           ↵ save · esc cancel
         </span>
         <button

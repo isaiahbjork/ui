@@ -670,14 +670,14 @@ export function FunnelChart({
           <span
             ref={hCountRef}
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-[6px] whitespace-nowrap font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+            className="pointer-events-none absolute left-0 top-[6px] whitespace-nowrap font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]"
           >
             {valueLabel}
           </span>
           <span
             ref={hPctRef}
             aria-hidden="true"
-            className="pointer-events-none absolute right-2 top-[6px] whitespace-nowrap font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]"
+            className="pointer-events-none absolute right-2 top-[6px] whitespace-nowrap font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] opacity-0 [text-box:trim-both_cap_alphabetic]"
           >
             Overall
           </span>

@@ -591,7 +591,7 @@ export function PricingTable({
                       {plan.highlighted && (
                         <span
                           className={cn(
-                            "absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap rounded-b-[7px] border border-t-0 px-2 pb-[2px] pt-[1px] text-[10px] font-medium uppercase tracking-[0.08em]",
+                            "absolute left-1/2 top-0 -translate-x-1/2 whitespace-nowrap rounded-b-[7px] border border-t-0 px-2 pb-[2px] pt-[1px] text-[11px] font-medium uppercase tracking-[0.08em]",
                             accentEdge,
                             isDark ? "bg-[#1d130d] text-[#d86a2c]" : "bg-[#fbeee3] text-[#bd4514]"
                           )}

@@ -268,7 +268,7 @@ export function LeaderboardTable({
   const renderChange = (entry: (typeof ranked)[number]) => {
     if (entry.previousRank === null) {
       return (
-        <span className={cn("inline-flex rounded-[6px] border px-1.5 py-[1px] text-[10.5px] font-medium", orange.bgColor, orange.borderColor, orange.textColor)}>
+        <span className={cn("inline-flex rounded-[6px] border px-1.5 py-[1px] text-[11px] font-medium", orange.bgColor, orange.borderColor, orange.textColor)}>
           New<span className="sr-only"> entrant</span>
         </span>
       );
@@ -286,7 +286,7 @@ export function LeaderboardTable({
     const tone = up ? green : red;
     return (
       <span className={cn("inline-flex items-center gap-0.5 text-[12px] font-medium tabular-nums", tone.textColor)}>
-        <span aria-hidden="true" className="text-[9px]">{up ? "▲" : "▼"}</span>
+        <span aria-hidden="true" className="text-[10px]">{up ? "▲" : "▼"}</span>
         <span aria-hidden="true">{Math.abs(delta)}</span>
         <span className="sr-only">
           {up ? "Up" : "Down"} {Math.abs(delta)} {Math.abs(delta) === 1 ? "place" : "places"}
@@ -525,7 +525,7 @@ export function LeaderboardTable({
                                     {entry.handle}
                                   </span>
                                   {isUser && (
-                                    <span className={cn("shrink-0 rounded-[5px] px-1 py-[1px] text-[10px] font-medium uppercase tracking-[0.06em]", palette.accentBg, palette.accent)}>
+                                    <span className={cn("shrink-0 rounded-[5px] px-1 py-[1px] text-[11px] font-medium uppercase tracking-[0.06em]", palette.accentBg, palette.accent)}>
                                       You
                                     </span>
                                   )}

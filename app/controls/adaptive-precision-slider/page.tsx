@@ -114,7 +114,7 @@ export default function Page() {
           precisionFalloff={falloff}
           showGain={showGain}
         />
-        <p className="px-[12px] text-[12px] text-[color:var(--bjork-text-soft,rgba(237,237,237,0.36))]">
+        <p className="px-[12px] text-[12px] text-[color:var(--bjork-text-soft,rgba(237,237,237,0.5))]">
           Drag, then drift away from the track to fine-tune.
         </p>
       </div>

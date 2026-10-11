@@ -421,7 +421,7 @@ export function SparkTable({
         </div>
 
         {/* Header */}
-        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)]" style={{ height: HEADER_H }}>
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)]" style={{ height: HEADER_H }}>
           <span className="absolute left-0 top-[9px] [text-box:trim-both_cap_alphabetic]">Metric</span>
           <span
             ref={timeRef}
@@ -456,7 +456,7 @@ export function SparkTable({
                   <span className="truncate">{r.label}</span>
                 </span>
                 {r.sublabel && (
-                  <span className="max-w-full truncate pl-3 font-mono text-[10px] leading-[14px] text-[color:var(--bjork-text-soft)]">
+                  <span className="max-w-full truncate pl-3 font-mono text-[11px] leading-[14px] text-[color:var(--bjork-text-soft)]">
                     {r.sublabel}
                   </span>
                 )}

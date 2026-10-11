@@ -313,7 +313,7 @@ function Waterfall({ spans, total, unit = "s", animate }: { spans: BentoSpan[]; 
     <div className="w-full max-w-[640px] self-stretch rounded-[14px] border border-[color:var(--bjork-border)] bg-[var(--bjork-panel)] p-4">
       <div className="grid grid-cols-[96px_minmax(0,1fr)] gap-x-3 @md:grid-cols-[116px_minmax(0,1fr)]">
         <span />
-        <div className="relative mb-2 h-4 font-mono text-[9.5px] text-[color:var(--bjork-text-soft)]">
+        <div className="relative mb-2 h-4 font-mono text-[11px] text-[color:var(--bjork-text-soft)]">
           {ticks.map((tick) => (
             <span
               key={tick}
@@ -329,7 +329,7 @@ function Waterfall({ spans, total, unit = "s", animate }: { spans: BentoSpan[]; 
           <Fragment key={span.label}>
             <span
               className={cn(
-                "truncate py-[5px] font-mono text-[10.5px] leading-4",
+                "truncate py-[5px] font-mono text-[11px] leading-4",
                 span.slow ? "text-[color:var(--bjork-text)]" : "text-[color:var(--bjork-text-muted)]",
               )}
             >
@@ -354,7 +354,7 @@ function Waterfall({ spans, total, unit = "s", animate }: { spans: BentoSpan[]; 
                   )}
                 />
                 {span.slow ? (
-                  <span className="absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-full bg-[var(--bjork-accent-soft)] px-1.5 py-px font-mono text-[9.5px] tabular-nums text-[color:var(--bjork-accent)]">
+                  <span className="absolute left-full top-1/2 ml-2 -translate-y-1/2 whitespace-nowrap rounded-full bg-[var(--bjork-accent-soft)] px-1.5 py-px font-mono text-[10px] tabular-nums text-[color:var(--bjork-accent)]">
                     {span.duration}
                     {unit}
                   </span>
@@ -372,7 +372,7 @@ function Replay({ markers, position, timecode, label }: { markers: number[]; pos
   return (
     <div className="w-full max-w-[300px]">
       <div className="mb-4 flex items-center justify-between">
-        <span className="flex items-center gap-2 rounded-full border border-[color:var(--bjork-border)] bg-[var(--bjork-panel)] py-1 pl-1 pr-2.5 font-mono text-[10.5px] text-[color:var(--bjork-text-medium)]">
+        <span className="flex items-center gap-2 rounded-full border border-[color:var(--bjork-border)] bg-[var(--bjork-panel)] py-1 pl-1 pr-2.5 font-mono text-[11px] text-[color:var(--bjork-text-medium)]">
           <span className="grid size-5 place-items-center rounded-full bg-[color:var(--bjork-text)] text-[color:var(--bjork-bg)]">
             <svg viewBox="0 0 10 10" className="ml-px size-2.5">
               <path d="M2.5 1.5v7l6-3.5z" fill="currentColor" />
@@ -403,7 +403,7 @@ function Replay({ markers, position, timecode, label }: { markers: number[]; pos
           style={{ left: `${position * 100}%` }}
         >
           <span className="absolute left-0 top-0 h-full w-[2px] -translate-x-1/2 rounded-full bg-[color:var(--bjork-text)]" />
-          <span className="absolute -top-6 left-0 -translate-x-1/2 whitespace-nowrap rounded-[6px] bg-[color:var(--bjork-text)] px-1.5 py-0.5 font-mono text-[9.5px] text-[color:var(--bjork-bg)]">
+          <span className="absolute -top-6 left-0 -translate-x-1/2 whitespace-nowrap rounded-[6px] bg-[color:var(--bjork-text)] px-1.5 py-0.5 font-mono text-[11px] text-[color:var(--bjork-bg)]">
             {label}
           </span>
         </div>
@@ -444,7 +444,7 @@ function Alerts({ alerts }: { alerts: { title: string; meta: string }[] }) {
               />
               <span className="min-w-0">
                 <span className="block truncate text-[12.5px] font-medium text-[color:var(--bjork-text)]">{alert.title}</span>
-                <span className="block truncate font-mono text-[10px] text-[color:var(--bjork-text-soft)]">{alert.meta}</span>
+                <span className="block truncate font-mono text-[11px] text-[color:var(--bjork-text-soft)]">{alert.meta}</span>
               </span>
             </div>
           </div>
@@ -463,7 +463,7 @@ function Cost({ value, caption, bars, highlight, animate }: { value: string; cap
         <p className="font-bjork-display text-[40px] font-semibold leading-none tracking-[-0.04em] tabular-nums text-[color:var(--bjork-text)]">
           {value}
         </p>
-        <p className="mt-1.5 font-mono text-[10.5px] text-[color:var(--bjork-text-soft)]">{caption}</p>
+        <p className="mt-1.5 font-mono text-[11px] text-[color:var(--bjork-text-soft)]">{caption}</p>
       </div>
       <div className="flex h-14 items-end gap-[3px]">
         {bars.map((bar, index) => (
@@ -491,7 +491,7 @@ function Code({ filename, lines }: { filename: string; lines: string[] }) {
   return (
     <div className="w-full max-w-[320px] overflow-hidden rounded-[14px] border border-[color:var(--bjork-border)] bg-[var(--bjork-panel)]">
       <div className="flex items-center justify-between border-b border-[color:var(--bjork-border)] px-3 py-2">
-        <span className="font-mono text-[10px] text-[color:var(--bjork-text-soft)]">{filename}</span>
+        <span className="font-mono text-[11px] text-[color:var(--bjork-text-soft)]">{filename}</span>
         <span className="flex gap-1">
           <span className="size-1.5 rounded-full bg-[color:var(--bjork-border-strong)]" />
           <span className="size-1.5 rounded-full bg-[color:var(--bjork-border-strong)]" />
@@ -556,7 +556,7 @@ function Redact({ segments, badge }: { segments: (string | { redacted: string })
     <div className="w-full max-w-[440px] rounded-[14px] border border-[color:var(--bjork-border)] bg-[var(--bjork-panel)] p-4">
       <div className="mb-3 flex items-center justify-between">
         <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-[color:var(--bjork-text-soft)]">span input</span>
-        <span className="flex items-center gap-1.5 rounded-full bg-[var(--bjork-accent-soft)] px-2 py-0.5 font-mono text-[10px] text-[color:var(--bjork-accent)]">
+        <span className="flex items-center gap-1.5 rounded-full bg-[var(--bjork-accent-soft)] px-2 py-0.5 font-mono text-[11px] text-[color:var(--bjork-accent)]">
           <svg viewBox="0 0 12 12" className="size-3">
             <rect x="2.5" y="5.5" width="7" height="5" rx="1.2" fill="none" stroke="currentColor" strokeWidth="1.2" />
             <path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" strokeWidth="1.2" />

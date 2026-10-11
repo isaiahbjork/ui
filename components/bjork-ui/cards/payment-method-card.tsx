@@ -488,20 +488,20 @@ function CardFace({
             </p>
             <div className="mt-[3%] flex items-end justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[9px] uppercase tracking-[0.14em]" style={{ color: f.soft }}>
+                <p className="text-[11px] uppercase tracking-[0.14em]" style={{ color: f.soft }}>
                   Card holder
                 </p>
                 <p className="truncate text-[12px] font-medium uppercase tracking-[0.06em]">{method.holder}</p>
               </div>
               <div className="shrink-0">
-                <p className="text-[9px] uppercase tracking-[0.14em]" style={{ color: f.soft }}>
+                <p className="text-[11px] uppercase tracking-[0.14em]" style={{ color: f.soft }}>
                   Expires
                 </p>
                 <p className="text-[12px] font-medium">{exp}</p>
               </div>
               <div className="flex shrink-0 flex-col items-center">
                 <NetworkMark color={f.ink} />
-                <span className="text-[8px] uppercase tracking-[0.18em]" style={{ color: f.soft }}>
+                <span className="text-[11px] uppercase tracking-[0.18em]" style={{ color: f.soft }}>
                   {method.network}
                 </span>
               </div>

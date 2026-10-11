@@ -423,7 +423,7 @@ export function DiffReview({
 
 function Kbd({ children }: { children: string }) {
   return (
-    <kbd className="inline-grid h-4 min-w-4 place-items-center rounded-[4px] border border-[color:var(--bjork-border)] px-1 font-mono text-[10px] text-[color:var(--bjork-text-muted)]">
+    <kbd className="inline-grid h-4 min-w-4 place-items-center rounded-[4px] border border-[color:var(--bjork-border)] px-1 font-mono text-[11px] text-[color:var(--bjork-text-muted)]">
       {children}
     </kbd>
   );

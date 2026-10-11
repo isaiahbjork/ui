@@ -81,7 +81,7 @@ const TOKENS: Record<BjorkTone, Record<string, string>> = {
     "--bjork-text": "#ededed",
     "--bjork-text-strong": "rgba(237, 237, 237, 0.9)",
     "--bjork-text-medium": "rgba(237, 237, 237, 0.72)",
-    "--bjork-text-muted": "rgba(237, 237, 237, 0.52)",
+    "--bjork-text-muted": "rgba(237, 237, 237, 0.6)",
     "--bjork-text-soft": "rgba(237, 237, 237, 0.4)",
     "--bjork-text-faint": "rgba(237, 237, 237, 0.22)",
     "--bjork-inverted-text": "#080808",
@@ -272,7 +272,7 @@ export function Kbd({ children, className }: { children: ReactNode; className?: 
   return (
     <kbd
       className={cn(
-        "inline-flex h-5 min-w-5 items-center justify-center rounded-[5px] border border-[color:var(--bjork-border-strong)] bg-[var(--bjork-surface)] px-1 font-mono text-[10.5px] font-medium leading-none text-[color:var(--bjork-text-muted)] shadow-[0_1px_0_var(--bjork-border-strong)]",
+        "inline-flex h-5 min-w-5 items-center justify-center rounded-[5px] border border-[color:var(--bjork-border-strong)] bg-[var(--bjork-surface)] px-1 font-mono text-[11px] font-medium leading-none text-[color:var(--bjork-text-muted)] shadow-[0_1px_0_var(--bjork-border-strong)]",
         className,
       )}
     >
@@ -379,7 +379,7 @@ export function InitialsAvatar({
       style={{
         width: size,
         height: size,
-        fontSize: Math.max(9, Math.round(size * 0.38)),
+        fontSize: Math.max(11, Math.round(size * 0.38)),
         background: `color-mix(in oklab, hsl(${hue} 70% 55%) 22%, var(--bjork-surface-active))`,
         boxShadow: `inset 0 0 0 1px color-mix(in oklab, hsl(${hue} 70% 55%) 24%, transparent)`,
       }}

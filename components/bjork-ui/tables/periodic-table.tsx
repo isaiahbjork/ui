@@ -366,7 +366,7 @@ export function PeriodicTable({
               return (
                 <span
                   key={category}
-                  className="flex items-center gap-1.5 text-[10.5px] leading-none"
+                  className="flex items-center gap-1.5 text-[11px] leading-none"
                 >
                   <span
                     className={cn("size-1.5 rounded-full", categoryPalette.dot)}
@@ -403,13 +403,13 @@ export function PeriodicTable({
         {/* f-block placeholders in the main grid */}
         <div
           style={{ gridColumn: 3, gridRow: 6 }}
-          className="pointer-events-none flex aspect-square items-center justify-center rounded-[8px] border border-dashed border-[var(--bjork-border-strong)] text-[8.5px] tabular-nums text-[var(--bjork-text-faint)]"
+          className="pointer-events-none flex aspect-square items-center justify-center rounded-[8px] border border-dashed border-[var(--bjork-border-strong)] text-[10px] tabular-nums text-[var(--bjork-text-faint)]"
         >
           57-71
         </div>
         <div
           style={{ gridColumn: 3, gridRow: 7 }}
-          className="pointer-events-none flex aspect-square items-center justify-center rounded-[8px] border border-dashed border-[var(--bjork-border-strong)] text-[8.5px] tabular-nums text-[var(--bjork-text-faint)]"
+          className="pointer-events-none flex aspect-square items-center justify-center rounded-[8px] border border-dashed border-[var(--bjork-border-strong)] text-[10px] tabular-nums text-[var(--bjork-text-faint)]"
         >
           89-103
         </div>
@@ -503,7 +503,7 @@ export function PeriodicTable({
                     </span>
                     <span
                       className={cn(
-                        "rounded-[8px] border px-1.5 py-0.5 text-[10px] font-medium leading-none",
+                        "rounded-[8px] border px-1.5 py-0.5 text-[11px] font-medium leading-none",
                         activeCategory.bg,
                         activeCategory.border,
                         activeCategory.text
@@ -529,7 +529,7 @@ export function PeriodicTable({
                       <div className="text-[12px] font-medium tabular-nums text-[var(--bjork-text-strong)]">
                         {anchor.element.mass}
                       </div>
-                      <div className="mt-0.5 text-[9.5px] leading-none text-[var(--bjork-text-soft)]">
+                      <div className="mt-0.5 text-[11px] leading-none text-[var(--bjork-text-soft)]">
                         Mass
                       </div>
                     </div>
@@ -537,7 +537,7 @@ export function PeriodicTable({
                       <div className="text-[12px] font-medium tabular-nums text-[var(--bjork-text-strong)]">
                         {anchor.element.group ?? "f-block"}
                       </div>
-                      <div className="mt-0.5 text-[9.5px] leading-none text-[var(--bjork-text-soft)]">
+                      <div className="mt-0.5 text-[11px] leading-none text-[var(--bjork-text-soft)]">
                         Group
                       </div>
                     </div>
@@ -545,7 +545,7 @@ export function PeriodicTable({
                       <div className="text-[12px] font-medium tabular-nums text-[var(--bjork-text-strong)]">
                         {anchor.element.period}
                       </div>
-                      <div className="mt-0.5 text-[9.5px] leading-none text-[var(--bjork-text-soft)]">
+                      <div className="mt-0.5 text-[11px] leading-none text-[var(--bjork-text-soft)]">
                         Period
                       </div>
                     </div>
@@ -618,7 +618,7 @@ function ElementCell({
         isActive && "z-10"
       )}
     >
-      <span className="absolute left-[5px] top-[3px] text-[8px] leading-none tabular-nums text-[var(--bjork-text-soft)]">
+      <span className="absolute left-[5px] top-[3px] text-[10px] leading-none tabular-nums text-[var(--bjork-text-soft)]">
         {element.number}
       </span>
       <span

@@ -537,7 +537,7 @@ export function InlineAiEdit({
                   autoComplete="off"
                   className="h-8 min-w-0 flex-1 bg-transparent text-[13px] text-[color:var(--bjork-text)] outline-none placeholder:text-[color:var(--bjork-text-faint)]"
                 />
-                <span className="hidden shrink-0 font-mono text-[10px] text-[color:var(--bjork-text-faint)] @[420px]:inline">⌘K</span>
+                <span className="hidden shrink-0 font-mono text-[11px] text-[color:var(--bjork-text-faint)] @[420px]:inline">⌘K</span>
                 <button
                   type="submit"
                   aria-label="Run"
@@ -619,7 +619,7 @@ export function InlineAiEdit({
                 )}
               >
                 Accept
-                <span aria-hidden="true" className="font-mono text-[10px] opacity-70">
+                <span aria-hidden="true" className="font-mono text-[11px] opacity-70">
                   ↵
                 </span>
               </button>
@@ -638,7 +638,7 @@ export function InlineAiEdit({
 
 function Key({ children }: { children: string }) {
   return (
-    <span aria-hidden="true" className="font-mono text-[10px] text-[color:var(--bjork-text-faint)]">
+    <span aria-hidden="true" className="font-mono text-[11px] text-[color:var(--bjork-text-faint)]">
       {children}
     </span>
   );

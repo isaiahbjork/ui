@@ -1064,7 +1064,7 @@ function SortGlyph({
           <ArrowUp style={style} />
         </span>
       )}
-      {order ? <span className={cn("text-[10px] tabular-nums", accent)}>{order}</span> : null}
+      {order ? <span className={cn("text-[11px] tabular-nums", accent)}>{order}</span> : null}
     </span>
   );
 }

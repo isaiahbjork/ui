@@ -1166,7 +1166,7 @@ function ProductPreview({ reduce }: { reduce: boolean }) {
               </span>
             </p>
           </div>
-          <div className="flex items-center gap-3 pt-0.5 text-[10.5px] text-[color:var(--bjork-text-muted)]">
+          <div className="flex items-center gap-3 pt-0.5 text-[11px] text-[color:var(--bjork-text-muted)]">
             <span className="flex items-center gap-1.5">
               <span className="h-[2px] w-3 rounded-full bg-[var(--bjork-accent)]" />
               14d
@@ -1207,7 +1207,7 @@ function ProductPreview({ reduce }: { reduce: boolean }) {
       <div className="-mt-5 ml-[18%] w-[min(82%,340px)] rounded-[14px] border border-[color:var(--bjork-border)] bg-[var(--bjork-menu)] p-3.5 shadow-[var(--bjork-shadow-menu)] backdrop-blur-xl">
         <div className="mb-2.5 flex items-center justify-between">
           <p className="text-[12px] font-medium">INC-2291 · Checkout latency</p>
-          <span className="rounded-full bg-[var(--blk-success-soft)] px-1.5 py-0.5 text-[10.5px] font-medium text-[color:var(--blk-success)]">
+          <span className="rounded-full bg-[var(--blk-success-soft)] px-1.5 py-0.5 text-[11px] font-medium text-[color:var(--blk-success)]">
             Resolved
           </span>
         </div>
@@ -1218,7 +1218,7 @@ function ProductPreview({ reduce }: { reduce: boolean }) {
                 <span className="absolute left-[3.5px] top-[17px] h-[calc(100%-10px)] w-px bg-[var(--bjork-border-strong)]" />
               )}
               <span className="relative size-2 shrink-0 rounded-full" style={{ background: entry.tone }} />
-              <span className="w-[38px] shrink-0 font-mono text-[10.5px] tabular-nums text-[color:var(--bjork-text-soft)]">{entry.time}</span>
+              <span className="w-[38px] shrink-0 font-mono text-[11px] tabular-nums text-[color:var(--bjork-text-soft)]">{entry.time}</span>
               <span className="truncate text-[color:var(--bjork-text-medium)]">{entry.label}</span>
             </li>
           ))}
@@ -1276,7 +1276,7 @@ function EnvelopeArt() {
         <rect x="4" y="7" width="20" height="14" rx="3" fill="none" stroke="var(--bjork-text-medium)" strokeWidth="1.5" />
         <path d="m5 8.5 9 6.5 9-6.5" fill="none" stroke="var(--bjork-text-medium)" strokeWidth="1.5" strokeLinejoin="round" />
       </svg>
-      <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-[var(--blk-accent-fill)] text-[9px] font-semibold text-[color:var(--blk-accent-fill-ink)] ring-2 ring-[color:var(--bjork-bg)]">
+      <span className="absolute -right-1 -top-1 grid size-4 place-items-center rounded-full bg-[var(--blk-accent-fill)] text-[11px] font-semibold text-[color:var(--blk-accent-fill-ink)] ring-2 ring-[color:var(--bjork-bg)]">
         1
       </span>
     </span>

@@ -361,7 +361,7 @@ function KeyboardShortcut({ shortcut }: { shortcut: string }) {
       {label.split(" + ").map((part, index) => (
         <React.Fragment key={`${part}-${index}`}>
           {index > 0 && <span>+</span>}
-          <span className="flex h-5 min-w-5 items-center justify-center rounded-[4px] border border-[color:var(--bjork-border)] px-1 text-[10px] leading-none">
+          <span className="flex h-5 min-w-5 items-center justify-center rounded-[4px] border border-[color:var(--bjork-border)] px-1 text-[11px] leading-none">
             {part}
           </span>
         </React.Fragment>

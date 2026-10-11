@@ -400,7 +400,7 @@ export function DumbbellChart({
             {labels[1]}
           </span>
         </div>
-        <span aria-hidden="true" className="pointer-events-none absolute right-0 top-[1px] font-mono text-[9px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]">
+        <span aria-hidden="true" className="pointer-events-none absolute right-0 top-[1px] font-mono text-[10px] uppercase leading-none tracking-[0.1em] text-[color:var(--bjork-text-soft)] [text-box:trim-both_cap_alphabetic]">
           Gap
         </span>
         <LabelPool count={X_LABELS} pool={xPool} />

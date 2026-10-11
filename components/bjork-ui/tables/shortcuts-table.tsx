@@ -587,7 +587,7 @@ export function ShortcutsTable({
                                     <Fragment key={j}>
                                       {j > 0 ? (
                                         <>
-                                          <span aria-hidden className={cn("text-[10px]", palette.secondaryText, "opacity-70")}>
+                                          <span aria-hidden className={cn("text-[11px]", palette.secondaryText, "opacity-70")}>
                                             +
                                           </span>
                                           <span className="sr-only"> plus </span>

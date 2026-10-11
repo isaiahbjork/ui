@@ -244,7 +244,7 @@ export function DeploymentCard({
         <div className="mt-3 flex items-start gap-2.5">
           <span
             aria-hidden="true"
-            className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-[color:var(--bjork-card-raised)] text-[10px] font-semibold text-[color:var(--bjork-text-medium)] ring-1 ring-[color:var(--bjork-border)]"
+            className="mt-0.5 grid size-6 shrink-0 place-items-center rounded-full bg-[color:var(--bjork-card-raised)] text-[11px] font-semibold text-[color:var(--bjork-text-medium)] ring-1 ring-[color:var(--bjork-border)]"
           >
             {commit.author
               .split(" ")

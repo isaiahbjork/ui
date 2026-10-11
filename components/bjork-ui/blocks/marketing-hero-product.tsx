@@ -551,11 +551,11 @@ function ProductWindow({ shot, tone }: { shot: HeroProductShot; tone: BlockTone 
                       >
                         {run.label}
                       </span>
-                      <span className="block truncate font-mono text-[10px] leading-4 text-[color:var(--bjork-text-soft)]">
+                      <span className="block truncate font-mono text-[11px] leading-4 text-[color:var(--bjork-text-soft)]">
                         {run.id}
                       </span>
                     </span>
-                    <span className="font-mono text-[10.5px] tabular-nums text-[color:var(--bjork-text-soft)]">
+                    <span className="font-mono text-[11px] tabular-nums text-[color:var(--bjork-text-soft)]">
                       <span className="sr-only">{RUN_WORD[run.status]}, </span>
                       {run.meta}
                     </span>
@@ -600,7 +600,7 @@ function ProductWindow({ shot, tone }: { shot: HeroProductShot; tone: BlockTone 
                     {metric.delta ? (
                       <span
                         className={cn(
-                          "font-mono text-[10.5px] tabular-nums",
+                          "font-mono text-[11px] tabular-nums",
                           metric.deltaTone === "bad" ? "text-[#d9634f]" : "text-[#3fa774]",
                         )}
                       >

@@ -372,7 +372,7 @@ export function PromptComposer({
               >
                 <span
                   aria-hidden="true"
-                  className="grid h-6 min-w-6 place-items-center rounded-[6px] bg-[color:var(--bjork-surface-active)] px-1 font-mono text-[8.5px] font-semibold uppercase text-[color:var(--bjork-text-medium)]"
+                  className="grid h-6 min-w-6 place-items-center rounded-[6px] bg-[color:var(--bjork-surface-active)] px-1 font-mono text-[10px] font-semibold uppercase text-[color:var(--bjork-text-medium)]"
                 >
                   {extOf(f.name).slice(0, 4)}
                 </span>

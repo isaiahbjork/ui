@@ -495,7 +495,7 @@ export function DonutChart({
           {showCentre && (
             <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center gap-[1.6cqw] text-center" style={{ width: `${(inner * 78).toFixed(1)}cqw` }}>
-                <span ref={cLabel} className="max-w-full truncate font-bjork-alpha text-[clamp(10px,5.2cqw,13px)] font-medium leading-tight text-[color:var(--bjork-text-muted)]" />
+                <span ref={cLabel} className="max-w-full truncate font-bjork-alpha text-[clamp(11px,5.2cqw,13px)] font-medium leading-tight text-[color:var(--bjork-text-muted)]" />
                 <span
                   ref={cValue}
                   className="max-w-full truncate font-mono leading-none tabular-nums text-[color:var(--bjork-text)] [text-box:trim-both_cap_alphabetic]"

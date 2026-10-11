@@ -666,7 +666,7 @@ export function ChangelogTable({
                                 {highlight(release.summary)}
                               </span>
                               {isLatest && (
-                                <span className={cn("shrink-0 rounded-[6px] border px-1.5 py-[1px] text-[10.5px] font-medium", palette.accentBg, palette.accentBorder, palette.accent)}>
+                                <span className={cn("shrink-0 rounded-[6px] border px-1.5 py-[1px] text-[11px] font-medium", palette.accentBg, palette.accentBorder, palette.accent)}>
                                   Latest
                                 </span>
                               )}

@@ -1249,7 +1249,7 @@ function AttachmentChip({ file, onRemove }: { file: ChatAttachment; onRemove?: (
       </span>
       <span className="min-w-0">
         <span className="block truncate font-medium">{file.name}</span>
-        <span className="block font-mono text-[10.5px] text-[color:var(--bjork-text-soft)]">{file.size}</span>
+        <span className="block font-mono text-[11px] text-[color:var(--bjork-text-soft)]">{file.size}</span>
       </span>
       {onRemove && (
         <button
