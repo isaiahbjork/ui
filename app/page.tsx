@@ -8,6 +8,7 @@ import { useTheme } from "next-themes";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   ArrowDown,
+  ArrowRight,
   ArrowUp,
   Check,
   Clipboard,
@@ -315,6 +316,7 @@ function HeroQuickStart({
           isLight={isLight}
         />
         <OutputBlock isLight={isLight} />
+        <SkillBlock isLight={isLight} />
       </div>
     </motion.section>
   );
@@ -356,6 +358,40 @@ function CommandBlock({
         </code>
         <Clipboard className={cn("size-4 shrink-0", isLight ? "text-[#171717]/60" : "text-[#ededed]/52")} />
       </div>
+    </div>
+  );
+}
+
+function SkillBlock({ isLight }: { isLight: boolean }) {
+  return (
+    <div>
+      <p
+        className={cn(
+          "mb-5 font-mono text-[12px] uppercase leading-none tracking-[0.14em]",
+          isLight ? "text-[#171717]/60" : "text-[#ededed]/32"
+        )}
+      >
+        Teach your agent the style
+      </p>
+      <Link
+        href="/docs/design-skill"
+        className={cn(
+          "group flex min-h-[54px] items-center justify-between gap-4 rounded-[16px] px-5 text-[14px] transition-colors duration-150",
+          isLight
+            ? "bg-[#faf7f0] text-[#171717]/78 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] hover:bg-[#f5efe3]"
+            : "bg-[#111111] text-[#ededed]/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.045)] hover:bg-[#161616]"
+        )}
+      >
+        <span className="min-w-0 truncate">
+          The design skill: surfaces, colour, type, motion and charts, as one file for your coding agent
+        </span>
+        <ArrowRight
+          className={cn(
+            "size-4 shrink-0 transition-transform duration-150 group-hover:translate-x-0.5",
+            isLight ? "text-[#bd4514]" : "text-[#d86a2c]"
+          )}
+        />
+      </Link>
     </div>
   );
 }

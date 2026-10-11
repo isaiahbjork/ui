@@ -25,7 +25,10 @@ interface ComponentGroup {
 const componentRoutes: ComponentGroup[] = [
   {
     title: "Docs",
-    routes: [{ name: "Introduction", path: "/docs" }],
+    routes: [
+      { name: "Introduction", path: "/docs" },
+      { name: "Design skill", path: "/docs/design-skill" },
+    ],
   },
   {
     title: "UI Primitives",
