@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
+import { usePreviewMode, usePreviewSearchParam } from "@/components/bjork-ui/use-preview-mode";
+import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Crosshair, Radar, ToggleLeft } from "lucide-react";
 import { ComponentDemoShell, ShellSegmented } from "@/components/bjork-ui/component-demo-shell";
@@ -15,6 +16,7 @@ const item = getGalleryItem("hud-frame");
 
 export default function Page() {
   const isPreview = usePreviewMode();
+  const isPreviewLight = usePreviewSearchParam("theme") === "light";
   const [mounted, setMounted] = useState(false);
   const [showTargeting, setShowTargeting] = useState(true);
   const [targetingKey, setTargetingKey] = useState(0);
@@ -117,8 +119,16 @@ export default function Page() {
   );
 
   if (isPreview) {
+    // Match the shared stage: warm #f7f5ef in light, #111 in dark. bg-background resolves to pure white in light.
     return (
-      <div className="flex min-h-screen items-center justify-center overflow-hidden bg-background">
+      <div
+        data-preview-mode="true"
+        style={{ colorScheme: isPreviewLight ? "light" : "dark" }}
+        className={cn(
+          "flex min-h-screen items-center justify-center overflow-hidden",
+          isPreviewLight ? "bg-[#f7f5ef] text-[#171717]" : "bg-[#111] text-[#ededed]",
+        )}
+      >
         <div className="w-[920px] scale-[0.5]">{demo}</div>
       </div>
     );
