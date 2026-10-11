@@ -37,6 +37,8 @@ interface CoachSchedulingProps {
   onTimeSlotSelect?: (day: string, time: string) => void;
   onWeekChange?: (direction: "prev" | "next") => void;
   enableAnimations?: boolean;
+  /** Shows only the first N days of the schedule. Used to keep the gallery preview inside its frame. */
+  visibleDays?: number;
   className?: string;
 }
 
@@ -134,8 +136,10 @@ export function CoachSchedulingCard({
   onTimeSlotSelect,
   onWeekChange,
   enableAnimations = true,
+  visibleDays,
   className
 }: CoachSchedulingProps) {
+  const days = visibleDays === undefined ? weekSchedule : weekSchedule.slice(0, visibleDays);
   const [selectedLocation, setSelectedLocation] = useState(locations[0]);
   const [weekRange] = useState("Aug 17 - Aug 22");
   const [showConfirmationView, setShowConfirmationView] = useState(false);
@@ -408,7 +412,7 @@ export function CoachSchedulingCard({
         variants={shouldAnimate ? itemVariants : {}}
         className="px-6 pb-6 space-y-4"
       >
-        {weekSchedule.map((day) => (
+        {days.map((day) => (
           <motion.div
             key={day.date}
             variants={shouldAnimate ? itemVariants : {}}

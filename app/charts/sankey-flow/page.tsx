@@ -64,7 +64,7 @@ export default function Page() {
   flow
 />`}
       previewScaleClassName="w-[320px]"
-      previewCaptureScaleClassName="w-[760px] scale-[1.08]"
+      previewCaptureScaleClassName="w-[760px] scale-[1.1]"
       optionsDefaultOpen={false}
       onReset={reset}
       controls={<ShellSwitch label="Flow" checked={flow} onCheckedChange={setFlow} />}

@@ -391,7 +391,7 @@ const primitiveDemos: Record<string, PrimitiveDemo> = {
     title: "Form",
     description: "A compact form block with label, helper text, input, and final action.",
     usageCode: `import { BjorkFormPreview } from "@/components/bjork-ui/primitives";`,
-    examples: [{ label: "Profile form", description: "Use as the base rhythm for settings and account forms.", preview: <BjorkFormPreview />, code: `<BjorkFormPreview />` }],
+    examples: [{ label: "Profile form", description: "Use as the base rhythm for settings and account forms.", preview: <BjorkFormPreview />, code: `<BjorkFormPreview />`, staticScaleClassName: "scale-[1.85]" }],
   },
   "input-mask": {
     title: "Input Mask",
