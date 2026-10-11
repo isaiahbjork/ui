@@ -2,6 +2,28 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useIsDarkTheme } from "@/hooks/use-is-dark-theme";
+
+// Ember and rust on the dark surface, warm paper and rust in light. No safety yellow.
+const DARK_PALETTE = {
+  outline: "#ec5c13",
+  mark: "#ec5c13",
+  corner: "#ec5c13",
+  stripes: "#b84a12",
+  stripeAlpha: 0.72,
+  fill: "#b84a12",
+  fillAlpha: 0.08,
+};
+
+const LIGHT_PALETTE = {
+  outline: "#b84a12",
+  mark: "#b84a12",
+  corner: "#b84a12",
+  stripes: "#ec5c13",
+  stripeAlpha: 0.7,
+  fill: "#fffcf6",
+  fillAlpha: 1,
+};
 
 interface WarningGraphicProps {
   /** Width of the graphic */
@@ -14,7 +36,7 @@ interface WarningGraphicProps {
   enableAnimations?: boolean;
   /** Animation speed multiplier */
   animationSpeed?: number;
-  /** Color override for all elements */
+  /** Colour override for all elements. Omit it to use the theme palette (ember and rust, warm paper in light). */
   color?: string;
 }
 
@@ -24,11 +46,16 @@ export function WarningGraphic({
   className,
   enableAnimations = true,
   animationSpeed = 1,
-  color = "#FDC221",
+  color,
 }: WarningGraphicProps = {}) {
   const shouldReduceMotion = useReducedMotion();
   const shouldAnimate = enableAnimations && !shouldReduceMotion;
   const speedMultiplier = 1 / animationSpeed;
+  const isDark = useIsDarkTheme();
+  const base = isDark ? DARK_PALETTE : LIGHT_PALETTE;
+  const p = color
+    ? { ...base, outline: color, mark: color, corner: color, stripes: color, fillAlpha: 0 }
+    : base;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -182,7 +209,7 @@ export function WarningGraphic({
           width="0.538"
           height="0.538"
           transform="translate(-25.128 25.666) rotate(-90)"
-          fill={color}
+          fill={p.corner}
           variants={elementVariants}
         />
         <motion.rect
@@ -190,7 +217,7 @@ export function WarningGraphic({
           width="0.538"
           height="0.538"
           transform="translate(-22.449 22.987) rotate(-90)"
-          fill={color}
+          fill={p.corner}
           variants={elementVariants}
         />
         <motion.rect
@@ -199,7 +226,7 @@ export function WarningGraphic({
           width="0.538"
           height="0.538"
           transform="translate(151.292 202.086) rotate(-90)"
-          fill={color}
+          fill={p.corner}
           variants={elementVariants}
         />
         <motion.rect
@@ -208,7 +235,7 @@ export function WarningGraphic({
           width="0.538"
           height="0.538"
           transform="translate(153.971 199.408) rotate(-90)"
-          fill={color}
+          fill={p.corner}
           variants={elementVariants}
         />
 
@@ -217,7 +244,7 @@ export function WarningGraphic({
           <motion.path
             d="M25.949,24.432H5.565a.375.375,0,0,1,0-.75H25.52l8.068-13.7H59.015a.375.375,0,0,1,0,.75h-25Z"
             fill="none"
-            stroke={color}
+            stroke={p.corner}
             strokeWidth="0.5"
             strokeLinecap="round"
             variants={pathLineVariants}
@@ -225,7 +252,7 @@ export function WarningGraphic({
           <motion.path
             d="M171.393,24.432H151.009l-8.068-13.7h-25a.375.375,0,0,1,0-.75H143.37l8.068,13.7h19.955a.375.375,0,0,1,0,.75Z"
             fill="none"
-            stroke={color}
+            stroke={p.corner}
             strokeWidth="0.5"
             strokeLinecap="round"
             variants={pathLineVariants}
@@ -233,7 +260,7 @@ export function WarningGraphic({
           <motion.path
             d="M57.3,57.531a.375.375,0,0,1-.321-.182L47.147,41.043H18.507l-7.71-7.71H7.66a.375.375,0,1,1,0-.75h3.448l7.709,7.71H47.571L57.623,56.962a.376.376,0,0,1-.127.515A.382.382,0,0,1,57.3,57.531Z"
             fill="none"
-            stroke={color}
+            stroke={p.corner}
             strokeWidth="0.5"
             strokeLinecap="round"
             variants={pathLineVariants}
@@ -241,17 +268,25 @@ export function WarningGraphic({
           <motion.path
             d="M119.656,57.531a.376.376,0,0,1-.321-.569l10.052-16.669h28.754l7.709-7.71H169.3a.375.375,0,0,1,0,.75h-3.137l-7.71,7.71h-28.64l-9.833,16.306A.377.377,0,0,1,119.656,57.531Z"
             fill="none"
-            stroke={color}
+            stroke={p.corner}
             strokeWidth="0.5"
             strokeLinecap="round"
             variants={pathLineVariants}
           />
         </motion.g>
 
-        {/* Second: Main warning triangle outline draws */}
+        {/* Second: Main warning triangle outline draws, over a faint field */}
+        {p.fillAlpha > 0 && (
+          <motion.polygon
+            points="93.6,1 120.3,47.3 115.2,56.1 61.7,56.1 56.6,47.3 83.4,1"
+            fill={p.fill}
+            fillOpacity={p.fillAlpha}
+            variants={triangleVariants}
+          />
+        )}
         <motion.path
           d="M93.582,1l26.746,46.327-5.1,8.828H61.737L56.63,47.326,83.377,1h10.2m.577-1H82.8L55.475,47.327l5.685,9.828h54.648l5.675-9.828L94.159,0Z"
-          fill={color}
+          fill={p.outline}
           variants={triangleVariants}
         />
 
@@ -260,34 +295,40 @@ export function WarningGraphic({
           {/* Left side stripes (animate from center going left) */}
           <motion.polygon
             points="51.838 37.309 61.852 37.309 75.448 13.85 65.434 13.85 51.838 37.309"
-            fill={color}
+            fill={p.stripes}
+            fillOpacity={p.stripeAlpha}
             variants={leftStripeVariants}
           />
           <motion.polygon
             points="37.422 37.309 47.436 37.309 61.033 13.85 51.019 13.85 37.422 37.309"
-            fill={color}
+            fill={p.stripes}
+            fillOpacity={p.stripeAlpha}
             variants={leftStripeVariants}
           />
           <motion.polygon
             points="23.007 37.309 33.021 37.309 46.617 13.85 36.603 13.85 23.007 37.309"
-            fill={color}
+            fill={p.stripes}
+            fillOpacity={p.stripeAlpha}
             variants={leftStripeVariants}
           />
 
           {/* Right side stripes (animate from center going right) */}
           <motion.polygon
             points="125.121 37.309 115.107 37.309 101.51 13.85 111.524 13.85 125.121 37.309"
-            fill={color}
+            fill={p.stripes}
+            fillOpacity={p.stripeAlpha}
             variants={rightStripeVariants}
           />
           <motion.polygon
             points="139.536 37.309 129.522 37.309 115.926 13.85 125.94 13.85 139.536 37.309"
-            fill={color}
+            fill={p.stripes}
+            fillOpacity={p.stripeAlpha}
             variants={rightStripeVariants}
           />
           <motion.polygon
             points="153.951 37.309 143.937 37.309 130.341 13.85 140.355 13.85 153.951 37.309"
-            fill={color}
+            fill={p.stripes}
+            fillOpacity={p.stripeAlpha}
             variants={rightStripeVariants}
           />
         </motion.g>
@@ -295,7 +336,7 @@ export function WarningGraphic({
         {/* Fourth: Exclamation mark with overshoot */}
         <motion.path
           d="M88.469,38.939a3.158,3.158,0,0,1,2.29.838,3.058,3.058,0,0,1,0,4.269,3.521,3.521,0,0,1-4.56,0,2.827,2.827,0,0,1-.868-2.125,2.858,2.858,0,0,1,.868-2.134A3.11,3.11,0,0,1,88.469,38.939Zm2.339-3.079H86.13l-.662-19.666h6Z"
-          fill={color}
+          fill={p.mark}
           variants={exclamationVariants}
         />
       </motion.g>

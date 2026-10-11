@@ -6066,19 +6066,19 @@
           "target": "@components/bjork-ui/hud/hud-button.tsx"
         },
         {
-          "path": "components/ui/hyper-text.tsx",
-          "type": "registry:ui",
-          "target": "@ui/hyper-text.tsx"
-        },
-        {
-          "path": "lib/utils.ts",
-          "type": "registry:lib",
-          "target": "@lib/utils.ts"
+          "path": "components/bjork-ui/_core/surface.ts",
+          "type": "registry:component",
+          "target": "@components/bjork-ui/_core/surface.ts"
         },
         {
           "path": "components/bjork-ui/_core/palette.ts",
           "type": "registry:component",
           "target": "@components/bjork-ui/_core/palette.ts"
+        },
+        {
+          "path": "lib/utils.ts",
+          "type": "registry:lib",
+          "target": "@lib/utils.ts"
         },
         {
           "path": "public/images/interface-01.svg",
@@ -6104,10 +6104,8 @@
       "description": "HUD button is a production-ready hud component from BJORK UI, packaged for shadcn registries.",
       "homepage": "https://ui.isaiahbjork.com/hud/hud-button",
       "dependencies": [
-        "clsx",
         "framer-motion",
-        "next-themes",
-        "tailwind-merge"
+        "next-themes"
       ],
       "cssVars": {
         "light": {
@@ -6276,14 +6274,9 @@
           "target": "@hooks/use-is-dark-theme.ts"
         },
         {
-          "path": "components/ui/hyper-text.tsx",
-          "type": "registry:ui",
-          "target": "@ui/hyper-text.tsx"
-        },
-        {
-          "path": "lib/utils.ts",
-          "type": "registry:lib",
-          "target": "@lib/utils.ts"
+          "path": "components/bjork-ui/_core/surface.ts",
+          "type": "registry:component",
+          "target": "@components/bjork-ui/_core/surface.ts"
         },
         {
           "path": "components/bjork-ui/_core/palette.ts",
@@ -6669,6 +6662,16 @@
           "path": "components/bjork-ui/_core/palette.ts",
           "type": "registry:component",
           "target": "@components/bjork-ui/_core/palette.ts"
+        },
+        {
+          "path": "components/bjork-ui/_core/surface.ts",
+          "type": "registry:component",
+          "target": "@components/bjork-ui/_core/surface.ts"
+        },
+        {
+          "path": "hooks/use-is-dark-theme.ts",
+          "type": "registry:hook",
+          "target": "@hooks/use-is-dark-theme.ts"
         }
       ],
       "meta": {
@@ -6686,6 +6689,7 @@
       "dependencies": [
         "clsx",
         "framer-motion",
+        "next-themes",
         "tailwind-merge"
       ],
       "cssVars": {
@@ -6853,6 +6857,11 @@
           "path": "lib/utils.ts",
           "type": "registry:lib",
           "target": "@lib/utils.ts"
+        },
+        {
+          "path": "hooks/use-is-dark-theme.ts",
+          "type": "registry:hook",
+          "target": "@hooks/use-is-dark-theme.ts"
         }
       ],
       "meta": {
