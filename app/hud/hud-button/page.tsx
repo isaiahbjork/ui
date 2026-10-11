@@ -50,6 +50,7 @@ export function Demo() {
   );
 }`}
       previewScaleClassName="w-[720px] scale-[0.92]"
+      previewCaptureScaleClassName="w-fit scale-[1.6]"
       onReset={resetControls}
       controls={
         <>

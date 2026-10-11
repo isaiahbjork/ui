@@ -63,6 +63,7 @@ export function Demo() {
   );
 }`}
       previewScaleClassName="w-[420px] scale-[0.95]"
+      previewCaptureScaleClassName="w-[420px] scale-[1.4]"
       onReset={resetControls}
       controls={
         <>

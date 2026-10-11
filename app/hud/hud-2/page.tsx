@@ -18,6 +18,7 @@ export function Demo() {
   return <Overlay2 />;
 }`}
       previewScaleClassName="w-[920px] scale-[0.72]"
+      previewCaptureScaleClassName="w-[920px] scale-[1.18]"
       previewInnerClassName="p-0 bg-transparent"
     >
       <Overlay2 className="h-[620px] w-[920px]" compact />

@@ -21,6 +21,8 @@ interface DownloadProps {
   /** Follows the theme when omitted. */
   tone?: BjorkTone;
   isAnimating?: boolean;
+  /** Holds the card mid-transfer at this progress (0 to 1), for still previews. */
+  previewProgress?: number;
   onAnimationComplete?: () => void;
 }
 
@@ -49,13 +51,16 @@ export function AnimatedDownload({
   durationMs = 3200,
   tone: toneProp,
   isAnimating = false,
+  previewProgress,
   onAnimationComplete,
 }: DownloadProps) {
   const tone = useBjorkTone(toneProp);
   const pal = BJORK_PALETTE[tone];
   const reduce = !!useReducedMotion();
 
-  const [transfer, setTransfer] = useState<Transfer>(IDLE);
+  const [transfer, setTransfer] = useState<Transfer>(
+    previewProgress === undefined ? IDLE : { phase: "downloading", progress: previewProgress }
+  );
 
   // Keep the latest callback in a ref so an inline handler does not restart the transfer.
   const onCompleteRef = useRef(onAnimationComplete);
@@ -64,6 +69,7 @@ export function AnimatedDownload({
   }, [onAnimationComplete]);
 
   useEffect(() => {
+    if (previewProgress !== undefined) return;
     if (!isAnimating) {
       // A finished transfer stays on its check until the next run or a remount.
       setTransfer((prev) => (prev.phase === "done" ? prev : IDLE));
@@ -90,7 +96,7 @@ export function AnimatedDownload({
       clearInterval(id);
       if (holdTimer) clearTimeout(holdTimer);
     };
-  }, [isAnimating, durationMs]);
+  }, [isAnimating, durationMs, previewProgress]);
 
   const { phase, progress } = transfer;
   const pct = Math.round(progress * 100);

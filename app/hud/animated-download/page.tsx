@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { usePreviewMode } from "@/components/bjork-ui/use-preview-mode";
 import { AnimatedDownload } from "@/components/bjork-ui/hud/animated-download";
 import { SimpleComponentDemoPage } from "@/components/bjork-ui/component-demo-shell";
 import { BjorkButton } from "@/components/bjork-ui/primitives";
@@ -8,6 +9,7 @@ import { getGalleryItem } from "@/lib/bjork-gallery";
 import { Download, MousePointer2, RotateCcw } from "lucide-react";
 
 export default function Home() {
+  const isPreview = usePreviewMode();
   const item = getGalleryItem("animated-download")
   const [isDownloading, setIsDownloading] = useState(false)
   // Bumping the key remounts the card, which returns it to the ready state.
@@ -81,12 +83,13 @@ export function Demo() {
       previewScaleClassName="w-[760px] scale-[0.84]"
       previewCaptureScaleClassName="w-[900px] scale-100"
     >
-      {/* The card is 360px wide; scale it up so it fills the stage like the other HUD thumbnails. */}
+      {/* The card is 360px wide; zoom (not a transform) enlarges it in layout so nothing clips it. */}
       <div className="flex w-full items-center justify-center">
-        <div className="origin-center scale-[1.5]">
+        <div style={{ zoom: 1.5 }}>
           <AnimatedDownload
             key={runKey}
             isAnimating={isDownloading}
+            previewProgress={isPreview ? 0.64 : undefined}
             onAnimationComplete={() => setIsDownloading(false)}
           />
         </div>
