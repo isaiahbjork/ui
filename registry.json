@@ -16445,6 +16445,11 @@
           "target": "@components/bjork-ui/_core/palette.ts"
         },
         {
+          "path": "components/bjork-ui/_core/surface.ts",
+          "type": "registry:component",
+          "target": "@components/bjork-ui/_core/surface.ts"
+        },
+        {
           "path": "components/bjork-ui/_core/tone.ts",
           "type": "registry:component",
           "target": "@components/bjork-ui/_core/tone.ts"

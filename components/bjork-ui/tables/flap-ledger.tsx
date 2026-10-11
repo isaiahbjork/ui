@@ -10,6 +10,7 @@ import {
 import { useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { BJORK_PALETTE, type BjorkTone } from "@/components/bjork-ui/_core/palette";
+import { BJORK_SURFACE } from "@/components/bjork-ui/_core/surface";
 import { useBjorkTone } from "@/components/bjork-ui/_core/tone";
 import { useVisibleLoop } from "@/components/bjork-ui/_core/loop";
 import { LiveRegion } from "@/components/bjork-ui/_core/a11y";
@@ -101,19 +102,19 @@ interface Material {
 
 const MATERIAL: Record<BjorkTone, Material> = {
   dark: {
-    board: "#0b0b0b",
-    topFace: ["#1a1a1a", "#151515"],
-    bottomFace: ["#131313", "#101010"],
+    board: BJORK_SURFACE.dark.surface,
+    topFace: ["#1e1e1e", "#191919"],
+    bottomFace: ["#171717", "#141414"],
     split: "#050505",
     splitHighlight: "rgba(255,255,255,0.04)",
     flapEdge: "rgba(255,255,255,0.16)",
     flapShade: 0.6,
   },
   light: {
-    board: "#efe9dd",
-    topFace: ["#fffcf6", "#f8f2e7"],
-    bottomFace: ["#f5efe3", "#efe7d8"],
-    split: "#e1d7c8",
+    board: BJORK_SURFACE.light.surface,
+    topFace: ["#f6f0e5", "#f1eadd"],
+    bottomFace: ["#eee7d9", "#e9e1d2"],
+    split: "#ddd2c1",
     splitHighlight: "rgba(255,255,255,0.7)",
     flapEdge: "rgba(0,0,0,0.14)",
     flapShade: 0.22,
@@ -976,9 +977,11 @@ export function FlapLedger({
         style={{
           padding: m.pad,
           borderRadius: m.boardRadius,
+          // The library's card surface, pinned to the board's tone so the frame
+          // always matches the faces drawn on the canvas.
           background: material.board,
-          border: `1px solid var(--bjork-border, ${palette.border})`,
-          boxShadow: "var(--bjork-shadow-panel, none)",
+          border: `1px solid ${BJORK_SURFACE[resolvedTone].border}`,
+          boxShadow: BJORK_SURFACE[resolvedTone].shadowSurface,
           color: ink,
           width: boardWidth + ledSpace + m.pad * 2 + 2,
         }}
