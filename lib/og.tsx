@@ -5,6 +5,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { ImageResponse } from "next/og";
 
 import { mosaicPreviews, type ShareCard } from "@/lib/og-cards";
+import { breakableParts, lineCount, readFontMetrics, type FontMetrics } from "@/lib/og-measure";
 
 export const ogSize = { width: 1200, height: 630 };
 
@@ -24,12 +25,15 @@ const ACCENT = "#ec5c13";
 const FONT_DIR = path.join(process.cwd(), "lib", "og-fonts");
 const PREVIEW_DIR = path.join(process.cwd(), "public", "component-previews");
 
+let displayMetrics: FontMetrics | null = null;
+
 async function loadFonts() {
   const [display, text, mono] = await Promise.all([
     readFile(path.join(FONT_DIR, "BjorkGroteskDisplay-Medium.ttf")),
     readFile(path.join(FONT_DIR, "BjorkGroteskAlpha-Regular.ttf")),
     readFile(path.join(FONT_DIR, "GeistMono-Regular.ttf")),
   ]);
+  displayMetrics ??= readFontMetrics(display);
   return [
     { name: "Bjork Display", data: display, style: "normal" as const, weight: 500 as const },
     { name: "Bjork Text", data: text, style: "normal" as const, weight: 400 as const },
@@ -178,12 +182,31 @@ function installLine(registry: string) {
   return full.length <= 40 ? full : `@bjork-ui/${registry}`;
 }
 
-function titleSize(title: string) {
+// The name column on a component card: 380 wide less its 16 right padding.
+const TITLE_COLUMN = 364;
+const TITLE_MAX_LINES = 3;
+const titleSpacing = (size: number) => (size >= 70 ? -2.4 : -1.6);
+
+// Short names get room to be big; longer ones start smaller so a card keeps its rhythm.
+function titleCeiling(title: string) {
   const longest = Math.max(...title.split(" ").map((word) => word.length));
   if (title.length <= 10 && longest <= 9) return 88;
   if (title.length <= 18 && longest <= 11) return 74;
   if (longest <= 13) return 62;
   return 54;
+}
+
+// The largest size, up to the ceiling, where no word runs past the column (Satori
+// can't break inside a word, so an unbroken word that is too wide gets clipped) and
+// the name stays within three lines. Measured against the real font with a small margin.
+function titleSize(title: string, metrics: FontMetrics) {
+  const room = TITLE_COLUMN - 6;
+  for (let size = titleCeiling(title); size > 36; size -= 2) {
+    const measure = (text: string) => metrics.width(text, size, titleSpacing(size));
+    const widest = Math.max(...breakableParts(title).map(measure));
+    if (widest <= room && lineCount(title, room, measure) <= TITLE_MAX_LINES) return size;
+  }
+  return 36;
 }
 
 // A quiet field of dots for components without a still preview.
@@ -258,7 +281,7 @@ export async function renderComponentCard(card: ShareCard) {
     loadFonts(),
     card.preview ? loadPreview(card.preview) : Promise.resolve(null),
   ]);
-  const size = titleSize(card.title);
+  const size = titleSize(card.title, displayMetrics!);
 
   return new ImageResponse(
     (
@@ -291,7 +314,7 @@ export async function renderComponentCard(card: ShareCard) {
                   fontWeight: 500,
                   fontSize: size,
                   lineHeight: 1.0,
-                  letterSpacing: size >= 70 ? -2.4 : -1.6,
+                  letterSpacing: titleSpacing(size),
                   color: INK,
                 }}
               >
